@@ -1,0 +1,41 @@
+rule network_analysis {
+
+  meta:
+    author = "Google Cloud Security"
+    description = "Detects network connection events that exceed a set of thresholds based on statistical calclations"
+    severity = "Low"
+    priority = "Low"
+    type = "Detection"
+    data_source = "Zeek"
+
+  events:
+    $net.metadata.event_type = "NETWORK_CONNECTION"
+    $net.metadata.vendor_name = "Zeek"
+    NOT net.ip_in_range_cidr($net.target.ip, "10.10.0.0/16")
+    $net.network.application_protocol = "HTTP"
+    $net.network.ip_protocol = "TCP"
+    $principal_ip = $net.principal.ip
+    $target_ip = $net.target.ip
+
+  match:
+    $principal_ip, $target_ip over 30m
+
+  outcome:
+    $risk_score = 15
+    $event_count = count_distinct($net.metadata.id)
+    $sum_bytes_sent = sum($net.network.sent_bytes)
+    $sum_bytes_received = sum($net.network.received_bytes)
+    $avg_bytes_sent = math.ceil(window.avg($net.network.sent_bytes))
+    $avg_bytes_received = math.ceil( window.avg($net.network.received_bytes))
+    $range_bytes_sent_min_exclude_zeros = arrays.min(window.range($net.network.sent_bytes, true))
+    $range_bytes_sent_max_exclude_zeros = arrays.max(window.range($net.network.sent_bytes, true))
+    $range_bytes_received_min_exclude_zeros = arrays.min(window.range($net.network.received_bytes, true))
+    $range_bytes_received_max_exclude_zeros = arrays.max(window.range($net.network.received_bytes, true))
+    $total_mb = ($sum_bytes_sent + $sum_bytes_received) / 1048576
+    $first_seen = window.first($net.metadata.event_timestamp.seconds, timestamp.get_timestamp($net.metadata.event_timestamp.seconds))
+    $last_seen = window.last($net.metadata.event_timestamp.seconds, timestamp.get_timestamp($net.metadata.event_timestamp.seconds))
+    $time_diff_secs = timestamp.as_unix_seconds($last_seen) - timestamp.as_unix_seconds($first_seen)
+
+  condition:
+    $net and $event_count > 10 and $total_mb > 5
+}

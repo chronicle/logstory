@@ -1,0 +1,22 @@
+{
+  "name": "projects/{{project_id}}/locations/{{location}}/instances/{{instance}}/users/me/searchQueries/{{guid}}",
+  "metadata": {
+    "sharingMode": "MODE_SHARED_WITH_CUSTOMER",
+    "createTime": "{{create_time}}",
+    "updateTime": "{{update_tim}}"
+  },
+  "displayName": "Zeek - Investigative Search",
+  "query": "metadata.vendor_name = \"Zeek\" AND network.application_protocol = ${protocol} and principal.ip = ${originating_ip}",
+  "queryId": "{{query_id}}",
+  "userId": "jstoner@google.com",
+  "description": "Advanced Search Workshop - Search Templates Exercise",
+  "placeholderNames": [
+    "${originating_ip}",
+    "${protocol}"
+  ],
+  "placeholderDescriptions": [
+    "Enter the IP Address of a system where traffic originated from",
+    ""
+  ],
+  "queryType": "QUERY_TYPE_UDM_QUERY"
+}

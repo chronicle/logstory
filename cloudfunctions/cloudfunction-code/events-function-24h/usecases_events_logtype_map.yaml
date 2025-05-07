@@ -1,0 +1,186 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+  1DNS:
+    enabled: 1
+    log_type:
+      - EXTRAHOP_DNS
+
+  AWS:
+    enabled: 1
+    log_type:
+      - AWS_CLOUDTRAIL
+      - GUARDDUTY
+      - AWS_WAF
+
+  GARTNER_DEMO:
+    enabled: 1
+    log_type:
+      - WINDOWS_DHCP
+      - INFOBLOX_DHCP
+      - WINEVTLOG
+      - WINDOWS_SYSMON
+      - SEP
+      - GUARDDUTY
+      - GCP_FIREWALL
+      - GCP_SECURITYCENTER_THREAT
+
+  GCTI:
+    enabled: 1
+    log_type:
+      - TANIUM_TH
+      - MICROSOFT_DEFENDER_ENDPOINT
+      - LIMACHARLIE_EDR
+      - CS_EDR
+      - WINDOWS_DHCP
+      - WINDOWS_SYSMON
+      - WINEVTLOG
+      - POWERSHELL
+      - GCP_CLOUDAUDIT
+      - FIREEYE_HX
+      - WINDOWS_DEFENDER_ATP
+      - SENTINEL_EDR
+
+  TOR:
+    enabled: 1
+    log_type:
+      - WINDOWS_DHCP
+      - WINDOWS_SYSMON
+
+  BENIGN_HASH:
+    enabled: 1
+    log_type:
+      - CS_EDR
+
+  VIRUSTOTAL:
+    enabled: 1
+    log_type:
+      - WINDOWS_DHCP
+      - WINDOWS_SYSMON
+      - ZSCALER_WEBPROXY
+      - CS_EDR
+
+  WHOIS:
+    enabled: 1
+    log_type:
+      - WINDOWS_DHCP
+      - ZSCALER_WEBPROXY
+      - WINDOWS_SYSMON
+
+  PREVALENCE:
+    enabled: 1
+    log_type:
+      - WINDOWS_DHCP
+      - SQUID_WEBPROXY
+
+  GSCC:
+    enabled: 1
+    log_type:
+      - GCP_SECURITYCENTER_THREAT
+      - GCP_SECURITYCENTER_MISCONFIGURATION
+
+  GEOIP:
+    enabled: 1
+    log_type:
+      - AWS_CLOUDTRAIL
+
+  MALWARE:
+    enabled: 1
+    log_type:
+      - WINDOWS_DHCP
+
+  MALWARE_IOC:
+    enabled: 1
+    log_type:
+      - WINDOWS_DHCP
+      - GCP_DNS
+      - ZSCALER_WEBPROXY
+      - WINDOWS_SYSMON
+      - CHROME_MANAGEMENT
+      - WINDOWS_DEFENDER_ATP
+
+  COMMUNITY_SECURITY_ANALYTICS:
+    enabled: 1
+    log_type:
+      - GCP_CLOUDAUDIT
+
+  AZURE_AD:
+    enabled: 1
+    log_type:
+      - AZURE_AD
+
+  CDIR:
+    enabled: 1
+    log_type:
+      - GCP_SECURITYCENTER_THREAT
+      - GCP_SECURITYCENTER_MISCONFIGURATION
+      - GCP_CLOUDAUDIT
+
+  EXFILTRATION:
+    enabled: 1
+    log_type:
+      - GCP_SECURITYCENTER_THREAT
+      - GCP_CLOUDAUDIT
+      - GMAIL_LOGS
+
+  BRUTE_FORCE_CRYPTO_MINER:
+    enabled: 1
+    log_type:
+      - GCP_FIREWALL
+      - NIX_SYSTEM
+      - GCP_CLOUDAUDIT
+      - GCP_SECURITYCENTER_THREAT
+
+  OKTA:
+    enabled: 1
+    log_type:
+      - OKTA
+
+  SOAR:
+    enabled: 1
+    log_type:
+      - INFOBLOX_DHCP
+      - ZSCALER_WEBPROXY
+      - TANIUM_TH
+
+  MANDIANT_FRONTLINE:
+    enabled: 1
+    log_type:
+      - WINDOWS_SYSMON
+
+  LINUX:
+    enabled: 1
+    log_type:
+      - INFOBLOX_DHCP
+      - AUDITD
+      - NIX_SYSTEM
+
+  WORKSPACE:
+    enabled: 1
+    log_type:
+      - WORKSPACE_ACTIVITY
+      - GCP_CLOUDAUDIT
+      - WORKSPACE_ALERTS
+      - CHROME_MANAGEMENT
+
+  GCP:
+    enabled: 1
+    log_type:
+      - GCP_CLOUDAUDIT
+
+  GITHUB:
+    enabled: 1
+    log_type:
+      - GITHUB

@@ -1,0 +1,47 @@
+rule logins_from_terminated_employees {
+  
+  meta:
+    author = "Google Cloud Security"
+    description = "Allowed Logins from Terminated Employees"
+    assumptions = "This rule requires a context data source such as AzureAD AD Context or Workday to demonstrate the correlation of context logs with event logs"
+    type = "alert"
+    tags = "user enrichment"
+    data_source = "microsoft windows events"
+    mitre_attack_tactic = "Defense Evasion, Persistence, Privilege Escalation, Initial Access"
+    mitre_attack_technique = "Valid Accounts"
+    mitre_attack_url = "https://attack.mitre.org/techniques/T1078/"
+    mitre_attack_version = "v13.1"
+    severity = "Medium"
+    priority = "Medium"
+
+  events:
+    $login.metadata.event_type = "USER_LOGIN"
+    $login.security_result.action = "ALLOW"
+    $login.target.user.userid = $user
+    $login.target.user.termination_date.seconds > 0 
+    $login.target.user.termination_date.seconds < $login.metadata.event_timestamp.seconds 
+
+  match:
+    $user over 1d
+
+  outcome:
+    $risk_score = max(65)
+    $mitre_attack_tactic = "Defense Evasion, Persistence, Privilege Escalation, Initial Access"
+    $mitre_attack_technique = "Valid Accounts"
+    $mitre_attack_technique_id = "T1078"
+    $event_count = count_distinct($login.metadata.id)
+    $employee_last_login = max($login.target.user.termination_date.seconds)
+    $total_distinct_ips = count_distinct($login.principal.ip)
+    // added to populate alert graph with additional context
+    $principal_hostname = array_distinct($login.principal.hostname)
+    $target_hostname = array_distinct($login.target.hostname)
+    $principal_user_userid = array_distinct($login.principal.user.userid)
+    // Commented out target.user.userid because it is already represented in graph as match variable. If match changes, can uncomment to add to results
+    //$target_user_userid = array_distinct($login.target.user.userid)
+    $principal_resource_name = array_distinct($login.principal.resource.name)
+    $target_resource_name = array_distinct($login.target.resource.name)
+    $target_url = array_distinct($login.target.url)
+
+  condition:
+    $login
+}

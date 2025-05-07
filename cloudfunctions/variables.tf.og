@@ -1,0 +1,88 @@
+variable "gcp_credential_file" {
+  description = "The path to the GCP credential file for the Terraform service account in the Argolis environment"
+  type        = string
+  default     = "~/.gcp/gcp-project-XXX-1234567890.json"
+}
+
+variable "gcp_project_id" {
+  description = "Value of the GCP Project ID of the Argolis environment"
+  type        = string
+  default     = "chronicle-demo-env-123"
+}
+
+#Argolis
+variable "gcp_project_number" {
+  # Execute 'gcloud projects list' to find the project number.
+  description = "Value of the GCP Project number of the Argolis environment"
+  type        = string
+  default     = "105111850896"
+}
+
+variable "gcp_region" {
+  description = "Value of the GCP Region"
+  type        = string
+  default     = "us-central1"
+}
+
+variable "gcp_scheduler_region" {
+  description = "Value of the GCP Region for Scheduler"
+  type        = string
+  default     = "us-central1"
+}
+
+variable "gcs_bucket_location" {
+  description = "Value of the GCS Bucket Location"
+  type        = string
+  default     = "US"
+}
+
+variable "chronicle_tenant_tla" {
+  description = "Value of the Chronicle TLA in lowercase (gglxxx)"
+  type        = string
+  default     = "chronicle-tla"
+}
+
+variable "chronicle_customer_id" {
+  description = "Value of the Chronicle Customer ID from Chronicle"
+  type        = string
+  default     = "12345678-1234-1234-1234-1234567890ab"
+}
+
+variable "ingestion_api_base_url" {
+  description = "Value of the Ingestion API Base URL - verify your region"
+  type        = string
+  default     = "https://malachiteingestion-pa.googleapis.com"
+}
+
+variable "detection_api_base_url" {
+  description = "Value of the Detection API Base URL  - verify your region"
+  type        = string
+  default     = "https://backstory.googleapis.com"
+}
+
+variable "rule_creator_paused" {
+  description = "By default rule creator is paused, change to false to resume"
+  type        = bool
+  default     = true
+}
+
+
+variable "api_key" {
+    description = "Value of the Ingestion & Detection API Key from malachite project"
+    type = string
+    default = <<EOH
+    {
+      "type": "service_account",
+      "project_id": "malachite-XXX",
+      "private_key_id": "XXX",
+      "private_key": "[redacted contents of key]",
+      "client_email": "XXX@malachite-XXX.iam.gserviceaccount.com",
+      "client_id": "XXX",
+      "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+      "token_uri": "https://oauth2.googleapis.com/token",
+      "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+      "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/XXX%40malachite-XXX.iam.gserviceaccount.com",
+      "universe_domain": "googleapis.com"
+  }
+EOH
+}

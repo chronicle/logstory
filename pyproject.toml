@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "logstory"
+version = "0.1.1"
+authors = [
+  { name = "Google Cloud Security" },
+]
+description =  "Replay SecOps logs with updated timestamps."
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache License 2.0",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "absl-py == 2.1",
+    "google-cloud-storage == 2.10",
+    "google-cloud-secret-manager == 2.0",
+    "google-api-python-client == 2.98",
+    "google-auth == 2.23",
+    "oyaml >= 1.0",
+    "requests < 2.32",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/chronicle/logstory"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["logstory*"]
+
+[project.scripts]
+logstory = "logstory.logstory:entry_point"
+
+[tool.setuptools.package-data]
+"logstory" = [
+"usecases/**/*.log",
+"*.yaml",
+"usecases/**/*.yl2",
+"usecases/**/*.json",
+"usecases/**/*.md",
+"usecases/**/*.proto"
+]

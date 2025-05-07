@@ -1,0 +1,148 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+  GCP_BIGQUERY_CONTEXT:
+    api: unstructuredlogentries
+    timestamps:
+    - name: gcp_creationTime
+      base_time: true
+      dateformat: '%s'
+      epoch: true
+      group: 2
+      pattern: '("creationTime":\s*"?)(\d{10})'
+    - name: gcp_expirationTime
+      dateformat: '%s'
+      epoch: true
+      group: 2
+      pattern: '("expirationTime":\s*"?)(\d{10})'
+
+  GCP_COMPUTE_CONTEXT:
+    api: unstructuredlogentries
+    timestamps:
+    - name: gcp_creationTimestamp
+      dateformat: '%Y-%m-%dT%H:%M:%S'
+      base_time: true
+      epoch: false
+      group: 2
+      pattern: '(creationTimestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+    - name: gcp_lastStartTimestamp
+      dateformat: '%Y-%m-%dT%H:%M:%S'
+      epoch: false
+      group: 2
+      pattern: '(lastStartTimestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+
+  GCP_DLP_CONTEXT:
+    api: unstructuredlogentries
+    timestamps:
+    - name: gcp_dlp_entity_timestamp
+      base_time: true
+      dateformat: '%Y-%m-%dT%H:%M:%S'
+      epoch: false
+      group: 2
+      pattern: '(timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")'
+    - name: gcp_dlp_entity_createTime
+      dateformat: '%Y-%m-%dT%H:%M:%S'
+      epoch: false
+      group: 2
+      pattern: '(createTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")'
+    - name: gcp_dlp_entity_lastModifiedTime
+      dateformat: '%Y-%m-%dT%H:%M:%S'
+      epoch: false
+      group: 2
+      pattern: '(lastModifiedTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")'
+    - name: gcp_dlp_entity_expirationTime
+      dateformat: '%Y-%m-%dT%H:%M:%S'
+      epoch: false
+      group: 2
+      pattern: '(expirationTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")'
+    - name: gcp_dlp_entity_profileLastGenerated
+      dateformat: '%Y-%m-%dT%H:%M:%S'
+      epoch: false
+      group: 2
+      pattern: '(profileLastGenerated"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")'
+
+  GCP_IAM_ANALYSIS:
+    api: entities
+    timestamps:
+    - name: gcp_iam_entity_timestamp
+      base_time: true
+      dateformat: '%s'
+      epoch: true
+      group: 2
+      pattern: '("seconds":\s*"?)(\d+)(\s*")'
+
+  GCP_IAM_CONTEXT:
+    api: unstructuredlogentries
+    timestamps:
+    - name: gcp_Timestamp
+      base_time: true
+      dateformat: '%Y-%m-%dT%H:%M:%S'
+      epoch: false
+      group: 2
+      pattern: '(timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+
+  MISP_IOC:
+    api: unstructuredlogentries
+    timestamps:
+    - name: time
+      base_time: true
+      dateformat: '%s'
+      epoch: true
+      group: 1
+      pattern: '(\d{10})'
+    - name: date
+      dateformat: '%Y-%m-%d'
+      epoch: false
+      group: 1
+      pattern: '(\d{4}-\d{2}-\d{2})'
+
+  OKTA_USER_CONTEXT:
+    api: unstructuredlogentries
+    btsepoch: false
+    btsformat: '%Y-%m-%dT%H:%M:%S'
+    btsgroup: 2
+    btspattern: '(lastLogin"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")'
+    timestamps:
+    - name: lastLogin
+      dateformat: '%Y-%m-%dT%H:%M:%S'
+      base_time: true
+      epoch: false
+      group: 2
+      pattern: '(lastLogin"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")'
+    - name: lastUpdated
+      dateformat: '%Y-%m-%dT%H:%M:%S'
+      epoch: false
+      group: 2
+      pattern: '(lastUpdated"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")'
+
+  WINDOWS_AD:
+    api: unstructuredlogentries
+    timestamps:
+    - name: Date
+      base_time: true
+      dateformat: '%s'
+      epoch: true
+      group: 3
+      pattern: '("\\/Date\()(-?)(\d{10})(\d{3})'
+
+  WORKSPACE_USERS:
+    api: unstructuredlogentries
+    timestamps:
+    - name: gcp_lastLoginTime
+      base_time: true
+      dateformat: '%Y-%m-%dT%H:%M:%S'
+      epoch: false
+      group: 2
+      pattern: '(lastLoginTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")'
