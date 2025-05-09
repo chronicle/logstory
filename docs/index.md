@@ -32,7 +32,7 @@ After the subcommand, Logstory uses Google's [Abseil](https://abseil.io/docs/pyt
 
 ```
 logstory usecase_replay RULES_SEARCH_WORKSHOP \
---customer_id=7e977ce4-f45d-43b2-aea0-52f8b66acd80 \
+--customer_id=01234567-0123-4321-abcd-01234567890a \
 --credentials_path=/usr/local/google/home/dandye/.ssh/malachite-787fa7323a7d_bk_and_ing.json \
 --timestamp_delta=1d  # optional
 ```
