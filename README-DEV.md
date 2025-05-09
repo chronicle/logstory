@@ -35,26 +35,7 @@ gs://logstory-usecases-20241216/RULES_SEARCH_WORKSHOP
 # Edit and Publish Docs
 #
 
-To edit the docs, use `cd docs/ && make livehtml` and then view the docs at localhost:9000
-
-
-NOTE: if you are working on a CloudTop, you can port forward 8000 with:
-```
-ssh -L 8000:localhost:8000 ${cloudtop_hosthame}.c.googlers.com
-```
-
-
-The docs are temporarily hosted in a GCP bucket for dev and review. To publish to that bucket:
-```
-cd docs/_build/
-gsutil rsync -r \
-. \
-gs://logstory-usecases-20241216/docs/
-```
-
-You may then view the docs at:
-https://storage.googleapis.com/logstory-usecases-20241216/docs/index.html
-
+To edit the docs, use `cd docs/ && make livehtml` and then view the docs at localhost:8000
 
 ## Contributing
 
