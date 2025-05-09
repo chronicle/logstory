@@ -1,7 +1,7 @@
-absl-py==2.1
-google-cloud-storage==2.10
-google-cloud-secret-manager==2.0
-google-api-python-client==2.98
-google-auth==2.23
+absl-py<=2.1
+google-cloud-storage<=2.10
+google-cloud-secret-manager<=2.0
+google-api-python-client<=2.98
+google-auth<=2.23
 oyaml>=1.0
 requests<2.32

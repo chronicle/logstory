@@ -32,7 +32,7 @@ After the subcommand, Logstory uses Google's [Abseil](https://abseil.io/docs/pyt
 
 ```
 logstory usecase_replay RULES_SEARCH_WORKSHOP \
---customer_id=7e977ce4-f45d-43b2-aea0-52f8b66acd80 \
+--customer_id=01234567-0123-4321-abcd-01234567890a \
 --credentials_path=/usr/local/google/home/dandye/.ssh/malachite-787fa7323a7d_bk_and_ing.json \
 --timestamp_delta=1d  # optional
 ```
@@ -136,17 +136,36 @@ gs://logstory-usecases-20241216/EDR_WORKSHOP \
 ~/miniconda3/envs/pkg101_20241212_0453/lib/python3.13/site-packages/logstory/usecases/
 ```
 
-```{note}
-This is onerous, so I'm going to add somecommands to make it easier.
+To make that easier:
+```
+❯ logstory usecases_list_available
+
+Available usecases in bucket 'logstory-usecases-20241216':
+- EDR_WORKSHOP
+- RULES_SEARCH_WORKSHOP
+['EDR_WORKSHOP', 'RULES_SEARCH_WORKSHOP']
 ```
 
 ```
-ToDo:
- * [ ] Upload subset of usecases to a public bucket
-   * [ ] add a management command to download from bucket
-   * [ ] update readme with how to add
- * [ ] Add metadata to usecases
-   * [ ] They should be self documenting
+❯ logstory usecase_get EDR_WORKSHOP
+
+Available usecases in bucket 'logstory-usecases-20241216':
+- EDR_WORKSHOP
+- RULES_SEARCH_WORKSHOP
+Downloading EDR_WORKSHOP/EDR_WORKSHOP.md to [redacted]/logstory/usecases/EDR_WORKSHOP/EDR_WORKSHOP.md
+Downloading EDR_WORKSHOP/EVENTS/CS_DETECTS.log to [redacted]/logstory/src/logstory/usecases/EDR_WORKSHOP/EVENTS/CS_DETECTS.log
+Downloading EDR_WORKSHOP/EVENTS/CS_EDR.log to [redacted]/logstory/src/logstory/usecases/EDR_WORKSHOP/EVENTS/CS_EDR.log
+Downloading EDR_WORKSHOP/EVENTS/WINDOWS_SYSMON.log to [redacted]/logstory/src/logstory/usecases/EDR_WORKSHOP/EVENTS/WINDOWS_SYSMON.log
+```
+
+```
+❯ logstory usecase_list
+Unknown command: usecase_list
+❯ logstory usecases_list
+#
+# EDR_WORKSHOP
+#
+...
 ```
 
 ## Contributing
