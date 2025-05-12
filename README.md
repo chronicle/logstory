@@ -1,7 +1,7 @@
 
-> **WARNING** Logstory is a tool capable of sending logs and other data to security information event management(SIEM) systems and/or other 
-destinations. **It can be very difficult or impossible to remove data from these systems once ingested.** Ingesting data into your SIEM can have adverse 
-effects on privacy, security, compliance, and functionality, and more. You are responsible for the impact of ingesting data into your SIEM or other systems 
+> **WARNING** Logstory is a tool capable of sending logs and other data to security information and event management (SIEM) systems and/or other
+destinations. **It can be very difficult or impossible to remove data from these systems once they are ingested.** Ingesting data into your SIEM can have adverse
+effects on privacy, security, compliance, functionality, and more. You are responsible for the impact of ingesting data into your SIEM or other systems
 using Logstory. Please see the [Usecases](#Usecases) section of this document for information regarding the Logstory datasets distributed with this repository.
 
 > **NOTE** The *full* documentation for Logstory is at: https://chronicle.github.io/logstory/
@@ -14,7 +14,7 @@ Logstory is used to update timestamps in telemetry (i.e. logs) and then replay t
 
 The stories are organized as "usecases", which always contain events and may contain [entities](https://cloud.google.com/chronicle/docs/ingestion/ingestion-entities), [reference lists](https://cloud.google.com/chronicle/docs/reference/reference-lists), and/or [YARA-L 2.0](https://cloud.google.com/chronicle/docs/detection/yara-l-2-0-overview) Detection Rules. Each usecase includes a README.md file to describe its use.
 
-Only the RULES_SEARCH_WORKSHOP is included with the PyPI package. Learning about and installing addition usecases is described in [usecases](./usecase_docs/ReadMe.md).
+Only the RULES_SEARCH_WORKSHOP is included with the PyPI package. Learning about and installing additional usecases is described in [usecases](./usecase_docs/ReadMe.md).
 
 ## Installation
 
@@ -24,12 +24,12 @@ Logstory has a command line interface (CLI), written in Python, that is most eas
 $ pip install logstory
 ```
 
-The `logstory` CLI interface has subcommands, which take arguments like so:
+The `logstory` CLI has subcommands, which take arguments like so:
 ```
 logstory usecase_replay RULES_SEARCH_WORKSHOP
 ```
 
-These are explained in depth later in this doc.
+These are explained in depth later in this document.
 
 ## Configuration
 
@@ -59,7 +59,7 @@ https://${code}.backstory.chronicle.security/settings/profile
 
 ### Timestamp BTS
 
-(Optional, default=1d) Updating timestamps for security telemetry is tricky. The .log files in the usecases have timestamps in many formats and we need to update them all to be recent while simultaneously preserving the relative differences between them. For each usecase, Logstory determines the base timestamp "bts" for the first timestamp in the first logfile and all updates are relative to it.
+(Optional, default=1d) Updating timestamps for security telemetry is tricky. The .log files in the usecases have timestamps in many formats and we need to update them all to be recent while simultaneously preserving the relative differences between them. For each usecase, Logstory determines the base timestamp "bts" for the first timestamp in the first log file and all updates are relative to it.
 
 
 The image below shows that original timestamps on 2023-06-23 (top two subplots) were updated to 2023-09-24, the relative differences between the three timestamps on the first line of the first log file before (top left) and the last line of the logfile (top right) are preserved both interline and intraline on the bottom two subplots. The usecase spans an interval of 5 minutes and 55 seconds both before and after updates.
@@ -71,10 +71,10 @@ The image below shows that original timestamps on 2023-06-23 (top two subplots) 
 When timestamp_delta is set to 0d (zero days), only year, month, and day are updated (to today) and the hours, minutes, seconds, and milliseconds are preserved. That hour may be in the future, so when timestamp_delta is set to 1d the year, month, and day are set to today minus 1 day and the hours, minutes, seconds, and milliseconds are preserved.
 
 ```{tip}
-For best results, use a cron jobs to run the usecase daily at 12:01am with `--timestamp_delta=1d`.
+For best results, use a cron job to run the usecase daily at 12:01am with `--timestamp_delta=1d`.
 ```
 
-You may also provide `Nh` for offsetting by the hour, which is mainly useful if you want to replay the same log file multiple times per day (and prevend deduplication). Likewise, `Nm` offsets by minutes. These can be combined. For example, on the day of writing (Dec 13, 2024)`--timestamp_delta=1d1h1m` changes an original timestamp from/to:
+You may also provide `Nh` for offsetting by the hour, which is mainly useful if you want to replay the same log file multiple times per day (and prevent deduplication). Likewise, `Nm` offsets by minutes. These can be combined. For example, on the day of writing (Dec 13, 2024)`--timestamp_delta=1d1h1m` changes an original timestamp from/to:
 ```
 2021-12-01T13:37:42.123Z1
 2024-12-12T12:36:42.123Z1
@@ -91,13 +91,13 @@ Assuming your flagfile is named config.cfg, you can use it to define all of the 
 logstory usecase_replay_logtype RULES_SEARCH_WORKSHOP POWERSHELL --flagfile=config.cfg
 ```
 
-That updates timestamps and all uploads from a single logfile in a single usecase. The following updates timestamps and uploads only entities (rather than events) from and overrides the timestamp_delta in the flagfile (if it is specified):
+That updates timestamps and all uploads from a single log file in a single usecase. The following updates timestamps and uploads only entities (rather than events) from the usecase and overrides the timestamp_delta in the flagfile (if it is specified):
 
 ```
 logstory usecase_replay_logtype RULES_SEARCH_WORKSHOP POWERSHELL --flagfile=config.cfg --timestamp_delta=0d --entities
 ```
 
-You can increase verbocity with by prepending the python log level:
+You can increase verbosity by prepending the Python log level:
 ```
 PYTHONLOGLEVEL=DEBUG logstory usecase_replay RULES_SEARCH_WORKSHOP --flagfile=config.cfg --timestamp_delta=0d
 ```
