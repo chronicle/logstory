@@ -1,4 +1,10 @@
-NOTE: The *full* documentation for Logstory is at: https://chronicle.github.io/logstory/
+
+> **WARNING** Logstory is a tool capable of sending logs and other data to security information event management(SIEM) systems and/or other 
+destinations. **It can be very difficult or impossible to remove data from these systems once ingested.** Ingesting data into your SIEM can have adverse 
+effects on privacy, security, compliance, and functionality, and more. You are responsible for the impact of ingesting data into your SIEM or other systems 
+using Logstory. Please see the [Usecases](#Usecases) section of this document for information regarding the Logstory datasets distributed with this repository.
+
+> **NOTE** The *full* documentation for Logstory is at: https://chronicle.github.io/logstory/
 
 # Logstory
 
