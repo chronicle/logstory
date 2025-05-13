@@ -141,3 +141,5 @@ dmypy.json
 .DS_Store
 cloudfunctions/variables.tf
 cloudfunctions/backend.tf
+.pypirc
+dist/*
