@@ -15,7 +15,18 @@ make build
 
 The wheel to be published is in: dist/logstory-0.1.0-py3-none-any.whl
 
-That would then be published to PyPI with:
+That would then be published to Test PyPI with:
+
+```
+twine upload --repository testpypi dist/*
+```
+
+Test that with:
+```
+pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ logstory
+```
+
+When tested, that would then be published to PyPI with:
 ```
 twine upload dist/*
 ```
