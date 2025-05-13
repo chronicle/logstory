@@ -8,7 +8,7 @@ Logstory is used to update timestamps in telemetry (i.e. logs) and then replay t
 
 The stories are organized as "usecases", which always contain events and may contain [entities](https://cloud.google.com/chronicle/docs/ingestion/ingestion-entities), [reference lists](https://cloud.google.com/chronicle/docs/reference/reference-lists), and/or [YARA-L 2.0](https://cloud.google.com/chronicle/docs/detection/yara-l-2-0-overview) Detection Rules. Each usecase includes a README.md file to describe its use.
 
-Only the RULES_SEARCH_WORKSHOP is included with the PyPI package. Learning about and installing addition usecases is described in [usecases](./usecase_docs/ReadMe.md).
+Only the RULES_SEARCH_WORKSHOP is included with the PyPI package. Learning about and installing addition usecases is described in [usecases](https://github.com/chronicle/logstory/blob/main/docs/usecase_docs/ReadMe.md).
 
 ## Installation
 
@@ -51,6 +51,10 @@ https://${code}.backstory.chronicle.security/settings/profile
 "Your Google Security Operations representative will provide you with a Google Developer Service Account Credential to enable the API client to communicate with the API."[[reference](https://cloud.google.com/chronicle/docs/reference/ingestion-api#getting_api_authentication_credentials)]
 
 
+**Update:** you can now download the ingestion authentication file from your SecOps tenant's settings page:
+
+https://${code}.backstory.chronicle.security/settings/collection-agent
+
 ### Timestamp BTS
 
 (Optional, default=1d) Updating timestamps for security telemetry is tricky. The .log files in the usecases have timestamps in many formats and we need to update them all to be recent while simultaneously preserving the relative differences between them. For each usecase, Logstory determines the base timestamp "bts" for the first timestamp in the first logfile and all updates are relative to it.
@@ -58,15 +62,14 @@ https://${code}.backstory.chronicle.security/settings/profile
 
 The image below shows that original timestamps on 2023-06-23 (top two subplots) were updated to 2023-09-24, the relative differences between the three timestamps on the first line of the first log file before (top left) and the last line of the logfile (top right) are preserved both interline and intraline on the bottom two subplots. The usecase spans an interval of 5 minutes and 55 seconds both before and after updates.
 
-![My Image Description](docs/img/bts_update.jpg)
+![Visualize timestamp updates](https://raw.githubusercontent.com/chronicle/logstory/refs/heads/main/docs/img/bts_update.jpg)
 
 ### Timestamp Delta
 
 When timestamp_delta is set to 0d (zero days), only year, month, and day are updated (to today) and the hours, minutes, seconds, and milliseconds are preserved. That hour may be in the future, so when timestamp_delta is set to 1d the year, month, and day are set to today minus 1 day and the hours, minutes, seconds, and milliseconds are preserved.
 
-```{tip}
-For best results, use a cron jobs to run the usecase daily at 12:01am with `--timestamp_delta=1d`.
-```
+**Tip:** For best results, use a cron jobs to run the usecase daily at 12:01am with `--timestamp_delta=1d`.
+
 
 You may also provide `Nh` for offsetting by the hour, which is mainly useful if you want to replay the same log file multiple times per day (and prevend deduplication). Likewise, `Nm` offsets by minutes. These can be combined. For example, on the day of writing (Dec 13, 2024)`--timestamp_delta=1d1h1m` changes an original timestamp from/to:
 ```
@@ -88,12 +91,17 @@ logstory usecase_replay_logtype RULES_SEARCH_WORKSHOP POWERSHELL --flagfile=conf
 That updates timestamps and all uploads from a single logfile in a single usecase. The following updates timestamps and uploads only entities (rather than events) from and overrides the timestamp_delta in the flagfile (if it is specified):
 
 ```
-logstory usecase_replay_logtype RULES_SEARCH_WORKSHOP POWERSHELL --flagfile=config.cfg --timestamp_delta=0d --entities
+logstory usecase_replay_logtype RULES_SEARCH_WORKSHOP POWERSHELL \
+ --flagfile=config.cfg \
+ --timestamp_delta=0d \
+ --entities
 ```
 
-You can increase verbocity with by prepending the python log level:
+You can increase verbosity with by prepending the python log level:
 ```
-PYTHONLOGLEVEL=DEBUG logstory usecase_replay RULES_SEARCH_WORKSHOP --flagfile=config.cfg --timestamp_delta=0d
+PYTHONLOGLEVEL=DEBUG logstory usecase_replay RULES_SEARCH_WORKSHOP \
+ --flagfile=config.cfg \
+ --timestamp_delta=0d
 ```
 
 For more usage, see `logstory --help`
@@ -103,8 +111,7 @@ For more usage, see `logstory --help`
 
 Usecases are meant to be self-describing, so check out the metadata in each one.
 
-```{tip} It is strongly recommended to review each usecase before ingestion rather than importing them all at once.
-```
+**Tip:** It is strongly recommended to review each usecase before ingestion rather than importing them all at once.
 
 As shown in the [ReadMe for the Rules Search Workshop](https://storage.googleapis.com/logstory-usecases-20241216/RULES_SEARCH_WORKSHOP/RULES_SEARCH_WORKSHOP.md),
 
