@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "logstory"
-version = "0.1.1"
+version = "0.1.2"
 authors = [
   { name = "Google Cloud Security" },
 ]
@@ -39,10 +39,10 @@ logstory = "logstory.logstory:entry_point"
 
 [tool.setuptools.package-data]
 "logstory" = [
-"usecases/**/*.log",
-"*.yaml",
-"usecases/**/*.yl2",
-"usecases/**/*.json",
-"usecases/**/*.md",
-"usecases/**/*.proto"
+    "usecases/**/*.log",
+    "*.yaml",
+    "usecases/**/*.yl2",
+    "usecases/**/*.json",
+    "usecases/**/*.md",
+    "usecases/**/*.proto"
 ]

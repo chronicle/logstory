@@ -59,7 +59,7 @@ https://${code}.backstory.chronicle.security/settings/profile
 
 The image below shows that original timestamps on 2023-06-23 (top two subplots) were updated to 2023-09-24, the relative differences between the three timestamps on the first line of the first log file before (top left) and the last line of the logfile (top right) are preserved both interline and intraline on the bottom two subplots. The usecase spans an interval of 5 minutes and 55 seconds both before and after updates.
 
-![My Image Description](_images/bts_update.jpg)
+![Visualize timestamp updates](https://raw.githubusercontent.com/chronicle/logstory/refs/heads/main/docs/img/bts_update.jpg)
 
 ### Timestamp Delta
 
