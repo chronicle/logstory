@@ -48,6 +48,10 @@ logstory = "logstory.logstory:entry_point"
 ]
 
 [tool.ruff]
+# Ruff linting configuration - ready for enforcement when needed
+# Currently not enforced in CI/CD to keep PRs focused
+# To enable: run `ruff check .` locally or add to GitHub workflows
+
 # Same as Black's default line length
 line-length = 88
 
