@@ -15,7 +15,7 @@ def validate_base_time(filepath, data=None):
     """
     if data is None:
         try:
-            with open(filepath, 'r') as f:
+            with open(filepath) as f:
                 data = yaml.safe_load(f)
         except FileNotFoundError:
             raise FileNotFoundError(f"File not found: {filepath}")
@@ -26,23 +26,22 @@ def validate_base_time(filepath, data=None):
         raise ValueError("YAML file should contain a dictionary at the root level.")
 
     for entry_name, entry_data in data.items():
-        if 'timestamps' not in entry_data:
+        if "timestamps" not in entry_data:
             print(f"Warning: Entry '{entry_name}' has no 'timestamps' list. Skipping.")
             continue
 
-        timestamps = entry_data['timestamps']
+        timestamps = entry_data["timestamps"]
         base_time_count = 0
 
         for timestamp in timestamps:
-            if 'base_time' in timestamp and timestamp['base_time']:
+            if "base_time" in timestamp and timestamp["base_time"]:
                 base_time_count += 1
 
         if base_time_count == 0:
             raise ValueError(f"Entry '{entry_name}' has no base_time: true timestamp.")
-        elif base_time_count > 1:
+        if base_time_count > 1:
             raise ValueError(f"Entry '{entry_name}' has multiple base_time: true timestamps ({base_time_count}).")
-        else:
-            print(f"Entry '{entry_name}' has exactly one base_time: true timestamp. OK")
+        print(f"Entry '{entry_name}' has exactly one base_time: true timestamp. OK")
 
 
 def validate_base_time_format(filepath):
@@ -59,7 +58,7 @@ def validate_base_time_format(filepath):
         ValueError: If a base_time: true timestamp has incorrect epoch/dateformat combination.
     """
     try:
-        with open(filepath, 'r') as f:
+        with open(filepath) as f:
             data = yaml.safe_load(f)
     except FileNotFoundError:
         raise FileNotFoundError(f"File not found: {filepath}")
@@ -70,24 +69,24 @@ def validate_base_time_format(filepath):
         raise ValueError("YAML file should contain a dictionary at the root level.")
 
     for entry_name, entry_data in data.items():
-        if 'timestamps' not in entry_data:
+        if "timestamps" not in entry_data:
             print(f"Warning: Entry '{entry_name}' has no 'timestamps' list. Skipping.")
             continue
 
-        timestamps = entry_data['timestamps']
+        timestamps = entry_data["timestamps"]
 
         for timestamp in timestamps:
-            if 'base_time' in timestamp and timestamp['base_time']:
-                has_dateformat = 'dateformat' in timestamp
-                has_epoch = 'epoch' in timestamp
+            if "base_time" in timestamp and timestamp["base_time"]:
+                has_dateformat = "dateformat" in timestamp
+                has_epoch = "epoch" in timestamp
                 
                 if not has_epoch:
                     raise ValueError(f"Entry '{entry_name}' has base_time: true timestamp without 'epoch' field.")
                 
-                epoch_value = timestamp['epoch']
+                epoch_value = timestamp["epoch"]
                 if epoch_value is True and has_dateformat:
                     raise ValueError(f"Entry '{entry_name}' has base_time: true with epoch=true but also has dateformat field.")
-                elif epoch_value is False and not has_dateformat:
+                if epoch_value is False and not has_dateformat:
                     raise ValueError(f"Entry '{entry_name}' has base_time: true with epoch=false but missing dateformat field.")
                 
                 format_type = "epoch" if epoch_value else "dateformat"
@@ -105,7 +104,7 @@ def validate_timestamp_required_fields(filepath):
         ValueError: If any timestamp is missing required fields.
     """
     try:
-        with open(filepath, 'r') as f:
+        with open(filepath) as f:
             data = yaml.safe_load(f)
     except FileNotFoundError:
         raise FileNotFoundError(f"File not found: {filepath}")
@@ -115,13 +114,13 @@ def validate_timestamp_required_fields(filepath):
     if not isinstance(data, dict):
         raise ValueError("YAML file should contain a dictionary at the root level.")
 
-    base_required_fields = ['name', 'pattern', 'epoch', 'group']
+    base_required_fields = ["name", "pattern", "epoch", "group"]
 
     for entry_name, entry_data in data.items():
-        if 'timestamps' not in entry_data:
+        if "timestamps" not in entry_data:
             continue
 
-        timestamps = entry_data['timestamps']
+        timestamps = entry_data["timestamps"]
         for i, timestamp in enumerate(timestamps):
             # Check base required fields
             for field in base_required_fields:
@@ -129,9 +128,9 @@ def validate_timestamp_required_fields(filepath):
                     raise ValueError(f"Entry '{entry_name}' timestamp {i} missing required field: '{field}'")
             
             # Check epoch-specific requirements
-            if timestamp.get('epoch') is False and 'dateformat' not in timestamp:
+            if timestamp.get("epoch") is False and "dateformat" not in timestamp:
                 raise ValueError(f"Entry '{entry_name}' timestamp {i}: epoch=false requires dateformat field")
-            elif timestamp.get('epoch') is True and 'dateformat' in timestamp:
+            if timestamp.get("epoch") is True and "dateformat" in timestamp:
                 raise ValueError(f"Entry '{entry_name}' timestamp {i}: epoch=true should not have dateformat field")
             
             print(f"Entry '{entry_name}' timestamp {i} has all required fields. OK")
@@ -150,7 +149,7 @@ def validate_epoch_dateformat_consistency(filepath):
         ValueError: If epoch and dateformat are inconsistent.
     """
     try:
-        with open(filepath, 'r') as f:
+        with open(filepath) as f:
             data = yaml.safe_load(f)
     except FileNotFoundError:
         raise FileNotFoundError(f"File not found: {filepath}")
@@ -161,20 +160,20 @@ def validate_epoch_dateformat_consistency(filepath):
         raise ValueError("YAML file should contain a dictionary at the root level.")
 
     for entry_name, entry_data in data.items():
-        if 'timestamps' not in entry_data:
+        if "timestamps" not in entry_data:
             continue
 
-        timestamps = entry_data['timestamps']
+        timestamps = entry_data["timestamps"]
         for i, timestamp in enumerate(timestamps):
-            if 'epoch' in timestamp:
-                epoch = timestamp['epoch']
-                has_dateformat = 'dateformat' in timestamp
+            if "epoch" in timestamp:
+                epoch = timestamp["epoch"]
+                has_dateformat = "dateformat" in timestamp
                 
                 if epoch is True and has_dateformat:
                     raise ValueError(f"Entry '{entry_name}' timestamp {i}: epoch=true should NOT have dateformat field, but found '{timestamp['dateformat']}'")
-                elif epoch is False and not has_dateformat:
+                if epoch is False and not has_dateformat:
                     raise ValueError(f"Entry '{entry_name}' timestamp {i}: epoch=false should have dateformat field, but none found")
-                elif epoch is False and timestamp['dateformat'] == '%s':
+                if epoch is False and timestamp["dateformat"] == "%s":
                     raise ValueError(f"Entry '{entry_name}' timestamp {i}: epoch=false should not have dateformat='%s' (use epoch=true instead)")
                 
                 print(f"Entry '{entry_name}' timestamp {i} epoch/dateformat consistency. OK")
@@ -191,7 +190,7 @@ def validate_field_types(filepath):
         ValueError: If any field has incorrect type.
     """
     try:
-        with open(filepath, 'r') as f:
+        with open(filepath) as f:
             data = yaml.safe_load(f)
     except FileNotFoundError:
         raise FileNotFoundError(f"File not found: {filepath}")
@@ -202,23 +201,23 @@ def validate_field_types(filepath):
         raise ValueError("YAML file should contain a dictionary at the root level.")
 
     for entry_name, entry_data in data.items():
-        if 'timestamps' not in entry_data:
+        if "timestamps" not in entry_data:
             continue
 
-        timestamps = entry_data['timestamps']
+        timestamps = entry_data["timestamps"]
         for i, timestamp in enumerate(timestamps):
             # Check string fields
-            for field in ['name', 'dateformat', 'pattern']:
+            for field in ["name", "dateformat", "pattern"]:
                 if field in timestamp and not isinstance(timestamp[field], str):
                     raise ValueError(f"Entry '{entry_name}' timestamp {i}: '{field}' should be string, got {type(timestamp[field])}")
             
             # Check boolean fields
-            for field in ['epoch', 'base_time']:
+            for field in ["epoch", "base_time"]:
                 if field in timestamp and not isinstance(timestamp[field], bool):
                     raise ValueError(f"Entry '{entry_name}' timestamp {i}: '{field}' should be boolean, got {type(timestamp[field])}")
             
             # Check integer fields
-            for field in ['group']:
+            for field in ["group"]:
                 if field in timestamp and not isinstance(timestamp[field], int):
                     raise ValueError(f"Entry '{entry_name}' timestamp {i}: '{field}' should be integer, got {type(timestamp[field])}")
                 if field in timestamp and timestamp[field] < 0:
@@ -238,48 +237,48 @@ def _validate_single_log_type(log_type: str, entry_data: dict) -> None:
     Raises:
         ValueError: If any validation fails.
     """
-    if 'timestamps' not in entry_data:
+    if "timestamps" not in entry_data:
         raise ValueError(f"Log type '{log_type}' missing 'timestamps' configuration")
     
-    timestamps = entry_data['timestamps']
+    timestamps = entry_data["timestamps"]
     base_time_count = 0
     
     for i, timestamp in enumerate(timestamps):
         # Check required fields
-        required_fields = ['name', 'pattern', 'epoch', 'group']
+        required_fields = ["name", "pattern", "epoch", "group"]
         for field in required_fields:
             if field not in timestamp:
                 raise ValueError(f"timestamp {i} missing required field: '{field}'")
         
         # Check base_time count
-        if timestamp.get('base_time'):
+        if timestamp.get("base_time"):
             base_time_count += 1
         
         # Check epoch/dateformat consistency
-        epoch = timestamp.get('epoch')
-        has_dateformat = 'dateformat' in timestamp
+        epoch = timestamp.get("epoch")
+        has_dateformat = "dateformat" in timestamp
         
         if epoch is True and has_dateformat:
             raise ValueError(f"timestamp {i} ({timestamp['name']}): epoch=true should not have dateformat field")
-        elif epoch is False and not has_dateformat:
+        if epoch is False and not has_dateformat:
             raise ValueError(f"timestamp {i} ({timestamp['name']}): epoch=false requires dateformat field")
-        elif epoch is False and timestamp.get('dateformat') == '%s':
+        if epoch is False and timestamp.get("dateformat") == "%s":
             raise ValueError(f"timestamp {i} ({timestamp['name']}): epoch=false should not use dateformat='%s'")
         
         # Check field types
-        if not isinstance(timestamp.get('name'), str):
+        if not isinstance(timestamp.get("name"), str):
             raise ValueError(f"timestamp {i}: 'name' must be string")
-        if not isinstance(timestamp.get('pattern'), str):
+        if not isinstance(timestamp.get("pattern"), str):
             raise ValueError(f"timestamp {i}: 'pattern' must be string")
-        if not isinstance(timestamp.get('epoch'), bool):
+        if not isinstance(timestamp.get("epoch"), bool):
             raise ValueError(f"timestamp {i}: 'epoch' must be boolean")
-        if not isinstance(timestamp.get('group'), int) or timestamp.get('group') < 1:
+        if not isinstance(timestamp.get("group"), int) or timestamp.get("group") < 1:
             raise ValueError(f"timestamp {i}: 'group' must be positive integer")
     
     # Check base_time count
     if base_time_count == 0:
-        raise ValueError(f"has no base_time: true timestamp")
-    elif base_time_count > 1:
+        raise ValueError("has no base_time: true timestamp")
+    if base_time_count > 1:
         raise ValueError(f"has multiple base_time: true timestamps ({base_time_count})")
 
 
@@ -295,7 +294,7 @@ def validate_all_log_types(filepath):
         ValueError: If any log type has configuration issues.
     """
     try:
-        with open(filepath, 'r') as f:
+        with open(filepath) as f:
             data = yaml.safe_load(f)
     except FileNotFoundError:
         raise FileNotFoundError(f"File not found: {filepath}")
@@ -309,7 +308,7 @@ def validate_all_log_types(filepath):
     validated_count = 0
     
     for log_type, entry_data in data.items():
-        if 'timestamps' not in entry_data:
+        if "timestamps" not in entry_data:
             print(f"Warning: Log type '{log_type}' has no 'timestamps' list. Skipping.")
             continue
         
@@ -344,7 +343,7 @@ for filepath in filepaths:
       validate_field_types(filepath)
       
       # Comprehensive validation for all log types
-      print(f"\n--- Comprehensive validation for all log types ---")
+      print("\n--- Comprehensive validation for all log types ---")
       validate_all_log_types(filepath)
       
       print(f"\n✅ All validations passed for {filepath}")

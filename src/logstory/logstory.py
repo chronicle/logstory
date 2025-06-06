@@ -23,7 +23,7 @@ from absl import app, flags
 from google.cloud import storage
 from google.oauth2 import service_account
 
-UTC = datetime.timezone.utc
+UTC = datetime.UTC
 
 
 # Validation function to check if the string is a valid UUID4
@@ -308,7 +308,7 @@ def local_main(argv):
     print("Unknown command: %s" % command)
     return 1
 
-  logstory_exe_time = datetime.datetime.now(datetime.timezone.utc)
+  logstory_exe_time = datetime.datetime.now(datetime.UTC)
   for use_case in usecases:
     logstory_exe_time = _get_current_time()
     if command == "usecases_replay":

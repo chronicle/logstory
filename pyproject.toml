@@ -54,7 +54,15 @@ line-length = 88
 # Assume Python 3.11+
 target-version = "py311"
 
-exclude = ["cloudfunctions/"]
+exclude = [
+    "cloudfunctions/",
+    "docs/",
+    "dist/", 
+    "*.egg-info/",
+    ".git/",
+    "__pycache__/",
+    "*.pyc"
+]
 
 [tool.ruff.lint]
 # Enable pycodestyle (`E`) and Pyflakes (`F`) codes by default
@@ -87,9 +95,11 @@ max-complexity = 10
 
 [tool.ruff.lint.per-file-ignores]
 # Tests can use assertions and have more relaxed rules
-"tests/*" = ["S101", "D", "PLR2004"]
-# Scripts and CLI entry points can have print statements
-"src/logstory/logstory.py" = ["T201"]
+"tests/*" = ["S101", "D", "PLR2004", "T201", "B904", "F541"]
+# Scripts and CLI entry points can have print statements and more relaxed rules
+"src/logstory/logstory.py" = ["T201", "PLR0911", "PLR2004", "PLW2901", "UP031", "D415"]
+# Main module can have some relaxed rules for Cloud Functions compatibility
+"src/logstory/main.py" = ["PLW2901", "ARG001"]
 
 [tool.ruff.lint.isort]
 # Sort imports according to Google style

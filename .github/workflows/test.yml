@@ -24,7 +24,12 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pyyaml
+        pip install pyyaml ruff
+
+    - name: Run Ruff linter (quick check)
+      run: |
+        echo "🔍 Running quick lint check..."
+        ruff check --select E,F,W --quiet src/ tests/
 
     - name: Run timestamp validation tests
       run: |
