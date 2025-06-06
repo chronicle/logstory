@@ -48,6 +48,15 @@ logstory = "logstory.logstory:entry_point"
 ]
 
 [tool.ruff]
+# Same as Black's default line length
+line-length = 88
+
+# Assume Python 3.11+
+target-version = "py311"
+
+exclude = ["cloudfunctions/"]
+
+[tool.ruff.lint]
 # Enable pycodestyle (`E`) and Pyflakes (`F`) codes by default
 select = ["E", "F", "W", "C90", "I", "N", "D", "UP", "S", "B", "A", "C4", "ISC", "T20", "PT", "Q", "RSE", "RET", "SIM", "TID", "ARG", "ERA", "PL", "SLF", "PIE", "G"]
 ignore = [
@@ -68,27 +77,21 @@ ignore = [
     "F841",  # Local variable assigned but never used (existing code)
 ]
 
-# Same as Black's default line length
-line-length = 88
-
-# Assume Python 3.11+
-target-version = "py311"
-
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 # Use Google-style docstrings
 convention = "google"
 
-[tool.ruff.mccabe]
+[tool.ruff.lint.mccabe]
 # Flag errors (`C901`) whenever the complexity level exceeds 10
 max-complexity = 10
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 # Tests can use assertions and have more relaxed rules
 "tests/*" = ["S101", "D", "PLR2004"]
 # Scripts and CLI entry points can have print statements
 "src/logstory/logstory.py" = ["T201"]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 # Sort imports according to Google style
 force-single-line = false
 split-on-trailing-comma = true
