@@ -18,7 +18,6 @@
     timestamps:
       - name: event_time
         base_time: true
-        dateformat: "%s"
         pattern: '(\s*?)(\d{10})(.\d+\s*)'
         epoch: true
         group: 2
@@ -53,7 +52,6 @@
     timestamps:
       - name: timestamp
         base_time: true
-        dateformat: "%s"
         pattern: '("timestamp":\s*?)(\d{10})(.\d+\s*)'
         epoch: true
         group: 2
@@ -73,7 +71,6 @@
     timestamps:
       - name: zeek_ts
         base_time: true
-        dateformat: "%s"
         pattern: '("ts":\s*?)(\d{10})(.\d+\s*)'
         epoch: true
         group: 2
@@ -83,7 +80,6 @@
     timestamps:
       - name: cb_edr_timestamp
         base_time: true
-        dateformat: "%s"
         pattern: '("timestamp":\s*)(\d{10})'
         epoch: true
         group: 2
@@ -93,7 +89,6 @@
     timestamps:
       - name: chrome_timestamp
         base_time: true
-        dateformat: "%s"
         pattern: '("time":\s*")(\d{10})(.\d+\s*")?'
         epoch: true
         group: 2
@@ -133,27 +128,22 @@
     timestamps:
       - name: cs_edr_timestamp
         base_time: true
-        dateformat: "%s"
         pattern: '("timestamp":\s*"?)(\d{10})'
         epoch: true
         group: 2
       - name: ContextTimeStamp
-        dateformat: "%s"
         pattern: '("ContextTimeStamp":\s*"?)(\d{10})'
         epoch: true
         group: 2
       - name: OriginalEventTimeStamp
-        dateformat: "%s"
         pattern: '("OriginalEventTimeStamp":\s*"?)(\d{10})'
         epoch: true
         group: 2
       - name: ProcessStartTime
-        dateformat: "%s"
         pattern: '("ProcessStartTime":\s*"?)(\d{10})'
         epoch: true
         group: 2
       - name: AgentLocalTime
-        dateformat: "%s"
         pattern: '("AgentLocalTime":\s*"?)(\d{10})'
         epoch: true
         group: 2
@@ -283,7 +273,6 @@
         epoch: false
         group: 2
       - name: timestamp
-        dateformat: "%s"
         pattern: '("seconds":\s*")(\d{10})'
         epoch: true
         group: 2
@@ -303,7 +292,6 @@
         epoch: false
         group: 2
       - name: timestamp
-        dateformat: "%s"
         pattern: '("seconds":\s*")(\d{10})'
         epoch: true
         group: 2
@@ -338,7 +326,6 @@
     timestamps:
       - name: timestamp
         base_time: true
-        dateformat: "%s"
         pattern: '("timestamp_usec":\s+")(\d{10})(\d{6})'
         epoch: true
         group: 2
@@ -393,12 +380,10 @@
     timestamps:
       - name: TIMESTAMP
         base_time: true
-        dateformat: "%s"
         pattern: '("TIMESTAMP":)(\d{10})(\d{3})'
         epoch: true
         group: 2
       - name: event_time
-        dateformat: "%s"
         pattern: '("event_time":)(\d{10})(\d{3})'
         epoch: true
         group: 2
@@ -502,7 +487,6 @@
         epoch: false
         group: 2
       - name: EventTime
-        dateformat: "%s"
         pattern: ("EventTime":)(\d+)(,)
         epoch: true
         group: 2
@@ -512,7 +496,6 @@
         epoch: false
         group: 2
       - name: EventReceivedTime
-        dateformat: "%s"
         pattern: ("EventReceivedTime":)(\d+)(,)
         epoch: true
         group: 2
@@ -551,7 +534,6 @@
     api: unstructuredlogentries
     timestamps:
       - name: EventTime
-        dateformat: "%s"
         pattern: ("EventTime":)(\d+)(,)
         epoch: true
         group: 2
@@ -562,7 +544,6 @@
         epoch: false
         group: 2
       - name: EventReceivedTime
-        dateformat: "%s"
         pattern: ("EventReceivedTime":)(\d+)(,)
         epoch: true
         group: 2
@@ -572,12 +553,10 @@
     timestamps:
       - name: timestamp
         base_time: true
-        dateformat: "%s"
         pattern: '("@timestamp":)(\d{10})'
         epoch: true
         group: 2
       - name: millisecondsSinceEpoch
-        dateformat: "%s"
         pattern: '("millisecondsSinceEpoch"\s*:\s*"?)(\d{10})'
         epoch: true
         group: 2
@@ -602,7 +581,6 @@
     timestamps:
       - name: syslog_timestamp
         base_time: true
-        dateformat: "%s"
         pattern: '(\d{10})(.\d{3})'
         epoch: true
         group: 1
@@ -612,7 +590,6 @@
     timestamps:
       - name: EventTime
         base_time: true
-        dateformat: "%s"
         pattern: ("EventTime":)(\d+)(,)
         epoch: true
         group: 2
@@ -627,7 +604,6 @@
         epoch: false
         group: 2
       - name: EventReceivedTime
-        dateformat: "%s"
         pattern: ("EventReceivedTime":)(\d+)(,)
         epoch: true
         group: 2
@@ -667,7 +643,6 @@
     timestamps:
       - name: EventTime
         base_time: true
-        dateformat: "%s"
         pattern: ("EventTime":)(\d+)(,)
         epoch: true
         group: 2
@@ -677,7 +652,6 @@
         epoch: false
         group: 2
       - name: EventReceivedTime
-        dateformat: "%s"
         pattern: ("EventReceivedTime":)(\d+)(,)
         epoch: true
         group: 2
@@ -792,12 +766,10 @@
     timestamps:
       - name: base_created
         base_time: true
-        dateformat: "%s"
         pattern: '("Created"\s*:\s*"\\\\\/Date\(-?)(\d{10})(\d{3})'
         epoch: true
         group: 2
       - name: Date
-        dateformat: "%s"
         pattern: '("\\\\\/Date\(-?)(\d{10})(\d{3})'
         epoch: true
         group: 2
@@ -837,12 +809,10 @@
     timestamps:
       - name: created_at
         base_time: true
-        dateformat: "%s"
         pattern: '(\"created_at\":)(\d{10})(\d{3})'
         epoch: true
         group: 2
       - name: timestamp
-        dateformat: "%s"
         pattern: '("@timestamp":)(\d{10})'
         epoch: true
         group: 2

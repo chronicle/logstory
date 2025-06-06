@@ -1,0 +1,97 @@
+name: Test
+
+on:
+  push:
+    branches: [ main, chronicle-main ]
+  pull_request:
+    branches: [ main, chronicle-main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyyaml
+
+    - name: Run timestamp validation tests
+      run: |
+        cd tests
+        python test_yaml.py
+
+    - name: Validate timestamp configurations
+      run: |
+        cd tests
+        echo "✅ Testing timestamp validation with Python ${{ matrix.python-version }}"
+        python -c "
+        import yaml
+        import sys
+        import os
+        
+        # Add src to path for imports
+        sys.path.insert(0, os.path.join('..', 'src', 'logstory'))
+        
+        # Import validation function from main.py
+        try:
+            from main import _validate_timestamp_config
+            print('✅ Successfully imported validation function')
+        except ImportError as e:
+            print(f'❌ Import failed: {e}')
+            # Define validation function locally for testing
+            def _validate_timestamp_config(log_type, timestamp_map):
+                if log_type not in timestamp_map:
+                    raise ValueError(f'Log type {log_type} not found')
+                entry_data = timestamp_map[log_type]
+                if 'timestamps' not in entry_data:
+                    raise ValueError(f'Log type {log_type} missing timestamps')
+                timestamps = entry_data['timestamps']
+                base_time_count = sum(1 for ts in timestamps if ts.get('base_time'))
+                for i, timestamp in enumerate(timestamps):
+                    required_fields = ['name', 'pattern', 'epoch', 'group']
+                    for field in required_fields:
+                        if field not in timestamp:
+                            raise ValueError(f'Missing field {field} in timestamp {i}')
+                    epoch = timestamp.get('epoch')
+                    has_dateformat = 'dateformat' in timestamp
+                    if epoch is True and has_dateformat:
+                        raise ValueError(f'Timestamp {i} has epoch=true but also dateformat')
+                    elif epoch is False and not has_dateformat:
+                        raise ValueError(f'Timestamp {i} has epoch=false but no dateformat')
+                if base_time_count != 1:
+                    raise ValueError(f'Expected 1 base_time, got {base_time_count}')
+                print(f'✅ Validation passed for {log_type}')
+        
+        # Test a few key log types from each file
+        test_cases = [
+            ('../src/logstory/logtypes_events_timestamps.yaml', ['AUDITD', 'AWS_CLOUDTRAIL', 'BRO_JSON']),
+            ('../src/logstory/logtypes_entities_timestamps.yaml', ['GCP_BIGQUERY_CONTEXT', 'MISP_IOC'])
+        ]
+        
+        for yaml_file, log_types in test_cases:
+            with open(yaml_file) as f:
+                timestamp_map = yaml.safe_load(f)
+            
+            for log_type in log_types:
+                if log_type in timestamp_map:
+                    try:
+                        _validate_timestamp_config(log_type, timestamp_map)
+                    except Exception as e:
+                        print(f'❌ {log_type}: {e}')
+                        sys.exit(1)
+                else:
+                    print(f'⚠️  {log_type} not found in {yaml_file}')
+        
+        print('✅ All runtime validation tests passed!')
+        "

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "logstory"
-version = "0.1.2"
+version = "0.1.3"
 authors = [
   { name = "Google Cloud Security" },
 ]
@@ -24,7 +24,7 @@ dependencies = [
     "google-api-python-client == 2.98",
     "google-auth == 2.23",
     "oyaml >= 1.0",
-    "requests < 2.32",
+    "requests ~= 2.32.3",
 ]
 
 [project.urls]
@@ -46,3 +46,50 @@ logstory = "logstory.logstory:entry_point"
     "usecases/**/*.md",
     "usecases/**/*.proto"
 ]
+
+[tool.ruff]
+# Enable pycodestyle (`E`) and Pyflakes (`F`) codes by default
+select = ["E", "F", "W", "C90", "I", "N", "D", "UP", "S", "B", "A", "C4", "ISC", "T20", "PT", "Q", "RSE", "RET", "SIM", "TID", "ARG", "ERA", "PL", "SLF", "PIE", "G"]
+ignore = [
+    "D100",  # Missing docstring in public module
+    "D101",  # Missing docstring in public class
+    "D102",  # Missing docstring in public method
+    "D103",  # Missing docstring in public function
+    "D104",  # Missing docstring in public package
+    "D105",  # Missing docstring in magic method
+    "D107",  # Missing docstring in __init__
+    "E501",  # Line too long (we'll use a longer line length for existing code)
+    "S101",  # Use of assert detected (common in tests)
+    "PLR0913", # Too many arguments
+    "PLR0912", # Too many branches
+    "PLR0915", # Too many statements
+    "C901",  # Function is too complex
+    "W293",  # Blank line contains whitespace (existing code)
+    "F841",  # Local variable assigned but never used (existing code)
+]
+
+# Same as Black's default line length
+line-length = 88
+
+# Assume Python 3.11+
+target-version = "py311"
+
+[tool.ruff.pydocstyle]
+# Use Google-style docstrings
+convention = "google"
+
+[tool.ruff.mccabe]
+# Flag errors (`C901`) whenever the complexity level exceeds 10
+max-complexity = 10
+
+[tool.ruff.per-file-ignores]
+# Tests can use assertions and have more relaxed rules
+"tests/*" = ["S101", "D", "PLR2004"]
+# Scripts and CLI entry points can have print statements
+"src/logstory/logstory.py" = ["T201"]
+
+[tool.ruff.isort]
+# Sort imports according to Google style
+force-single-line = false
+split-on-trailing-comma = true
+known-first-party = ["logstory"]

@@ -77,6 +77,62 @@ You may also provide `Nh` for offsetting by the hour, which is mainly useful if 
 
 The hour and minute were each offset by -1 and the date is the date of execution -1.
 
+## Timestamp Configuration
+
+LogStory uses YAML configuration files to define how timestamps are parsed and processed for each log type:
+
+- `logtypes_entities_timestamps.yaml` - Configuration for entity timestamps
+- `logtypes_events_timestamps.yaml` - Configuration for event timestamps
+
+### Timestamp Entry Structure
+
+Each log type defines timestamps with the following fields:
+
+**Required fields:**
+- `name`: String identifier for the timestamp field
+- `pattern`: Regular expression to match the timestamp
+- `epoch`: Boolean indicating timestamp format (`true` for Unix epoch, `false` for formatted dates)
+- `group`: Integer specifying which regex group contains the timestamp
+
+**Optional fields:**
+- `base_time`: Boolean marking the primary timestamp (exactly one per log type)
+- `dateformat`: Format string for non-epoch timestamps (required when `epoch: false`)
+
+### Epoch vs Formatted Timestamps
+
+LogStory supports two timestamp formats:
+
+**Unix Epoch Timestamps** (`epoch: true`):
+```yaml
+- name: event_time
+  base_time: true
+  epoch: true
+  group: 2
+  pattern: '(\s*?)(\d{10})(.\d+\s*)'
+```
+
+**Formatted Timestamps** (`epoch: false`):
+```yaml
+- name: gcp_timestamp
+  base_time: true
+  epoch: false
+  dateformat: '%Y-%m-%dT%H:%M:%S'
+  group: 2
+  pattern: '("timestamp":\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+```
+
+### Configuration Validation
+
+LogStory automatically validates timestamp configurations at runtime to ensure:
+
+- Each log type has exactly one `base_time: true` timestamp
+- All required fields are present with correct data types
+- Epoch and dateformat fields are logically consistent:
+  - `epoch: true` timestamps should not have `dateformat` fields
+  - `epoch: false` timestamps must have `dateformat` fields
+- All timestamps follow consistent naming and structure patterns
+
+If configuration validation fails, LogStory will provide clear error messages indicating the specific log type, timestamp, and issue found.
 
 ## Flags and flag files
 
@@ -186,6 +242,24 @@ git clone git@gitlab.com:google-cloud-ce/googlers/dandye/logstory.git
 make build
 # ToDo: pub to PyPI command
 ```
+
+### Testing
+
+LogStory includes comprehensive validation tests for timestamp configurations:
+
+```bash
+# Run YAML validation tests
+cd tests/
+python test_yaml.py
+```
+
+The test suite validates all timestamp configurations in both entities and events files, ensuring:
+- Proper field structure and data types
+- Logical consistency between epoch and dateformat fields  
+- Required field presence
+- Base time configuration correctness
+
+All 55 log types across both configuration files are automatically tested for compliance with LogStory's timestamp standards.
 
 
 # GCP Cloud Run functions

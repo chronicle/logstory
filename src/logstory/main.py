@@ -102,6 +102,71 @@ def _get_timestamp_delta_dict(timestamp_delta: str) -> Dict[str, int]:
   return {letter: int(number) for number, letter in ts_delta_pairs}
 
 
+def _validate_timestamp_config(log_type: str, timestamp_map: Dict[str, Any]) -> None:
+  """Validates timestamp configuration for logical consistency.
+  
+  Args:
+    log_type: The log type name for error reporting.
+    timestamp_map: The loaded timestamp configuration.
+    
+  Raises:
+    ValueError: If the configuration is invalid or inconsistent.
+  """
+  if log_type not in timestamp_map:
+    raise ValueError(f"Log type '{log_type}' not found in timestamp configuration")
+  
+  entry_data = timestamp_map[log_type]
+  
+  if 'timestamps' not in entry_data:
+    raise ValueError(f"Log type '{log_type}' missing 'timestamps' configuration")
+  
+  timestamps = entry_data['timestamps']
+  base_time_count = 0
+  
+  for i, timestamp in enumerate(timestamps):
+    # Check for required fields
+    required_fields = ['name', 'pattern', 'epoch', 'group']
+    for field in required_fields:
+      if field not in timestamp:
+        raise ValueError(f"Log type '{log_type}' timestamp {i} missing required field: '{field}'")
+    
+    # Check base_time count
+    if timestamp.get('base_time'):
+      base_time_count += 1
+    
+    # Check epoch/dateformat consistency
+    epoch = timestamp.get('epoch')
+    has_dateformat = 'dateformat' in timestamp
+    
+    if epoch is True and has_dateformat:
+      raise ValueError(f"Log type '{log_type}' timestamp {i} ({timestamp['name']}): "
+                      f"epoch=true should not have dateformat field, but found '{timestamp['dateformat']}'")
+    elif epoch is False and not has_dateformat:
+      raise ValueError(f"Log type '{log_type}' timestamp {i} ({timestamp['name']}): "
+                      f"epoch=false requires dateformat field")
+    elif epoch is False and timestamp.get('dateformat') == '%s':
+      raise ValueError(f"Log type '{log_type}' timestamp {i} ({timestamp['name']}): "
+                      f"epoch=false should not use dateformat='%s' (use epoch=true instead)")
+    
+    # Check field types
+    if not isinstance(timestamp.get('name'), str):
+      raise ValueError(f"Log type '{log_type}' timestamp {i}: 'name' must be string")
+    if not isinstance(timestamp.get('pattern'), str):
+      raise ValueError(f"Log type '{log_type}' timestamp {i}: 'pattern' must be string")
+    if not isinstance(timestamp.get('epoch'), bool):
+      raise ValueError(f"Log type '{log_type}' timestamp {i}: 'epoch' must be boolean")
+    if not isinstance(timestamp.get('group'), int) or timestamp.get('group') < 1:
+      raise ValueError(f"Log type '{log_type}' timestamp {i}: 'group' must be positive integer")
+  
+  # Check base_time count
+  if base_time_count == 0:
+    raise ValueError(f"Log type '{log_type}' has no base_time: true timestamp")
+  elif base_time_count > 1:
+    raise ValueError(f"Log type '{log_type}' has multiple base_time: true timestamps ({base_time_count})")
+  
+  LOGGER.debug(f"Timestamp configuration validation passed for log type '{log_type}'")
+
+
 def _get_log_content(
     use_case: str, log_type: str, entities: Optional[bool] = False
 ) -> str:
@@ -195,13 +260,13 @@ def _update_timestamp(
     event_timestamp = groups[group_index]
     event_time = None
     if timestamp.get("epoch"):
-      dateformat = "%s"
+      dateformat = "%s"  # For output formatting
       event_time = datetime.datetime.fromtimestamp(int(event_timestamp))
-    elif timestamp.get("pattern"):
+    elif timestamp.get("dateformat"):
       dateformat = str(timestamp["dateformat"])
       event_time = datetime.datetime.strptime(event_timestamp, dateformat)
     else:
-      # Raise?
+      # No epoch or dateformat - skip this timestamp
       return log_text
 
     if event_time:
@@ -360,6 +425,10 @@ def usecase_replay_logtype(
     file_path = os.path.split(__file__)[0] + "/" + file_path
   with open(file_path) as fh:
     timestamp_map = yaml.safe_load(fh)
+    
+    # Validate timestamp configuration before processing
+    _validate_timestamp_config(log_type, timestamp_map)
+    
     api_for_log_type = timestamp_map[log_type]["api"]
     log_content = _get_log_content(use_case, log_type, entities)
     ingestion_labels = _get_ingestion_labels(
@@ -370,7 +439,7 @@ def usecase_replay_logtype(
         (
             timestamp.get("pattern"),
             timestamp.get("group"),
-            timestamp.get("format"),
+            timestamp.get("dateformat"),
             timestamp.get("epoch"),
         )
         for timestamp in timestamp_map[log_type]["timestamps"]
