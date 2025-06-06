@@ -1,0 +1,149 @@
+# Pre-commit hooks for LogStory project
+# See https://pre-commit.com for more information
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      # Basic file checks
+      - id: trailing-whitespace
+        exclude: '^(docs/|\.md$)'
+      - id: end-of-file-fixer
+        exclude: '^(docs/|\.md$)'
+      - id: check-yaml
+        args: ['--unsafe']  # Allow custom YAML tags for our timestamp configs
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-case-conflict
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+
+  # Python code formatting and linting
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.8
+    hooks:
+      # Linter
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        types_or: [python, pyi]
+      # Formatter
+      - id: ruff-format
+        types_or: [python, pyi]
+
+  # Conventional commit message validation
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.0.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: [--strict]
+
+  # Security checks
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.5
+    hooks:
+      - id: bandit
+        args: ['-r', 'src/', '-f', 'json', '-o', '/tmp/bandit-report.json']
+        additional_dependencies: ['bandit[toml]']
+
+  # Check for secrets
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: '^(tests/|docs/)'
+
+  # YAML validation specific to our timestamp configs
+  - repo: local
+    hooks:
+      - id: validate-timestamp-configs
+        name: Validate LogStory timestamp configurations
+        entry: python
+        language: system
+        files: 'src/logstory/logtypes_.*_timestamps\.yaml$'
+        args:
+          - -c
+          - |
+            import yaml
+            import sys
+            
+            def validate_timestamp_config(file_path):
+                try:
+                    with open(file_path) as f:
+                        data = yaml.safe_load(f)
+                    
+                    if not isinstance(data, dict):
+                        raise ValueError("Root must be a dictionary")
+                    
+                    for log_type, entry in data.items():
+                        if 'timestamps' not in entry:
+                            continue
+                        
+                        timestamps = entry['timestamps']
+                        base_time_count = 0
+                        
+                        for i, ts in enumerate(timestamps):
+                            # Check required fields
+                            required = ['name', 'pattern', 'epoch', 'group']
+                            for field in required:
+                                if field not in ts:
+                                    raise ValueError(f"{log_type}[{i}] missing {field}")
+                            
+                            # Check epoch/dateformat consistency
+                            if ts.get('epoch') is True and 'dateformat' in ts:
+                                raise ValueError(f"{log_type}[{i}] has epoch=true with dateformat")
+                            elif ts.get('epoch') is False and 'dateformat' not in ts:
+                                raise ValueError(f"{log_type}[{i}] has epoch=false without dateformat")
+                            
+                            if ts.get('base_time'):
+                                base_time_count += 1
+                        
+                        if base_time_count != 1:
+                            raise ValueError(f"{log_type} needs exactly 1 base_time, got {base_time_count}")
+                    
+                    print(f"✅ {file_path} validation passed")
+                    return True
+                except Exception as e:
+                    print(f"❌ {file_path}: {e}")
+                    return False
+            
+            # Validate all changed timestamp config files
+            import os
+            files_to_check = [f for f in sys.argv[1:] if f.endswith('timestamps.yaml')]
+            
+            if not files_to_check:
+                print("No timestamp config files to validate")
+                sys.exit(0)
+            
+            all_valid = True
+            for file_path in files_to_check:
+                if os.path.exists(file_path):
+                    if not validate_timestamp_config(file_path):
+                        all_valid = False
+            
+            if not all_valid:
+                sys.exit(1)
+            
+            print("✅ All timestamp configurations are valid")
+
+# Configuration for specific hooks
+default_stages: [commit, push]
+fail_fast: false
+
+# Exclude patterns
+exclude: |
+  (?x)^(
+    \.git/.*|
+    \.venv/.*|
+    venv/.*|
+    __pycache__/.*|
+    \.pyc$|
+    dist/.*|
+    \.egg-info/.*|
+    cloudfunctions/.*|
+    docs/_build/.*
+  )$
