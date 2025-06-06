@@ -19,10 +19,9 @@ import os
 import sys
 import uuid
 
-from absl import app
-from absl import flags
-from google.oauth2 import service_account
+from absl import app, flags
 from google.cloud import storage
+from google.oauth2 import service_account
 
 UTC = datetime.timezone.utc
 

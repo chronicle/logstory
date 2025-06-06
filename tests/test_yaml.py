@@ -1,5 +1,6 @@
 import yaml
 
+
 def validate_base_time(filepath, data=None):
     """
     Reads a YAML file, checks each entry, and ensures it has exactly one
