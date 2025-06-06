@@ -17,13 +17,18 @@ import datetime
 import json
 import os
 import re
-from typing import Any, Optional
+from typing import Any
 
 import requests as real_requests
 import yaml
 from google.auth.transport import requests
 from google.cloud import secretmanager, storage
 from google.oauth2 import service_account
+
+# Constants
+DEFAULT_YEAR_FOR_INCOMPLETE_TIMESTAMPS = 1900
+BATCH_SIZE_THRESHOLD = 1000
+BATCH_BYTES_THRESHOLD = 500_000
 
 level = os.environ.get("PYTHONLOGLEVEL", "INFO").upper()
 try:  # main.py shouldn't need abseil
@@ -140,12 +145,12 @@ def _validate_timestamp_config(log_type: str, timestamp_map: dict[str, Any]) -> 
                 f"Log type '{log_type}' timestamp {i} ({timestamp['name']}): "
                 f"epoch=true should not have dateformat field, but found '{timestamp['dateformat']}'"
             )
-        elif epoch is False and not has_dateformat:
+        if epoch is False and not has_dateformat:
             raise ValueError(
                 f"Log type '{log_type}' timestamp {i} ({timestamp['name']}): "
                 f"epoch=false requires dateformat field"
             )
-        elif epoch is False and timestamp.get("dateformat") == "%s":
+        if epoch is False and timestamp.get("dateformat") == "%s":
             raise ValueError(
                 f"Log type '{log_type}' timestamp {i} ({timestamp['name']}): "
                 f"epoch=false should not use dateformat='%s' (use epoch=true instead)"
@@ -172,16 +177,16 @@ def _validate_timestamp_config(log_type: str, timestamp_map: dict[str, Any]) -> 
     # Check base_time count
     if base_time_count == 0:
         raise ValueError(f"Log type '{log_type}' has no base_time: true timestamp")
-    elif base_time_count > 1:
+    if base_time_count > 1:
         raise ValueError(
             f"Log type '{log_type}' has multiple base_time: true timestamps ({base_time_count})"
         )
 
-    LOGGER.debug(f"Timestamp configuration validation passed for log type '{log_type}'")
+    LOGGER.debug("Timestamp configuration validation passed for log type '%s'", log_type)
 
 
 def _get_log_content(
-    use_case: str, log_type: str, entities: Optional[bool] = False
+    use_case: str, log_type: str, entities: bool | None = False
 ) -> str:
     """Retrieves log content from either GCS or local filesystem."""
     if entities:
@@ -194,13 +199,11 @@ def _get_log_content(
         bucket = storage_client.bucket(BUCKET_NAME)
         file_object = bucket.get_blob(object_name)
         return file_object.download_as_text()
-    else:
-        # Local filesystem case
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        # local_file_path = os.path.join(script_dir, "../../usecases/", object_name)
-        local_file_path = os.path.join(script_dir, "usecases/", object_name)
-        with open(local_file_path, "r") as f:
-            return f.read()
+    # Local filesystem case
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    local_file_path = os.path.join(script_dir, "usecases/", object_name)
+    with open(local_file_path) as f:
+        return f.read()
 
 
 def _get_ingestion_labels(
@@ -288,7 +291,7 @@ def _update_timestamp(
             # If the current timestamp has a different date from the old_base_time
             #  we want the same N days different to be in the final ts
 
-            if event_time.year == 1900:
+            if event_time.year == DEFAULT_YEAR_FOR_INCOMPLETE_TIMESTAMPS:
                 event_time = event_time.replace(year=old_base_time.year)
             more_days = (event_time.date() - old_base_time.date()).days
             # Get today's date minus N days
@@ -329,7 +332,7 @@ def _post_entries_in_batches(
             entries_bytes += len(entry["logText"])  # unstructuredlogentry
         except (TypeError, KeyError):
             entries_bytes += len(entry)  # udmevent
-        if len(entries) % 1000 == 0 or entries_bytes > 500_000:
+        if len(entries) % BATCH_SIZE_THRESHOLD == 0 or entries_bytes > BATCH_BYTES_THRESHOLD:
             LOGGER.info("posting entry N: %s, entries_bytes: %s", i, entries_bytes)
             post_entries(api, log_type, entries, ingestion_labels)
             entries = []
@@ -487,9 +490,7 @@ def usecase_replay_logtype(
             LOGGER.debug(repr(log_text))
             if api_for_log_type == "unstructuredlogentries":
                 entries.append({"logText": log_text})
-            elif api_for_log_type == "udmevents":
-                entries.append(json.loads(log_text))
-            elif api_for_log_type == "entities":
+            elif api_for_log_type in {"udmevents", "entities"}:
                 entries.append(json.loads(log_text))
             else:
                 raise ValueError(
@@ -556,14 +557,15 @@ def main(request=None, enabled=False):  # pylint: disable=unused-argument
                         entities=entities,  # bool
                     )
         LOGGER.info("use_case: %s completed.", use_case)
-        logstory_fin_time = _get_current_time()
-        LOGGER.info(  # pylint: disable=logging-fstring-interpolation
-            f"""UDM Search for the loaded logs:
-    metadata.ingested_timestamp.seconds >= {int(logstory_exe_time.timestamp())}
-    metadata.log_type = {log_type}
-    metadata.ingestion_labels["replayed_from"] = "logstory"
-    metadata.ingestion_labels["log_replay"] = "true"
-    metadata.ingestion_labels["usecase_name"] = "{use_case}"
-    """
+        LOGGER.info(
+            "UDM Search for the loaded logs:\n"
+            "    metadata.ingested_timestamp.seconds >= %s\n"
+            "    metadata.log_type = %s\n"
+            '    metadata.ingestion_labels["replayed_from"] = "logstory"\n'
+            '    metadata.ingestion_labels["log_replay"] = "true"\n'
+            '    metadata.ingestion_labels["usecase_name"] = "%s"',
+            int(logstory_exe_time.timestamp()),
+            log_type,
+            use_case
         )
     return "Success Events!"
