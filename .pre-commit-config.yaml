@@ -1,5 +1,8 @@
 # Pre-commit hooks for LogStory project
 # See https://pre-commit.com for more information
+# 
+# Note: These hooks are currently optional and non-enforced
+# Install with: pip install pre-commit && pre-commit install
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks

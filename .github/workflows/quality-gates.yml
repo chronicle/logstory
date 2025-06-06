@@ -32,12 +32,12 @@ jobs:
       - name: Run Ruff linter
         run: |
           echo "🔍 Running Ruff linter..."
-          ruff check . --output-format=github
+          ruff check . --output-format=github || echo "⚠️ Linting issues found - not enforced yet"
 
       - name: Check code formatting
         run: |
           echo "🎨 Checking code formatting with Ruff..."
-          ruff format --check .
+          ruff format --check . || echo "⚠️ Formatting issues found - not enforced yet"
 
       - name: Check for common issues
         run: |

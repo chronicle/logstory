@@ -54,7 +54,7 @@ for this purpose.
 
 ### Code Standards
 
-- **Linting**: Use Ruff for code linting and formatting
+- **Linting**: Ruff is available for code linting and formatting (currently non-enforced)
 - **Testing**: Add tests for new functionality in the `tests/` directory
 - **Documentation**: Update relevant documentation for user-facing changes
 
@@ -139,12 +139,12 @@ Before creating a release, ensure:
 
 Every release automatically runs:
 
-- **Code Quality**: Ruff linting and formatting checks
+- **Code Quality**: Ruff linting and formatting checks (currently non-blocking)
 - **Security**: Bandit security scanning and dependency vulnerability checks  
 - **Testing**: Full test suite across Python 3.9-3.12
 - **Validation**: Timestamp configuration validation
 - **Build**: Package building and installation verification
 
-If any quality gate fails, the release is blocked and must be fixed before proceeding.
+Currently, only testing, validation, and build failures will block releases. Code quality checks run but don't fail the pipeline yet.
 
 For detailed technical documentation about the release pipeline, see [`docs/development/releases.md`](docs/development/releases.md).
