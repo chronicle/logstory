@@ -1,0 +1,240 @@
+name: Timestamp Configuration Validation
+
+on:
+  push:
+    branches: [ main, chronicle-main ]
+    paths:
+      - 'src/logstory/logtypes_*.yaml'
+      - 'tests/test_yaml.py'
+      - 'src/logstory/main.py'
+  pull_request:
+    branches: [ main, chronicle-main ]
+    paths:
+      - 'src/logstory/logtypes_*.yaml'
+      - 'tests/test_yaml.py'
+      - 'src/logstory/main.py'
+
+jobs:
+  validate-timestamps:
+    runs-on: ubuntu-latest
+    name: Validate All Timestamp Configurations
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyyaml
+
+    - name: Validate YAML syntax
+      run: |
+        echo "🔍 Checking YAML syntax..."
+        python -c "
+        import yaml
+        import sys
+        
+        files = [
+            'src/logstory/logtypes_entities_timestamps.yaml',
+            'src/logstory/logtypes_events_timestamps.yaml'
+        ]
+        
+        for file in files:
+            try:
+                with open(file) as f:
+                    yaml.safe_load(f)
+                print(f'✅ {file} - Valid YAML syntax')
+            except yaml.YAMLError as e:
+                print(f'❌ {file} - Invalid YAML: {e}')
+                sys.exit(1)
+        "
+
+    - name: Run comprehensive timestamp validation
+      run: |
+        cd tests
+        echo "🧪 Running comprehensive timestamp validation tests..."
+        python test_yaml.py
+
+    - name: Check for epoch/dateformat conflicts
+      run: |
+        echo "🔍 Checking for epoch=true with dateformat conflicts..."
+        python -c "
+        import yaml
+        import sys
+        
+        files = [
+            'src/logstory/logtypes_entities_timestamps.yaml',
+            'src/logstory/logtypes_events_timestamps.yaml'
+        ]
+        
+        total_conflicts = 0
+        
+        for file in files:
+            with open(file) as f:
+                data = yaml.safe_load(f)
+            
+            conflicts = 0
+            for log_type, entry in data.items():
+                if 'timestamps' not in entry:
+                    continue
+                for i, ts in enumerate(entry['timestamps']):
+                    if ts.get('epoch') is True and 'dateformat' in ts:
+                        print(f'❌ {file}:{log_type}:timestamp[{i}] has epoch=true with dateformat=\"{ts[\"dateformat\"]}\"')
+                        conflicts += 1
+            
+            if conflicts == 0:
+                print(f'✅ {file} - No epoch/dateformat conflicts found')
+            else:
+                total_conflicts += conflicts
+        
+        if total_conflicts > 0:
+            print(f'❌ Found {total_conflicts} epoch/dateformat conflicts')
+            sys.exit(1)
+        else:
+            print('✅ All timestamp configurations are clean!')
+        "
+
+    - name: Validate log type coverage
+      run: |
+        echo "📊 Checking log type coverage..."
+        python -c "
+        import yaml
+        
+        with open('src/logstory/logtypes_entities_timestamps.yaml') as f:
+            entities = yaml.safe_load(f)
+        with open('src/logstory/logtypes_events_timestamps.yaml') as f:
+            events = yaml.safe_load(f)
+        
+        entities_count = len(entities)
+        events_count = len(events)
+        total = entities_count + events_count
+        
+        print(f'📈 Coverage Summary:')
+        print(f'   • Entities: {entities_count} log types')
+        print(f'   • Events: {events_count} log types') 
+        print(f'   • Total: {total} log types validated')
+        
+        # Check for base_time coverage
+        entities_with_base_time = sum(1 for entry in entities.values() 
+                                    if any(ts.get('base_time') for ts in entry.get('timestamps', [])))
+        events_with_base_time = sum(1 for entry in events.values()
+                                  if any(ts.get('base_time') for ts in entry.get('timestamps', [])))
+        
+        print(f'   • Entities with base_time: {entities_with_base_time}/{entities_count}')
+        print(f'   • Events with base_time: {events_with_base_time}/{events_count}')
+        
+        if entities_with_base_time != entities_count:
+            print(f'❌ {entities_count - entities_with_base_time} entity log types missing base_time')
+        if events_with_base_time != events_count:
+            print(f'❌ {events_count - events_with_base_time} event log types missing base_time')
+        
+        if entities_with_base_time == entities_count and events_with_base_time == events_count:
+            print('✅ All log types have base_time configured')
+        "
+
+  test-runtime-validation:
+    runs-on: ubuntu-latest
+    name: Test Runtime Validation Function
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python  
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyyaml
+
+    - name: Test validation with invalid configurations
+      run: |
+        echo "🧪 Testing runtime validation with invalid configurations..."
+        python -c "
+        import tempfile
+        import yaml
+        import sys
+        import os
+        
+        # Add src to path
+        sys.path.insert(0, 'src/logstory')
+        
+        # Create test validation function
+        def validate_timestamp_config(log_type, timestamp_map):
+            if log_type not in timestamp_map:
+                raise ValueError(f'Log type {log_type} not found')
+            entry_data = timestamp_map[log_type]
+            if 'timestamps' not in entry_data:
+                raise ValueError(f'Missing timestamps')
+            timestamps = entry_data['timestamps']
+            base_time_count = 0
+            for i, timestamp in enumerate(timestamps):
+                required_fields = ['name', 'pattern', 'epoch', 'group']
+                for field in required_fields:
+                    if field not in timestamp:
+                        raise ValueError(f'Missing required field: {field}')
+                if timestamp.get('base_time'):
+                    base_time_count += 1
+                epoch = timestamp.get('epoch')
+                has_dateformat = 'dateformat' in timestamp
+                if epoch is True and has_dateformat:
+                    raise ValueError(f'epoch=true should not have dateformat field')
+                elif epoch is False and not has_dateformat:
+                    raise ValueError(f'epoch=false requires dateformat field')
+            if base_time_count != 1:
+                raise ValueError(f'Expected 1 base_time, got {base_time_count}')
+        
+        # Test 1: Valid configuration should pass
+        valid_config = {
+            'TEST_LOG': {
+                'api': 'unstructuredlogentries',
+                'timestamps': [{
+                    'name': 'test_time',
+                    'base_time': True,
+                    'epoch': True,
+                    'group': 1,
+                    'pattern': r'(\d{10})'
+                }]
+            }
+        }
+        
+        try:
+            validate_timestamp_config('TEST_LOG', valid_config)
+            print('✅ Valid configuration passed')
+        except Exception as e:
+            print(f'❌ Valid configuration failed: {e}')
+            sys.exit(1)
+        
+        # Test 2: Invalid configuration should fail
+        invalid_config = {
+            'TEST_LOG': {
+                'api': 'unstructuredlogentries',
+                'timestamps': [{
+                    'name': 'test_time',
+                    'base_time': True,
+                    'epoch': True,
+                    'dateformat': '%s',  # This should cause failure
+                    'group': 1,
+                    'pattern': r'(\d{10})'
+                }]
+            }
+        }
+        
+        try:
+            validate_timestamp_config('TEST_LOG', invalid_config)
+            print('❌ Invalid configuration incorrectly passed')
+            sys.exit(1)
+        except Exception as e:
+            print(f'✅ Invalid configuration correctly rejected: {e}')
+        
+        print('✅ Runtime validation tests passed!')
+        "

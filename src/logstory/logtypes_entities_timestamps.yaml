@@ -18,12 +18,10 @@
     timestamps:
     - name: gcp_creationTime
       base_time: true
-      dateformat: '%s'
       epoch: true
       group: 2
       pattern: '("creationTime":\s*"?)(\d{10})'
     - name: gcp_expirationTime
-      dateformat: '%s'
       epoch: true
       group: 2
       pattern: '("expirationTime":\s*"?)(\d{10})'
@@ -78,7 +76,6 @@
     timestamps:
     - name: gcp_iam_entity_timestamp
       base_time: true
-      dateformat: '%s'
       epoch: true
       group: 2
       pattern: '("seconds":\s*"?)(\d+)(\s*")'
@@ -98,7 +95,6 @@
     timestamps:
     - name: time
       base_time: true
-      dateformat: '%s'
       epoch: true
       group: 1
       pattern: '(\d{10})'
@@ -132,7 +128,6 @@
     timestamps:
     - name: Date
       base_time: true
-      dateformat: '%s'
       epoch: true
       group: 3
       pattern: '("\\/Date\()(-?)(\d{10})(\d{3})'
