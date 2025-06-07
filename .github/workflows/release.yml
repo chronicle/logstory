@@ -1,0 +1,208 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.2.3)'
+        required: true
+        type: string
+
+# Prevent concurrent releases
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # Use PYPI_TOKEN for publishing to PyPI
+  TWINE_USERNAME: __token__
+  TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+
+jobs:
+  quality-gates:
+    name: Quality Gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full history for semantic-release
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff pytest pyyaml build twine
+
+      - name: Run linting with Ruff
+        run: |
+          echo "🔍 Running Ruff linter..."
+          ruff check . --output-format=github || echo "⚠️ Linting issues found - not enforced yet"
+          
+      - name: Run formatting check with Ruff
+        run: |
+          echo "🎨 Checking code formatting..."
+          ruff format --check . || echo "⚠️ Formatting issues found - not enforced yet"
+
+      - name: Run tests
+        run: |
+          echo "🧪 Running test suite..."
+          cd tests
+          python test_yaml.py
+          python test_logstory.py
+
+      - name: Run timestamp validation
+        run: |
+          echo "⏱️ Validating timestamp configurations..."
+          python -c "
+          import yaml
+          import sys
+          
+          files = [
+              'src/logstory/logtypes_entities_timestamps.yaml',
+              'src/logstory/logtypes_events_timestamps.yaml'
+          ]
+          
+          for file in files:
+              try:
+                  with open(file) as f:
+                      yaml.safe_load(f)
+                  print(f'✅ {file} - Valid YAML syntax')
+              except yaml.YAMLError as e:
+                  print(f'❌ {file} - Invalid YAML: {e}')
+                  sys.exit(1)
+          
+          print('✅ All timestamp configurations are valid')
+          "
+
+      - name: Build package
+        run: |
+          echo "📦 Building Python package..."
+          python -m build
+          
+      - name: Verify package
+        run: |
+          echo "🔍 Verifying built package..."
+          python -m twine check dist/*
+
+  build-and-publish:
+    name: Build and Publish
+    runs-on: ubuntu-latest
+    needs: quality-gates
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Extract version from release tag
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+            # Remove 'v' prefix if present
+            VERSION="${VERSION#v}"
+          else
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "🏷️ Release version: $VERSION"
+
+      - name: Update version in pyproject.toml
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          echo "📝 Updating version to $VERSION in pyproject.toml"
+          sed -i "s/version = \".*\"/version = \"$VERSION\"/" pyproject.toml
+          
+          # Verify the update
+          grep "version = " pyproject.toml
+
+      - name: Build package
+        run: |
+          echo "📦 Building Python package..."
+          python -m build
+          
+          # List built files
+          ls -la dist/
+
+      - name: Verify package
+        run: |
+          echo "🔍 Verifying package integrity..."
+          python -m twine check dist/*
+
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        run: |
+          echo "🚀 Publishing to PyPI..."
+          python -m twine upload dist/*
+
+      - name: Upload wheel to release
+        if: github.event_name == 'release'
+        run: |
+          echo "📎 Uploading build artifacts to GitHub release..."
+          for file in dist/*.whl; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              gh release upload ${{ github.event.release.tag_name }} "$file" --clobber
+              echo "✅ Uploaded $filename"
+            fi
+          done
+          
+          for file in dist/*.tar.gz; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              gh release upload ${{ github.event.release.tag_name }} "$file" --clobber
+              echo "✅ Uploaded $filename"
+            fi
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  notify-success:
+    name: Notify Success
+    runs-on: ubuntu-latest
+    needs: [quality-gates, build-and-publish]
+    if: success()
+    steps:
+      - name: Success notification
+        run: |
+          echo "✅ Release pipeline completed successfully!"
+          echo "🎉 All quality gates passed and release published"
+          echo "📦 Package version ${{ needs.build-and-publish.outputs.version || 'unknown' }} published to PyPI"
+
+  notify-failure:
+    name: Notify Failure
+    runs-on: ubuntu-latest
+    needs: [quality-gates, build-and-publish]
+    if: failure()
+    steps:
+      - name: Failure notification
+        run: |
+          echo "❌ Release pipeline failed!"
+          echo "🔍 Check the logs above for details"
+          exit 1

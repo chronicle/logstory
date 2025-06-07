@@ -1,0 +1,303 @@
+name: Quality Gates
+
+on:
+  pull_request:
+    branches: [main, chronicle-main]
+  push:
+    branches: [main, chronicle-main]
+  workflow_dispatch:
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-format:
+    name: Lint and Format
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff
+
+      - name: Run Ruff linter
+        run: |
+          echo "🔍 Running Ruff linter..."
+          ruff check . --output-format=github || echo "⚠️ Linting issues found - not enforced yet"
+
+      - name: Check code formatting
+        run: |
+          echo "🎨 Checking code formatting with Ruff..."
+          ruff format --check . || echo "⚠️ Formatting issues found - not enforced yet"
+
+      - name: Check for common issues
+        run: |
+          echo "🧹 Checking for common code issues..."
+          # Check for TODO/FIXME comments in production code
+          if grep -r "TODO\|FIXME\|XXX" src/ --exclude-dir=__pycache__ || true; then
+            echo "⚠️ Found TODO/FIXME comments in production code"
+          fi
+          
+          # Check for debug prints
+          if grep -r "print(" src/ --exclude-dir=__pycache__ | grep -v "# debug: ok" || true; then
+            echo "⚠️ Found print statements in production code"
+          fi
+
+  security-checks:
+    name: Security Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install security tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit[toml] safety toml
+
+      - name: Run Bandit security linter
+        run: |
+          echo "🔒 Running Bandit security checks..."
+          bandit -r src/ -f json -o bandit-report.json || true
+          bandit -r src/ -f txt
+          
+      - name: Check dependencies for vulnerabilities
+        run: |
+          echo "🛡️ Checking dependencies for known vulnerabilities..."
+          # Create requirements.txt from pyproject.toml dependencies
+          python -c "
+          import toml
+          with open('pyproject.toml') as f:
+              data = toml.load(f)
+          deps = data['project']['dependencies']
+          with open('requirements-check.txt', 'w') as f:
+              for dep in deps:
+                  f.write(dep + '\n')
+          "
+          safety check -r requirements-check.txt
+          rm requirements-check.txt
+
+  test-matrix:
+    name: Test Matrix
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml pytest
+
+      - name: Run core tests
+        run: |
+          echo "🧪 Running tests with Python ${{ matrix.python-version }}"
+          cd tests
+          python test_yaml.py
+          python test_logstory.py
+
+  timestamp-validation:
+    name: Timestamp Configuration Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml
+
+      - name: Comprehensive timestamp validation
+        run: |
+          echo "⏱️ Running comprehensive timestamp validation..."
+          python -c "
+          import yaml
+          import sys
+          import re
+          
+          def validate_timestamp_config(file_path):
+              with open(file_path) as f:
+                  data = yaml.safe_load(f)
+              
+              errors = []
+              warnings = []
+              
+              for log_type, entry in data.items():
+                  if 'timestamps' not in entry:
+                      warnings.append(f'{log_type}: No timestamps defined')
+                      continue
+                  
+                  timestamps = entry['timestamps']
+                  base_time_count = 0
+                  
+                  for i, ts in enumerate(timestamps):
+                      # Required fields check
+                      required = ['name', 'pattern', 'epoch', 'group']
+                      for field in required:
+                          if field not in ts:
+                              errors.append(f'{log_type}[{i}]: Missing {field}')
+                      
+                      # Pattern validation
+                      try:
+                          re.compile(ts.get('pattern', ''))
+                      except re.error as e:
+                          errors.append(f'{log_type}[{i}]: Invalid regex pattern: {e}')
+                      
+                      # Epoch/dateformat consistency
+                      epoch = ts.get('epoch')
+                      has_dateformat = 'dateformat' in ts
+                      
+                      if epoch is True and has_dateformat:
+                          errors.append(f'{log_type}[{i}]: epoch=true should not have dateformat')
+                      elif epoch is False and not has_dateformat:
+                          errors.append(f'{log_type}[{i}]: epoch=false requires dateformat')
+                      
+                      # Base time validation
+                      if ts.get('base_time'):
+                          base_time_count += 1
+                  
+                  if base_time_count == 0:
+                      errors.append(f'{log_type}: No base_time timestamp defined')
+                  elif base_time_count > 1:
+                      errors.append(f'{log_type}: Multiple base_time timestamps (expected 1)')
+              
+              return errors, warnings
+          
+          # Validate both timestamp files
+          files = [
+              'src/logstory/logtypes_entities_timestamps.yaml',
+              'src/logstory/logtypes_events_timestamps.yaml'
+          ]
+          
+          total_errors = 0
+          total_warnings = 0
+          
+          for file_path in files:
+              print(f'Validating {file_path}...')
+              errors, warnings = validate_timestamp_config(file_path)
+              
+              for error in errors:
+                  print(f'❌ {error}')
+                  total_errors += 1
+              
+              for warning in warnings:
+                  print(f'⚠️ {warning}')
+                  total_warnings += 1
+              
+              if not errors and not warnings:
+                  print(f'✅ {file_path} validation passed')
+              elif not errors:
+                  print(f'✅ {file_path} validation passed with {len(warnings)} warnings')
+          
+          print(f'\n📊 Summary: {total_errors} errors, {total_warnings} warnings')
+          
+          if total_errors > 0:
+              sys.exit(1)
+          "
+
+  build-test:
+    name: Build and Package Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Build package
+        run: |
+          echo "📦 Building Python package..."
+          python -m build
+
+      - name: Verify package
+        run: |
+          echo "🔍 Verifying package integrity..."
+          python -m twine check dist/*
+          
+      - name: Test package installation
+        run: |
+          echo "🧪 Testing package installation..."
+          pip install dist/*.whl
+          
+          # Test that the package can be imported
+          python -c "import logstory; print('✅ Package imports successfully')"
+          
+          # Test the CLI entry point
+          which logstory
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+          retention-days: 7
+
+  quality-summary:
+    name: Quality Gates Summary
+    runs-on: ubuntu-latest
+    needs: [lint-and-format, security-checks, test-matrix, timestamp-validation, build-test]
+    if: always()
+    steps:
+      - name: Check all quality gates
+        run: |
+          echo "📋 Quality Gates Summary:"
+          echo "========================"
+          
+          # Check each job status
+          lint_status="${{ needs.lint-and-format.result }}"
+          security_status="${{ needs.security-checks.result }}"
+          test_status="${{ needs.test-matrix.result }}"
+          timestamp_status="${{ needs.timestamp-validation.result }}"
+          build_status="${{ needs.build-test.result }}"
+          
+          echo "🔍 Lint and Format: $lint_status"
+          echo "🔒 Security Checks: $security_status"
+          echo "🧪 Test Matrix: $test_status"
+          echo "⏱️ Timestamp Validation: $timestamp_status"
+          echo "📦 Build Test: $build_status"
+          echo ""
+          
+          # Determine overall status
+          if [[ "$lint_status" == "success" && "$security_status" == "success" && "$test_status" == "success" && "$timestamp_status" == "success" && "$build_status" == "success" ]]; then
+            echo "✅ All quality gates passed! Ready for release."
+            exit 0
+          else
+            echo "❌ One or more quality gates failed. Please review and fix issues."
+            exit 1
+          fi

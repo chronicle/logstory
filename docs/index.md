@@ -228,6 +228,8 @@ Unknown command: usecase_list
 
 Interested in contributing? Check out the contributing guidelines. Please note that this project is released with a Code of Conduct. By contributing to this project, you agree to abide by its terms.
 
+For detailed development and release documentation, see [Development Documentation](./development/).
+
 ## License
 
 `logstory` was created by Google Cloud Security. It is licensed under the terms of the Apache License 2.0 license.
@@ -393,4 +395,5 @@ maxdepth: 2
 ---
 usecase_docs/ReadMe
 usecase_docs/index
+development/releases
 ```

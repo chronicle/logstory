@@ -174,6 +174,14 @@ Unknown command: usecase_list
 ...
 ```
 
+## Releases
+
+This project uses automated releases triggered by GitHub Releases. Maintainers create releases through the GitHub interface, and automation handles building, testing, and publishing to PyPI.
+
+For contributors: no special release actions needed - just submit quality pull requests.
+
+For maintainers: see [CONTRIBUTING.md - Releases](CONTRIBUTING.md#releases) for the release process.
+
 ## Contributing
 
 Interested in contributing? Check out the contributing guidelines. Please note that this project is released with a Code of Conduct. By contributing to this project, you agree to abide by its terms.
