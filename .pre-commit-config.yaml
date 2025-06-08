@@ -1,12 +1,13 @@
 # Pre-commit hooks for LogStory project
 # See https://pre-commit.com for more information
 #
-# Note: These hooks are currently optional and non-enforced
-# Install with: pip install pre-commit && pre-commit install
+# ENFORCEMENT STATUS: These hooks are ENFORCED for all commits
+# Setup: Run `make dev-setup` to install hooks automatically
+# Manual: pip install pre-commit && pre-commit install
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v5.0.0
     hooks:
       # Basic file checks
       - id: trailing-whitespace
@@ -26,7 +27,7 @@ repos:
 
   # Python code linting with ruff
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.8
+    rev: v0.11.13
     hooks:
       # Linter only (formatting handled by pyink)
       - id: ruff
@@ -35,14 +36,14 @@ repos:
 
   # Python code formatting with pyink (2-space indentation)
   - repo: https://github.com/google/pyink
-    rev: 24.3.0
+    rev: 24.10.1
     hooks:
       - id: pyink
         args: ['--config', 'pyproject.toml']
 
   # Conventional commit message validation
   - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v3.0.0
+    rev: v4.2.0
     hooks:
       - id: conventional-pre-commit
         stages: [commit-msg]
@@ -50,7 +51,7 @@ repos:
 
   # Security checks
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.5
+    rev: 1.8.3
     hooks:
       - id: bandit
         args: ['-r', 'src/']
@@ -58,7 +59,7 @@ repos:
 
   # Check for secrets
   - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.4.0
+    rev: v1.5.0
     hooks:
       - id: detect-secrets
         args: ['--baseline', '.secrets.baseline']
@@ -66,7 +67,7 @@ repos:
 
   # Terraform formatting and validation
   - repo: https://github.com/antonbabenko/pre-commit-terraform
-    rev: v1.86.0
+    rev: v1.99.3
     hooks:
       - id: terraform_fmt
         files: '^cloudfunctions/.*\.tf$'
@@ -83,14 +84,14 @@ repos:
 
   # Shell script validation
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.9.0.6
+    rev: v0.10.0.1
     hooks:
       - id: shellcheck
         files: '\.sh$'
 
   # Markdown linting
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.38.0
+    rev: v0.45.0
     hooks:
       - id: markdownlint
         args: ['--config', '.markdownlint.yaml']
@@ -98,7 +99,7 @@ repos:
 
   # Python docstring coverage
   - repo: https://github.com/econchick/interrogate
-    rev: 1.5.0
+    rev: 1.7.0
     hooks:
       - id: interrogate
         args: ['-vv', '--fail-under=80', '--ignore-init-method', '--ignore-module', '--ignore-private', '--ignore-magic', 'src/']
@@ -106,7 +107,7 @@ repos:
 
   # Python type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
+    rev: v1.16.0
     hooks:
       - id: mypy
         additional_dependencies: [types-requests, types-PyYAML]
@@ -115,7 +116,7 @@ repos:
 
   # License header validation
   - repo: https://github.com/Lucas-C/pre-commit-hooks
-    rev: v1.5.4
+    rev: v1.5.5
     hooks:
       - id: insert-license
         name: Add Apache license header
@@ -129,7 +130,7 @@ repos:
 
   # YAML specific linting (beyond basic check-yaml)
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.33.0
+    rev: v1.37.1
     hooks:
       - id: yamllint
         args: ['-c', '.yamllint.yaml']
@@ -137,7 +138,7 @@ repos:
 
   # Protocol buffer linting
   - repo: https://github.com/bufbuild/buf
-    rev: v1.28.1
+    rev: v1.54.0
     hooks:
       - id: buf-lint
         files: '\.proto$'
@@ -147,7 +148,7 @@ repos:
 
   # Spell checking
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.6
+    rev: v2.4.1
     hooks:
       - id: codespell
         args: ['--skip', '*.zip,*.log,*.json', '--ignore-words-list', 'crate,ans,ect,hist,nd']
@@ -300,8 +301,15 @@ repos:
             sys.exit(1 if found_issues else 0)
 
 # Configuration for specific hooks
-default_stages: [commit, push]
+default_stages: [pre-commit, pre-push]
 fail_fast: false
+
+# Performance optimizations for CI
+ci:
+  autofix_commit_msg: 'style: auto-fix pre-commit hooks'
+  autofix_prs: true
+  autoupdate_commit_msg: 'chore: pre-commit autoupdate'
+  autoupdate_schedule: weekly
 
 # Exclude patterns
 exclude: |

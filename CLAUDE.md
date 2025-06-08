@@ -11,7 +11,7 @@
 
 ## Pre-commit Hooks
 
-This project uses pre-commit hooks for code quality. To set up:
+This project **enforces** pre-commit hooks for code quality. All commits must pass these checks. To set up:
 
 ```bash
 make dev-setup  # Creates venv and installs all dependencies including pre-commit
