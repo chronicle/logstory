@@ -39,6 +39,7 @@
 
 ### Security
 - Removed `.pypirc` from Git tracking (contains PyPI credentials)
+- Removed `jpn_config.cfg` from Git tracking
 - Added comprehensive secret detection in pre-commit hooks
 
 ## v0.1.4 (2025)
