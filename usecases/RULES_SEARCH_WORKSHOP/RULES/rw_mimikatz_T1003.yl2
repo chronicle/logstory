@@ -16,11 +16,11 @@ rule rw_mimikatz_T1003 {
   events:
     $process.metadata.event_type = "PROCESS_LAUNCH"
     $process.metadata.event_type = $event_type
-    $process.target.process.command_line = /mimikatz/ nocase 
+    $process.target.process.command_line = /mimikatz/ nocase
 
   match:
     $event_type over 5m
-    
+
   outcome:
     $risk_score = max(95)
     $mitre_attack_tactic = "Credential Access"
@@ -40,8 +40,8 @@ rule rw_mimikatz_T1003 {
     $target_process_file_sha256 = array_distinct($process.target.process.file.sha256)
     $target_process_file_full_path = array_distinct($process.target.process.file.full_path)
     $target_process_product_specfic_process_id = array_distinct($process.target.process.product_specific_process_id)
-    $principal_user_userid = array_distinct($process.principal.user.userid)  
-    
+    $principal_user_userid = array_distinct($process.principal.user.userid)
+
   condition:
     $process
 }

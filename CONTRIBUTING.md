@@ -98,14 +98,14 @@ This project uses an automated release process triggered by GitHub Releases. **O
    gh release create v1.2.3 --title "Release 1.2.3" --notes "
    ## New Features
    - Feature description
-   
+
    ## Bug Fixes
    - Bug fix description
-   
+
    ## Breaking Changes
    - Any breaking changes
    "
-   
+
    # Or via GitHub web interface:
    # Go to: Releases → Draft a new release → Fill in details → Publish release
    ```
@@ -140,7 +140,7 @@ Before creating a release, ensure:
 Every release automatically runs:
 
 - **Code Quality**: Ruff linting and formatting checks (currently non-blocking)
-- **Security**: Bandit security scanning and dependency vulnerability checks  
+- **Security**: Bandit security scanning and dependency vulnerability checks
 - **Testing**: Full test suite across Python 3.9-3.12
 - **Validation**: Timestamp configuration validation
 - **Build**: Package building and installation verification

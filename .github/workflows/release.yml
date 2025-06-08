@@ -44,7 +44,7 @@ jobs:
         run: |
           echo "🔍 Running Ruff linter..."
           ruff check . --output-format=github || echo "⚠️ Linting issues found - not enforced yet"
-          
+
       - name: Run formatting check with Ruff
         run: |
           echo "🎨 Checking code formatting..."
@@ -63,12 +63,12 @@ jobs:
           python -c "
           import yaml
           import sys
-          
+
           files = [
               'src/logstory/logtypes_entities_timestamps.yaml',
               'src/logstory/logtypes_events_timestamps.yaml'
           ]
-          
+
           for file in files:
               try:
                   with open(file) as f:
@@ -77,7 +77,7 @@ jobs:
               except yaml.YAMLError as e:
                   print(f'❌ {file} - Invalid YAML: {e}')
                   sys.exit(1)
-          
+
           print('✅ All timestamp configurations are valid')
           "
 
@@ -85,7 +85,7 @@ jobs:
         run: |
           echo "📦 Building Python package..."
           python -m build
-          
+
       - name: Verify package
         run: |
           echo "🔍 Verifying built package..."
@@ -136,7 +136,7 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           echo "📝 Updating version to $VERSION in pyproject.toml"
           sed -i "s/version = \".*\"/version = \"$VERSION\"/" pyproject.toml
-          
+
           # Verify the update
           grep "version = " pyproject.toml
 
@@ -144,7 +144,7 @@ jobs:
         run: |
           echo "📦 Building Python package..."
           python -m build
-          
+
           # List built files
           ls -la dist/
 
@@ -172,7 +172,7 @@ jobs:
               echo "✅ Uploaded $filename"
             fi
           done
-          
+
           for file in dist/*.tar.gz; do
             if [ -f "$file" ]; then
               filename=$(basename "$file")

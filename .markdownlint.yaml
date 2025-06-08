@@ -1,0 +1,10 @@
+# Markdown lint configuration
+default: true
+MD013:
+  line_length: 120
+  tables: false
+MD024:
+  siblings_only: true
+MD033:
+  allowed_elements: [details, summary, img]
+MD041: false  # First line doesn't need to be h1

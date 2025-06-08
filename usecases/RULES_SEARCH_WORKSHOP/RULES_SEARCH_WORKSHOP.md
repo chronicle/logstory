@@ -78,6 +78,3 @@ The "Building Rules for Google SecOps" workshop focuses on using YARA-L 2.0 to c
 |---------------------------|--------|-------------------------------------------------------------------------------------------|
 | key_servers               | String | Key server names - Used for rules workshop                                                |
 | ntds_suspicious_processes | String | process names often associated with accessing ntds.dit - Used for rules workshop - Stoner |
-
-
-
