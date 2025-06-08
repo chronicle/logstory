@@ -39,12 +39,12 @@ jobs:
         python -c "
         import yaml
         import sys
-        
+
         files = [
             'src/logstory/logtypes_entities_timestamps.yaml',
             'src/logstory/logtypes_events_timestamps.yaml'
         ]
-        
+
         for file in files:
             try:
                 with open(file) as f:
@@ -67,18 +67,18 @@ jobs:
         python -c "
         import yaml
         import sys
-        
+
         files = [
             'src/logstory/logtypes_entities_timestamps.yaml',
             'src/logstory/logtypes_events_timestamps.yaml'
         ]
-        
+
         total_conflicts = 0
-        
+
         for file in files:
             with open(file) as f:
                 data = yaml.safe_load(f)
-            
+
             conflicts = 0
             for log_type, entry in data.items():
                 if 'timestamps' not in entry:
@@ -87,12 +87,12 @@ jobs:
                     if ts.get('epoch') is True and 'dateformat' in ts:
                         print(f'❌ {file}:{log_type}:timestamp[{i}] has epoch=true with dateformat=\"{ts[\"dateformat\"]}\"')
                         conflicts += 1
-            
+
             if conflicts == 0:
                 print(f'✅ {file} - No epoch/dateformat conflicts found')
             else:
                 total_conflicts += conflicts
-        
+
         if total_conflicts > 0:
             print(f'❌ Found {total_conflicts} epoch/dateformat conflicts')
             sys.exit(1)
@@ -105,35 +105,35 @@ jobs:
         echo "📊 Checking log type coverage..."
         python -c "
         import yaml
-        
+
         with open('src/logstory/logtypes_entities_timestamps.yaml') as f:
             entities = yaml.safe_load(f)
         with open('src/logstory/logtypes_events_timestamps.yaml') as f:
             events = yaml.safe_load(f)
-        
+
         entities_count = len(entities)
         events_count = len(events)
         total = entities_count + events_count
-        
+
         print(f'📈 Coverage Summary:')
         print(f'   • Entities: {entities_count} log types')
-        print(f'   • Events: {events_count} log types') 
+        print(f'   • Events: {events_count} log types')
         print(f'   • Total: {total} log types validated')
-        
+
         # Check for base_time coverage
-        entities_with_base_time = sum(1 for entry in entities.values() 
+        entities_with_base_time = sum(1 for entry in entities.values()
                                     if any(ts.get('base_time') for ts in entry.get('timestamps', [])))
         events_with_base_time = sum(1 for entry in events.values()
                                   if any(ts.get('base_time') for ts in entry.get('timestamps', [])))
-        
+
         print(f'   • Entities with base_time: {entities_with_base_time}/{entities_count}')
         print(f'   • Events with base_time: {events_with_base_time}/{events_count}')
-        
+
         if entities_with_base_time != entities_count:
             print(f'❌ {entities_count - entities_with_base_time} entity log types missing base_time')
         if events_with_base_time != events_count:
             print(f'❌ {events_count - events_with_base_time} event log types missing base_time')
-        
+
         if entities_with_base_time == entities_count and events_with_base_time == events_count:
             print('✅ All log types have base_time configured')
         "
@@ -146,7 +146,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Python  
+    - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
@@ -164,10 +164,10 @@ jobs:
         import yaml
         import sys
         import os
-        
+
         # Add src to path
         sys.path.insert(0, 'src/logstory')
-        
+
         # Create test validation function
         def validate_timestamp_config(log_type, timestamp_map):
             if log_type not in timestamp_map:
@@ -192,7 +192,7 @@ jobs:
                     raise ValueError(f'epoch=false requires dateformat field')
             if base_time_count != 1:
                 raise ValueError(f'Expected 1 base_time, got {base_time_count}')
-        
+
         # Test 1: Valid configuration should pass
         valid_config = {
             'TEST_LOG': {
@@ -206,14 +206,14 @@ jobs:
                 }]
             }
         }
-        
+
         try:
             validate_timestamp_config('TEST_LOG', valid_config)
             print('✅ Valid configuration passed')
         except Exception as e:
             print(f'❌ Valid configuration failed: {e}')
             sys.exit(1)
-        
+
         # Test 2: Invalid configuration should fail
         invalid_config = {
             'TEST_LOG': {
@@ -228,13 +228,13 @@ jobs:
                 }]
             }
         }
-        
+
         try:
             validate_timestamp_config('TEST_LOG', invalid_config)
             print('❌ Invalid configuration incorrectly passed')
             sys.exit(1)
         except Exception as e:
             print(f'✅ Invalid configuration correctly rejected: {e}')
-        
+
         print('✅ Runtime validation tests passed!')
         "

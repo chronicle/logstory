@@ -1,2 +1,12 @@
 build
 twine
+ruff
+pre-commit
+mypy
+types-requests
+types-PyYAML
+interrogate
+isort
+yamllint
+codespell
+pyink

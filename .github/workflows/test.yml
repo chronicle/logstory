@@ -39,10 +39,10 @@ jobs:
         import yaml
         import sys
         import os
-        
+
         # Add src to path for imports
         sys.path.insert(0, os.path.join('..', 'src', 'logstory'))
-        
+
         # Import validation function from main.py
         try:
             from main import _validate_timestamp_config
@@ -72,17 +72,17 @@ jobs:
                 if base_time_count != 1:
                     raise ValueError(f'Expected 1 base_time, got {base_time_count}')
                 print(f'✅ Validation passed for {log_type}')
-        
+
         # Test a few key log types from each file
         test_cases = [
             ('../src/logstory/logtypes_events_timestamps.yaml', ['AUDITD', 'AWS_CLOUDTRAIL', 'BRO_JSON']),
             ('../src/logstory/logtypes_entities_timestamps.yaml', ['GCP_BIGQUERY_CONTEXT', 'MISP_IOC'])
         ]
-        
+
         for yaml_file, log_types in test_cases:
             with open(yaml_file) as f:
                 timestamp_map = yaml.safe_load(f)
-            
+
             for log_type in log_types:
                 if log_type in timestamp_map:
                     try:
@@ -92,6 +92,6 @@ jobs:
                         sys.exit(1)
                 else:
                     print(f'⚠️  {log_type} not found in {yaml_file}')
-        
+
         print('✅ All runtime validation tests passed!')
         "

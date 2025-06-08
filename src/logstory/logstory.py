@@ -238,7 +238,7 @@ def local_main(argv):
     flags.register_validator(
         "credentials_path",
         validate_service_account_json,
-        message=("--credentials_path must be JSON credentials for a Service Account"),
+        message="--credentials_path must be JSON credentials for a Service Account",
     )
   if FLAGS.customer_id:
     flags.register_validator(
@@ -328,14 +328,12 @@ def local_main(argv):
           timestamp_delta=FLAGS.timestamp_delta or None,
           entities=FLAGS.entities,
       )
-    print(
-        f"""UDM Search for the loaded logs:
+    print(f"""UDM Search for the loaded logs:
     metadata.ingested_timestamp.seconds >= {int(logstory_exe_time.timestamp())}
     metadata.ingestion_labels["log_replay"]="true"
     metadata.ingestion_labels["replayed_from"]="logstory"
     metadata.ingestion_labels["usecase_name"]="{use_case}"
-    """  # ToDo: get upper bound of ingested and print it?
-    )
+    """)  # ToDo: get upper bound of ingested and print it?
 
   return "Success Events!"
 

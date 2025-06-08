@@ -1,12 +1,13 @@
 # Pre-commit hooks for LogStory project
 # See https://pre-commit.com for more information
-# 
-# Note: These hooks are currently optional and non-enforced
-# Install with: pip install pre-commit && pre-commit install
+#
+# ENFORCEMENT STATUS: These hooks are ENFORCED for all commits
+# Setup: Run `make dev-setup` to install hooks automatically
+# Manual: pip install pre-commit && pre-commit install
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v5.0.0
     hooks:
       # Basic file checks
       - id: trailing-whitespace
@@ -24,21 +25,25 @@ repos:
       - id: mixed-line-ending
         args: ['--fix=lf']
 
-  # Python code formatting and linting
+  # Python code linting with ruff
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.8
+    rev: v0.11.13
     hooks:
-      # Linter
+      # Linter only (formatting handled by pyink)
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
         types_or: [python, pyi]
-      # Formatter
-      - id: ruff-format
-        types_or: [python, pyi]
+
+  # Python code formatting with pyink (2-space indentation)
+  - repo: https://github.com/google/pyink
+    rev: 24.10.1
+    hooks:
+      - id: pyink
+        args: ['--config', 'pyproject.toml']
 
   # Conventional commit message validation
   - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v3.0.0
+    rev: v4.2.0
     hooks:
       - id: conventional-pre-commit
         stages: [commit-msg]
@@ -46,19 +51,108 @@ repos:
 
   # Security checks
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.5
+    rev: 1.8.3
     hooks:
       - id: bandit
-        args: ['-r', 'src/', '-f', 'json', '-o', '/tmp/bandit-report.json']
+        args: ['-r', 'src/']
         additional_dependencies: ['bandit[toml]']
 
   # Check for secrets
   - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.4.0
+    rev: v1.5.0
     hooks:
       - id: detect-secrets
         args: ['--baseline', '.secrets.baseline']
         exclude: '^(tests/|docs/)'
+
+  # Terraform formatting and validation
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.99.3
+    hooks:
+      - id: terraform_fmt
+        files: '^cloudfunctions/.*\.tf$'
+      - id: terraform_validate
+        files: '^cloudfunctions/.*\.tf$'
+      - id: terraform_tflint
+        files: '^cloudfunctions/.*\.tf$'
+        args:
+          - --args=--config=__GIT_WORKING_DIR__/.tflint.hcl
+      - id: terraform_tfsec
+        files: '^cloudfunctions/.*\.tf$'
+        args:
+          - --args=--soft-fail
+
+  # Shell script validation
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+        files: '\.sh$'
+
+  # Markdown linting
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.45.0
+    hooks:
+      - id: markdownlint
+        args: ['--config', '.markdownlint.yaml']
+        exclude: '^(CHANGELOG\.md|docs/)'
+
+  # Python docstring coverage
+  - repo: https://github.com/econchick/interrogate
+    rev: 1.7.0
+    hooks:
+      - id: interrogate
+        args: ['-vv', '--fail-under=80', '--ignore-init-method', '--ignore-module', '--ignore-private', '--ignore-magic', 'src/']
+        exclude: '^(tests/|cloudfunctions/)'
+
+  # Python type checking
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.16.0
+    hooks:
+      - id: mypy
+        additional_dependencies: [types-requests, types-PyYAML]
+        args: ['--ignore-missing-imports', '--no-strict-optional']
+        files: '^src/'
+
+  # License header validation
+  - repo: https://github.com/Lucas-C/pre-commit-hooks
+    rev: v1.5.5
+    hooks:
+      - id: insert-license
+        name: Add Apache license header
+        files: '\.py$'
+        args:
+          - --license-filepath
+          - .license-header.txt
+          - --comment-style
+          - '#'
+        exclude: '^(\.git/|__pycache__|\.egg-info|dist/|build/)'
+
+  # YAML specific linting (beyond basic check-yaml)
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.37.1
+    hooks:
+      - id: yamllint
+        args: ['-c', '.yamllint.yaml']
+        exclude: '^(\.github/workflows/|cloudfunctions/.*\.yaml)'
+
+  # Protocol buffer linting
+  - repo: https://github.com/bufbuild/buf
+    rev: v1.54.0
+    hooks:
+      - id: buf-lint
+        files: '\.proto$'
+      - id: buf-format
+        files: '\.proto$'
+
+
+  # Spell checking
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
+    hooks:
+      - id: codespell
+        args: ['--skip', '*.zip,*.log,*.json', '--ignore-words-list', 'crate,ans,ect,hist,nd']
+        exclude: '^(\.git/|__pycache__|\.egg-info|dist/|build/|docs/_build/)'
 
   # YAML validation specific to our timestamp configs
   - repo: local
@@ -73,69 +167,149 @@ repos:
           - |
             import yaml
             import sys
-            
+
             def validate_timestamp_config(file_path):
                 try:
                     with open(file_path) as f:
                         data = yaml.safe_load(f)
-                    
+
                     if not isinstance(data, dict):
                         raise ValueError("Root must be a dictionary")
-                    
+
                     for log_type, entry in data.items():
                         if 'timestamps' not in entry:
                             continue
-                        
+
                         timestamps = entry['timestamps']
                         base_time_count = 0
-                        
+
                         for i, ts in enumerate(timestamps):
                             # Check required fields
                             required = ['name', 'pattern', 'epoch', 'group']
                             for field in required:
                                 if field not in ts:
                                     raise ValueError(f"{log_type}[{i}] missing {field}")
-                            
+
                             # Check epoch/dateformat consistency
                             if ts.get('epoch') is True and 'dateformat' in ts:
                                 raise ValueError(f"{log_type}[{i}] has epoch=true with dateformat")
                             elif ts.get('epoch') is False and 'dateformat' not in ts:
                                 raise ValueError(f"{log_type}[{i}] has epoch=false without dateformat")
-                            
+
                             if ts.get('base_time'):
                                 base_time_count += 1
-                        
+
                         if base_time_count != 1:
                             raise ValueError(f"{log_type} needs exactly 1 base_time, got {base_time_count}")
-                    
+
                     print(f"✅ {file_path} validation passed")
                     return True
                 except Exception as e:
                     print(f"❌ {file_path}: {e}")
                     return False
-            
+
             # Validate all changed timestamp config files
             import os
             files_to_check = [f for f in sys.argv[1:] if f.endswith('timestamps.yaml')]
-            
+
             if not files_to_check:
                 print("No timestamp config files to validate")
                 sys.exit(0)
-            
+
             all_valid = True
             for file_path in files_to_check:
                 if os.path.exists(file_path):
                     if not validate_timestamp_config(file_path):
                         all_valid = False
-            
+
             if not all_valid:
                 sys.exit(1)
-            
+
             print("✅ All timestamp configurations are valid")
 
+      # Chronicle rule file validation
+      - id: validate-chronicle-rules
+        name: Validate Chronicle rule files
+        entry: python
+        language: system
+        files: '\.yl2$'
+        args:
+          - -c
+          - |
+            import sys
+            import re
+
+            def validate_rule_file(filepath):
+                with open(filepath, 'r') as f:
+                    content = f.read()
+
+                # Basic validation for Chronicle rule structure
+                if not re.search(r'rule\s+\w+\s*{', content):
+                    print(f"❌ {filepath}: Missing rule declaration")
+                    return False
+
+                if not re.search(r'meta:', content):
+                    print(f"❌ {filepath}: Missing meta section")
+                    return False
+
+                if not re.search(r'events:', content):
+                    print(f"❌ {filepath}: Missing events section")
+                    return False
+
+                print(f"✅ {filepath}: Valid Chronicle rule")
+                return True
+
+            all_valid = True
+            for file in sys.argv[1:]:
+                if not validate_rule_file(file):
+                    all_valid = False
+
+            sys.exit(0 if all_valid else 1)
+
+      # Check for common security issues in configs
+      - id: no-hardcoded-secrets
+        name: Check for hardcoded secrets
+        entry: python
+        language: system
+        files: '\.(yaml|yml|json|tf|py)$'
+        exclude: '^(tests/|\.secrets\.baseline)'
+        args:
+          - -c
+          - |
+            import re
+            import sys
+
+            patterns = [
+                (r'(?i)(api[_-]?key|apikey)\s*[:=]\s*["\'][^"\']+["\']', 'API key'),
+                (r'(?i)(secret|password|passwd|pwd)\s*[:=]\s*["\'][^"\']+["\']', 'Password'),
+                (r'-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----', 'Private key'),
+                (r'[0-9a-zA-Z/+=]{40,}', 'Possible base64 encoded secret'),
+            ]
+
+            found_issues = False
+            for filepath in sys.argv[1:]:
+                with open(filepath, 'r') as f:
+                    content = f.read()
+
+                for pattern, desc in patterns:
+                    if re.search(pattern, content):
+                        # Skip if it's a variable reference
+                        if not re.search(r'\$\{|\$\(|%\(', content):
+                            print(f"⚠️  {filepath}: Possible {desc} found")
+                            found_issues = True
+
+            sys.exit(1 if found_issues else 0)
+
 # Configuration for specific hooks
-default_stages: [commit, push]
+default_stages: [pre-commit, pre-push]
 fail_fast: false
+
+# Performance optimizations for CI
+ci:
+  autofix_commit_msg: 'style: auto-fix pre-commit hooks'
+  autofix_prs: true
+  autoupdate_commit_msg: 'chore: pre-commit autoupdate'
+  autoupdate_schedule: weekly
 
 # Exclude patterns
 exclude: |
