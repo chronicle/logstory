@@ -465,6 +465,9 @@ def usecase_replay_logtype(
             old_base_time = datetime.datetime.fromtimestamp(int(old_base))
           elif btsformat:
             old_base_time = datetime.datetime.strptime(old_base, btsformat)
+          else:
+            print("error! it needs to be one of those...")
+            import pdb; pdb.set_trace()
 
       # for each timestamp in the yaml file
       for ts_n, timestamp in enumerate(timestamp_map[log_type]["timestamps"]):
