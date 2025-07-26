@@ -15,6 +15,7 @@
 ---
   AUDITD:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: event_time
         base_time: true
@@ -29,6 +30,7 @@
 
   AWS_CLOUDTRAIL:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: event_time
         base_time: true
@@ -49,6 +51,7 @@
 
   AWS_WAF:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: timestamp
         base_time: true
@@ -58,6 +61,7 @@
 
   AZURE_AD:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: createdDateTime
         base_time: true
@@ -68,6 +72,7 @@
 
   BRO_JSON:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory/usr/local/zeek/logs/current/
     timestamps:
       - name: zeek_ts
         base_time: true
@@ -77,6 +82,7 @@
 
   CB_EDR:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory/usr/local/bin/cbagentd/logs/
     timestamps:
       - name: cb_edr_timestamp
         base_time: true
@@ -86,6 +92,7 @@
 
   CHROME_MANAGEMENT:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory/var/log/chrome/
     timestamps:
       - name: chrome_timestamp
         base_time: true
@@ -95,6 +102,7 @@
 
   CORELIGHT:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory/usr/local/corelight/logs/
     timestamps:
       - name: ts
         base_time: true
@@ -115,6 +123,7 @@
 
   CS_DETECTS:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory/Library/CS/logs/
     timestamps:
       - name: all_timestamps
         base_time: true
@@ -125,6 +134,7 @@
 
   CS_EDR:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory/Library/CS/logs/
     timestamps:
       - name: cs_edr_timestamp
         base_time: true
@@ -150,6 +160,7 @@
 
   FIREEYE_HX:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory/opt/fireeye/agent/log/
     timestamps:
       - name: base_fireeye_timestamp
         base_time: true
@@ -165,6 +176,7 @@
 
   GCP_CLOUDAUDIT:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: gcp_timestamp
         base_time: true
@@ -185,6 +197,7 @@
 
   GCP_CLOUD_NAT:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: gcp_timestamp
         base_time: true
@@ -200,6 +213,7 @@
 
   GCP_DNS:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: gcp_timestamp
         base_time: true
@@ -215,6 +229,7 @@
 
   GCP_FIREWALL:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: gcp_timestamp
         base_time: true
@@ -230,6 +245,7 @@
 
   GCP_IDS:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: gcp_timestamp
         base_time: true
@@ -245,6 +261,7 @@
 
   GCP_LOADBALANCING:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: gcp_timestamp
         base_time: true
@@ -260,6 +277,7 @@
 
   GCP_SECURITYCENTER_THREAT:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: gcp_eventTime
         base_time: true
@@ -279,6 +297,7 @@
 
   GCP_SECURITYCENTER_MISCONFIGURATION:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: gcp_eventTime
         base_time: true
@@ -298,6 +317,7 @@
 
   GCP_VPC_FLOW:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: gcp_timestamp
         base_time: true
@@ -323,6 +343,7 @@
 
   GMAIL_LOGS:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: timestamp
         base_time: true
@@ -332,6 +353,7 @@
 
   GUARDDUTY:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: updatedAt
         base_time: true
@@ -357,6 +379,7 @@
 
   INFOBLOX_DHCP:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: syslog_timestamp
         base_time: true
@@ -367,6 +390,7 @@
 
   EXTRAHOP_DNS:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: syslog_timestamp
         base_time: true
@@ -377,6 +401,7 @@
 
   LIMACHARLIE_EDR:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: TIMESTAMP
         base_time: true
@@ -390,6 +415,7 @@
 
   OKTA:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: published
         base_time: true
@@ -415,6 +441,7 @@
 
   SURICATA_EVE:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: timestamp
         base_time: true
@@ -430,6 +457,7 @@
 
   TANIUM_TH:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: eventTimestamp
         base_time: true
@@ -440,6 +468,7 @@
 
   UDM:
     api: udmevents
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: udm_event_timestamp
         base_time: true
@@ -450,6 +479,7 @@
 
   WINDOWS_DHCP:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: dhcp_timestamp
         base_time: true
@@ -460,6 +490,7 @@
 
   WINDOWS_SYSMON:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: UtcTimeQuotes
         base_time: true
@@ -532,6 +563,7 @@
 
   POWERSHELL:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory/Library/Logs/Microsoft/PowerShell/
     timestamps:
       - name: EventTime
         pattern: ("EventTime":)(\d+)(,)
@@ -550,6 +582,7 @@
 
   SENTINEL_EDR:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: timestamp
         base_time: true
@@ -563,6 +596,7 @@
 
   SEP:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: syslog_timestamp
         base_time: true
@@ -578,6 +612,7 @@
 
   SQUID_WEBPROXY:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: syslog_timestamp
         base_time: true
@@ -587,6 +622,7 @@
 
   WINEVTLOG:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: EventTime
         base_time: true
@@ -615,6 +651,7 @@
 
   WINDOWS_DEFENDER_ATP:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory/var/log/microsoft/mdatp/
     timestamps:
       - name: time
         base_time: true
@@ -640,6 +677,7 @@
 
   WINDOWS_DEFENDER_AV:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: EventTime
         base_time: true
@@ -708,6 +746,7 @@
 
   MICROSOFT_DEFENDER_ENDPOINT:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: time
         base_time: true
@@ -733,6 +772,7 @@
 
   NIX_SYSTEM:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: syslog_timestamp
         base_time: true
@@ -743,6 +783,7 @@
 
   OFFICE_365:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: creation_time
         base_time: true
@@ -763,6 +804,7 @@
 
   WINDOWS_AD:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: base_created
         base_time: true
@@ -776,6 +818,7 @@
 
   WORKSPACE_ACTIVITY:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: time
         base_time: true
@@ -786,6 +829,7 @@
 
   WORKSPACE_ALERTS:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: time
         base_time: true
@@ -796,6 +840,7 @@
 
   ZSCALER_WEBPROXY:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: zscaler_event_timestamp
         base_time: true
@@ -806,6 +851,7 @@
 
   GITHUB:
     api: unstructuredlogentries
+    log_dir: /tmp/var/log/logstory
     timestamps:
       - name: created_at
         base_time: true

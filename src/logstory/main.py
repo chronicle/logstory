@@ -323,11 +323,11 @@ def _write_entries_to_local_file(
   Args:
     log_type: The log type name for the filename
     all_entries: List of log entries to write
-    log_dir: Directory to write log files to (defaults to /var/log/logstory)
+    log_dir: Directory to write log files to (defaults to /tmp/var/log/logstory)
   """
   # Get log directory from environment or use default
   if log_dir is None:
-    log_dir = os.getenv("LOGSTORY_LOCAL_LOG_DIR", "/var/log/logstory")
+    log_dir = os.getenv("LOGSTORY_LOCAL_LOG_DIR", "/tmp/var/log/logstory")
 
   # Create directory if it doesn't exist
   log_path = Path(log_dir)
@@ -376,11 +376,12 @@ def _post_entries_in_batches(
     all_entries: list[dict[str, str]],
     ingestion_labels: list[dict[str, str]],
     local_file_output: bool = False,
+    log_dir: str | None = None,
 ):
   """Posts entries to the ingestion API in batches or writes to local files."""
   # If local file output is enabled, write all entries to file and return
   if local_file_output:
-    _write_entries_to_local_file(log_type, all_entries)
+    _write_entries_to_local_file(log_type, all_entries, log_dir)
     return
 
   # Original API posting logic
@@ -509,6 +510,8 @@ def usecase_replay_logtype(
     _validate_timestamp_config(log_type, timestamp_map)
 
     api_for_log_type = timestamp_map[log_type]["api"]
+    # Get optional log_dir from YAML config, defaults to None for backwards compatibility
+    log_type_log_dir = timestamp_map[log_type].get("log_dir")
     log_content = _get_log_content(use_case, log_type, entities)
     ingestion_labels = _get_ingestion_labels(
         use_case, logstory_exe_time, api_for_log_type
@@ -562,6 +565,7 @@ def usecase_replay_logtype(
         entries,
         ingestion_labels,
         local_file_output,
+        log_type_log_dir,
     )
   return old_base_time
 

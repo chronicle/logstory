@@ -283,6 +283,12 @@ logstory replay usecase RULES_SEARCH_WORKSHOP \
 logstory replay logtype RULES_SEARCH_WORKSHOP POWERSHELL,WINEVTLOG \
   --customer-id=01234567-0123-4321-abcd-01234567890a \
   --credentials-path=/path/to/credentials.json
+
+# Write logs to local files instead of API (no credentials required)
+logstory replay usecase NETWORK_ANALYSIS --local-file-output
+
+# Use custom directory for local file output
+LOGSTORY_LOCAL_LOG_DIR=/tmp/my-logs logstory replay all --local-file-output
 ```
 
 ### Common Options
@@ -295,11 +301,95 @@ logstory replay logtype RULES_SEARCH_WORKSHOP POWERSHELL,WINEVTLOG \
 - `--logtypes`: Show logtypes for each usecase
 - `--details`: Show full markdown content for usecases
 - `--open`: Open usecase markdown file in VS Code (requires `code` command)
+- `--local-file-output`: Write logs to local files instead of sending to API
+
+### Local File Output
+
+Logstory supports writing logs to local files instead of sending them to the SecOps API. This is useful for testing, debugging, or integrating with log forwarders.
+
+#### Basic Usage
+
+```bash
+# Write logs to local files instead of API
+logstory replay usecase RULES_SEARCH_WORKSHOP --local-file-output
+
+# Custom base directory using environment variable
+LOGSTORY_LOCAL_LOG_DIR=/custom/path logstory replay all --local-file-output
+
+# Combine with other options
+logstory replay logtype NETWORK_ANALYSIS BRO_JSON --local-file-output --entities
+```
+
+#### Directory Structure
+
+When using `--local-file-output`, logs are organized in a structured directory tree:
+
+**Default Base Directory:** `/tmp/var/log/logstory/`
+**Environment Override:** `LOGSTORY_LOCAL_LOG_DIR`
+
+**Directory Organization:**
+- Most log types write to the base directory: `/tmp/var/log/logstory/{LOG_TYPE}.log`
+- Some log types use realistic subdirectories that mirror their typical filesystem locations:
+  - Zeek/BRO logs: `/tmp/var/log/logstory/usr/local/zeek/logs/current/BRO_JSON.log`
+  - PowerShell logs: `/tmp/var/log/logstory/Library/Logs/Microsoft/PowerShell/POWERSHELL.log`
+  - CrowdStrike logs: `/tmp/var/log/logstory/Library/CS/logs/CS_EDR.log`
+  - FireEye logs: `/tmp/var/log/logstory/opt/fireeye/agent/log/FIREEYE_HX.log`
+
+#### Example Tree Structure
+
+```bash
+# View the organized log structure
+tree /tmp/var/log/logstory/
+
+/tmp/var/log/logstory/
+├── AUDITD.log
+├── AWS_CLOUDTRAIL.log
+├── GITHUB.log
+├── Library/
+│   ├── CS/
+│   │   └── logs/
+│   │       ├── CS_DETECTS.log
+│   │       └── CS_EDR.log
+│   └── Logs/
+│       └── Microsoft/
+│           └── PowerShell/
+│               └── POWERSHELL.log
+├── opt/
+│   └── fireeye/
+│       └── agent/
+│           └── log/
+│               └── FIREEYE_HX.log
+├── usr/
+│   ├── local/
+│   │   ├── corelight/
+│   │   │   └── logs/
+│   │   │       └── CORELIGHT.log
+│   │   └── zeek/
+│   │       └── logs/
+│   │           └── current/
+│   │               └── BRO_JSON.log
+│   └── var/
+└── var/
+    └── log/
+        ├── chrome/
+        │   └── CHROME_MANAGEMENT.log
+        └── microsoft/
+            └── mdatp/
+                └── WINDOWS_DEFENDER_ATP.log
+```
+
+#### Benefits
+
+- **Testing & Development**: Test log processing without API credentials
+- **Log Forwarder Integration**: Point Filebeat, Fluentd, or other forwarders at specific directories
+- **Debugging**: Examine generated logs before sending to SecOps
+- **Offline Processing**: Generate logs for later batch upload or analysis
 
 **Environment Variables:**
 - `LOGSTORY_CUSTOMER_ID`: Your SecOps tenant UUID4
 - `LOGSTORY_CREDENTIALS_PATH`: Path to JSON credentials file
 - `LOGSTORY_REGION`: SecOps tenant region (default: US)
+- `LOGSTORY_LOCAL_LOG_DIR`: Base directory for local file output (default: /tmp/var/log/logstory)
 
 ### Command Migration Guide
 
