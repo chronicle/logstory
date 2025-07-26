@@ -191,6 +191,12 @@ UsecasesBucketOption = typer.Option(
     help="Usecase source URI (gs://bucket, git@repo, etc.) - overrides config list",
 )
 
+LocalFileOutputOption = typer.Option(
+    False,
+    "--local-file-output",
+    help="Write logs to local files instead of sending to API",
+)
+
 
 def _get_current_time():
   """Returns the current time in UTC."""
@@ -266,8 +272,8 @@ def usecases_list(
       os.path.join(os.path.dirname(os.path.abspath(__file__)), "usecases/*")
   )
   usecases = []
-  logypes_map = {}
-  markdown_map = {}
+  logypes_map: dict[str, list[str]] = {}
+  markdown_map: dict[str, list[str]] = {}
   for usecase_dir in usecase_dirs:
     parts = os.path.split(usecase_dir)
     if parts[-1] in ["__init__.py", "AWS"]:
@@ -530,15 +536,21 @@ def replay_all_usecases(
     region: str | None = RegionOption,
     entities: bool = EntitiesOption,
     timestamp_delta: str | None = TimestampDeltaOption,
+    local_file_output: bool = LocalFileOutputOption,
 ):
   """Replay all usecases."""
-  final_credentials, final_customer_id, final_region = _load_and_validate_params(
-      env_file, credentials_path, customer_id, region
-  )
-  _set_environment_vars(final_credentials, final_customer_id, final_region)
+  # Skip credential validation if using local file output
+  if not local_file_output:
+    final_credentials, final_customer_id, final_region = _load_and_validate_params(
+        env_file, credentials_path, customer_id, region
+    )
+    _set_environment_vars(final_credentials, final_customer_id, final_region)
+  else:
+    # Load env file but don't require credentials for local file output
+    load_env_file(env_file)
 
   usecases = get_usecases()
-  _replay_usecases(usecases, "*", entities, timestamp_delta)
+  _replay_usecases(usecases, "*", entities, timestamp_delta, local_file_output)
 
 
 @replay_app.command("usecase")
@@ -550,16 +562,22 @@ def replay_usecase(
     region: str | None = RegionOption,
     entities: bool = EntitiesOption,
     timestamp_delta: str | None = TimestampDeltaOption,
+    local_file_output: bool = LocalFileOutputOption,
 ):
   """Replay a specific usecase."""
-  final_credentials, final_customer_id, final_region = _load_and_validate_params(
-      env_file, credentials_path, customer_id, region
-  )
-  _set_environment_vars(final_credentials, final_customer_id, final_region)
+  # Skip credential validation if using local file output
+  if not local_file_output:
+    final_credentials, final_customer_id, final_region = _load_and_validate_params(
+        env_file, credentials_path, customer_id, region
+    )
+    _set_environment_vars(final_credentials, final_customer_id, final_region)
+  else:
+    # Load env file but don't require credentials for local file output
+    load_env_file(env_file)
 
   usecases = [usecase]
   logtypes = _get_logtypes(usecase, entities=entities)
-  _replay_usecases(usecases, logtypes, entities, timestamp_delta)
+  _replay_usecases(usecases, logtypes, entities, timestamp_delta, local_file_output)
 
 
 @replay_app.command("logtype")
@@ -572,16 +590,22 @@ def replay_usecase_logtype(
     region: str | None = RegionOption,
     entities: bool = EntitiesOption,
     timestamp_delta: str | None = TimestampDeltaOption,
+    local_file_output: bool = LocalFileOutputOption,
 ):
   """Replay specific logtypes from a usecase."""
-  final_credentials, final_customer_id, final_region = _load_and_validate_params(
-      env_file, credentials_path, customer_id, region
-  )
-  _set_environment_vars(final_credentials, final_customer_id, final_region)
+  # Skip credential validation if using local file output
+  if not local_file_output:
+    final_credentials, final_customer_id, final_region = _load_and_validate_params(
+        env_file, credentials_path, customer_id, region
+    )
+    _set_environment_vars(final_credentials, final_customer_id, final_region)
+  else:
+    # Load env file but don't require credentials for local file output
+    load_env_file(env_file)
 
   usecases = [usecase]
   logtype_list = [lt.strip() for lt in logtypes.split(",")]
-  _replay_usecases(usecases, logtype_list, entities, timestamp_delta)
+  _replay_usecases(usecases, logtype_list, entities, timestamp_delta, local_file_output)
 
 
 def _replay_usecases(
@@ -589,13 +613,14 @@ def _replay_usecases(
     logtypes: list[str] | str,
     entities: bool,
     timestamp_delta: str | None,
+    local_file_output: bool = False,
 ):
   """Core replay logic shared by replay commands."""
   # Late import to avoid circular imports
   try:
-    from . import main as imported_main
+    from . import main as imported_main  # type: ignore
   except ImportError:
-    import main as imported_main
+    import main as imported_main  # type: ignore
 
   logstory_exe_time = _get_current_time()
 
@@ -603,7 +628,7 @@ def _replay_usecases(
     if logtypes == "*":
       current_logtypes = _get_logtypes(use_case, entities=entities)
     else:
-      current_logtypes = logtypes
+      current_logtypes = logtypes if isinstance(logtypes, list) else [logtypes]
 
     old_base_time = None
     for log_type in current_logtypes:
@@ -618,6 +643,7 @@ def _replay_usecases(
           old_base_time,
           timestamp_delta=timestamp_delta,
           entities=entities,
+          local_file_output=local_file_output,
       )
 
     typer.echo(f"""UDM Search for the loaded logs:

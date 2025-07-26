@@ -17,6 +17,7 @@ import datetime
 import json
 import os
 import re
+from pathlib import Path
 from typing import Any
 
 import requests as real_requests
@@ -258,7 +259,7 @@ def _update_timestamp(
       the updated timestamp will be now() - [Nd]days -[Nh]hours - [Nm]mins
       ex. 2024-03-14T13:37:42.123456Z and {d: 1, h: 1, m: 1} ->
           2024-03-13T12:36:42.123456Z
-      Note that the seconds and miliseconds are always preserved.
+      Note that the seconds and milliseconds are always preserved.
 
   Returns:
     log_text: updated timestamp string
@@ -312,13 +313,77 @@ def _update_timestamp(
   return log_text
 
 
+def _write_entries_to_local_file(
+    log_type: str,
+    all_entries: list[dict[str, str]],
+    log_dir: str | None = None,
+) -> None:
+  """Write entries to local log files instead of sending to API.
+
+  Args:
+    log_type: The log type name for the filename
+    all_entries: List of log entries to write
+    log_dir: Directory to write log files to (defaults to /var/log/logstory)
+  """
+  # Get log directory from environment or use default
+  if log_dir is None:
+    log_dir = os.getenv("LOGSTORY_LOCAL_LOG_DIR", "/var/log/logstory")
+
+  # Create directory if it doesn't exist
+  log_path = Path(log_dir)
+  try:
+    log_path.mkdir(parents=True, exist_ok=True)
+  except PermissionError:
+    LOGGER.error("Permission denied creating directory: %s", log_path)
+    raise
+  except Exception as e:
+    LOGGER.error("Error creating directory %s: %s", log_path, e)
+    raise
+
+  # Write entries to log file
+  log_file_path = log_path / f"{log_type}.log"
+  try:
+    with open(log_file_path, "a", encoding="utf-8") as f:
+      for entry in all_entries:
+        try:
+          # Handle different entry types
+          if isinstance(entry, dict) and "logText" in entry:
+            # unstructuredlogentries format
+            f.write(entry["logText"] + "\n")
+          elif isinstance(entry, dict):
+            # udmevents/entities format - write as JSON
+            f.write(json.dumps(entry) + "\n")
+          else:
+            # fallback for other formats
+            f.write(str(entry) + "\n")
+        except Exception as e:
+          LOGGER.error("Error writing entry to %s: %s", log_file_path, e)
+          continue
+
+    LOGGER.info("Successfully wrote %d entries to %s", len(all_entries), log_file_path)
+
+  except PermissionError:
+    LOGGER.error("Permission denied writing to file: %s", log_file_path)
+    raise
+  except Exception as e:
+    LOGGER.error("Error writing to file %s: %s", log_file_path, e)
+    raise
+
+
 def _post_entries_in_batches(
     api: str,
     log_type: str,
     all_entries: list[dict[str, str]],
     ingestion_labels: list[dict[str, str]],
+    local_file_output: bool = False,
 ):
-  """Posts entries to the ingestion API in batches."""
+  """Posts entries to the ingestion API in batches or writes to local files."""
+  # If local file output is enabled, write all entries to file and return
+  if local_file_output:
+    _write_entries_to_local_file(log_type, all_entries)
+    return
+
+  # Original API posting logic
   entries_bytes = 0
   entries = []
   for i, entry in enumerate(all_entries):
@@ -408,6 +473,7 @@ def usecase_replay_logtype(
     timestamp_delta: str | None = None,
     ts_map_path: str | None = "./",
     entities: bool | None = False,
+    local_file_output: bool = False,
 ) -> datetime.datetime | None:
   """Replays log data for a specific use case and log type.
 
@@ -420,9 +486,10 @@ def usecase_replay_logtype(
      to apply to each timestamp pattern match.
     ts_map_path: disk location of the yaml files
     entities: bool for Entities (True) vs Events (False)
+    local_file_output: bool to write to local files instead of API
 
   Returns:
-    old_base_time: so that subequent logtypes/usecases can all use the same value
+    old_base_time: so that subsequent logtypes/usecases can all use the same value
   """
   timestamp_delta = timestamp_delta or "1d"
   ts_delta_dict = _get_timestamp_delta_dict(timestamp_delta)
@@ -494,6 +561,7 @@ def usecase_replay_logtype(
         log_type,
         entries,
         ingestion_labels,
+        local_file_output,
     )
   return old_base_time
 
