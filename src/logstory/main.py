@@ -343,7 +343,9 @@ def _post_entries_in_batches(
 
 
 # pylint: disable-next=g-bare-generic
-def post_entries(api: str, log_type: str, entries: list, ingestion_labels: list[dict[str, Any]]):
+def post_entries(
+    api: str, log_type: str, entries: list, ingestion_labels: list[dict[str, Any]]
+):
   """Send the provided entries to the appropriate ingestion API method.
 
   Args:

@@ -1,3 +1,143 @@
+---
+title: RULES_SEARCH_WORKSHOP
+description: Usecase providing logs for workshops on advanced search capabilities, building rules for Google SecOps, entity graph exploration, and statistical search
+tags:
+  - rules-workshop
+  - yara-l
+  - google-secops
+  - entity-graph
+  - advanced-search
+  - statistical-search
+  - visualization
+created: 2025-07-26
+updated: 2025-07-26
+run_frequency:
+  events: "Every 3 days"
+  entities: "Every 3 days (offset to 1 day before Events)"
+data_rbac: "Must be disabled because the entity graph join rules don't work with it on"
+events:
+  - log_type: POWERSHELL.log
+    product_name: PowerShell
+    vendor_name: Microsoft
+    notes: ""
+  - log_type: WINDOWS_DEFENDER_AV.log
+    product_name: Windows Defender AV
+    vendor_name: Microsoft
+    notes: ""
+  - log_type: WINDOWS_SYSMON.log
+    product_name: Microsoft-Windows-Sysmon
+    vendor_name: Microsoft
+    notes: ""
+  - log_type: WINEVTLOG.log
+    product_name: Microsoft-Windows-Security-Auditing
+    vendor_name: Microsoft
+    notes: ""
+  - log_type: WINEVTLOG.log
+    product_name: Microsoft-Windows-TaskScheduler
+    vendor_name: Microsoft
+    notes: ""
+  - log_type: WINEVTLOG.log
+    product_name: SecurityCenter
+    vendor_name: Microsoft
+    notes: ""
+  - log_type: WINEVTLOG.log
+    product_name: Service Control Manager
+    vendor_name: Microsoft
+    notes: ""
+entities:
+  - log_type: POWERSHELL.log
+    product_name: PowerShell
+    vendor_name: Microsoft
+    notes: ""
+  - log_type: WINDOWS_DEFENDER_AV.log
+    product_name: Windows Defender AV
+    vendor_name: Microsoft
+    notes: ""
+  - log_type: WINDOWS_SYSMON.log
+    product_name: Microsoft-Windows-Sysmon
+    vendor_name: Microsoft
+    notes: ""
+  - log_type: WINEVTLOG.log
+    product_name: Microsoft-Windows-Security-Auditing
+    vendor_name: Microsoft
+    notes: "Additional product_names in this log type include: Microsoft-Windows-TaskScheduler, SecurityCenter, and Service Control Manager"
+rules:
+  - name: whoami_execution.yaral
+    live: true
+    alerting: false
+    notes: "Rule Workshop slide 17"
+  - name: mitre_attack_T1021_002_windows_admin_share_basic.yaral
+    live: false
+    alerting: false
+    notes: "Rule Workshop slide 22"
+  - name: suspicious_unusual_location_lnk_file.yaral
+    live: false
+    alerting: false
+    notes: "Rule Workshop slide 27"
+  - name: rw_mimikatz_T1003.yaral
+    live: true
+    alerting: false
+    notes: "Rule Workshop slide 29"
+  - name: win_password_spray.yaral
+    live: false
+    alerting: false
+    notes: "Rule Workshop slide 44"
+  - name: win_repeatedAuthFailure_thenSuccess_T1110_001.yaral
+    live: true
+    alerting: true
+    notes: "Rule Workshop slide 60"
+  - name: mitre_attack_T1021_002_windows_admin_share_with_user_enrichment.yaral
+    live: false
+    alerting: false
+    notes: "Rule Workshop slide 50"
+  - name: mitre_attack_T1021_002_windows_admin_share_with_user_entity_non_domain_admin.yaral
+    live: false
+    alerting: false
+    notes: "Rule Workshop slide 55"
+  - name: mitre_attack_T1021_002_windows_admin_share_with_user_entity_domain_admin.yaral
+    live: false
+    alerting: false
+    notes: "EG workshop slide 43"
+  - name: mitre_attack_T1021_002_windows_admin_share_with_user_entity.yaral
+    live: false
+    alerting: false
+    notes: "EG workshop slide 41"
+  - name: rw_utilities_associated_with_ntdsdit_T1003_003.yaral
+    live: false
+    alerting: false
+    notes: "Rule Workshop slide 75"
+  - name: mitre_attack_T1021_002_windows_admin_share_with_asset_entity.yaral
+    live: false
+    alerting: false
+    notes: "EG workshop slide 45"
+  - name: win_repeatedAuthFailure_thenSuccess_T1110_001_user_asset_entity.yaral
+    live: false
+    alerting: false
+    notes: "EG workshop slide 47"
+  - name: safebrowsing_hashes_seen_more_than_7_days.yaral
+    live: false
+    alerting: false
+    notes: "EG Workshop slide 105 - Works with this usecase as well as MISP and SAFEBROWSING"
+  - name: google_safebrowsing_file_process_creation.yaral
+    live: true
+    alerting: true
+    notes: "EG Workshop slide 113 - Works with this usecase as well as MISP and SAFEBROWSING"
+  - name: google_safebrowsing_with_prevalence.yaral
+    live: false
+    alerting: false
+    notes: "EG Workshop slide 115 - Works with this usecase as well as MISP and SAFEBROWSING"
+saved_searches:
+  - name: Failed User Logins by Vendor or Product
+    creator: Google SecOps Curated
+    notes: "Advanced Search Workshop - slide 15 - Also returns data from AZURE_AD and TEMP_ACCOUNT use cases"
+reference_lists:
+  - name: key_servers
+    type: String
+    notes: "Key server names - Used for rules workshop"
+  - name: ntds_suspicious_processes
+    type: String
+    notes: "process names often associated with accessing ntds.dit - Used for rules workshop - Stoner"
+---
 
 # RULES_SEARCH_WORKSHOP
 

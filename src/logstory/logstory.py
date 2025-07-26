@@ -20,10 +20,13 @@ import uuid
 
 import typer
 from dotenv import load_dotenv
+from google.auth.exceptions import DefaultCredentialsError
 from google.cloud import storage
 from google.oauth2 import service_account
 
 UTC = datetime.UTC
+
+DEFAULT_BUCKET = "gs://logstory-usecases-20241216"
 
 # Create Typer app and command groups
 app = typer.Typer(help="Logstory: Replay SecOps logs with updated timestamps")
@@ -89,6 +92,37 @@ def get_region_default():
   return os.getenv("LOGSTORY_REGION", "US")
 
 
+def parse_usecase_source(source_uri: str) -> tuple[str, str]:
+  """Parse a usecase source URI and return (source_type, identifier).
+
+  Args:
+    source_uri: URI like 'gs://bucket-name' or bare bucket name
+
+  Returns:
+    Tuple of (source_type, identifier) where:
+    - source_type: 'gcs', 'git', etc.
+    - identifier: bucket name, repo URL, etc.
+  """
+  source_uri = source_uri.strip()
+
+  if source_uri.startswith("gs://"):
+    return ("gcs", source_uri[5:])  # Remove 'gs://' prefix
+  if source_uri.startswith("git@") or source_uri.endswith(".git"):
+    return ("git", source_uri)
+  if source_uri.startswith("s3://"):
+    return ("s3", source_uri[5:])
+  if source_uri.startswith("file://"):
+    return ("file", source_uri[7:])
+  # Backward compatibility: treat bare names as GCS bucket names
+  return ("gcs", source_uri)
+
+
+def get_usecases_buckets():
+  """Get list of usecases buckets from environment variable."""
+  buckets_str = os.getenv("LOGSTORY_USECASES_BUCKETS", DEFAULT_BUCKET)
+  return [bucket.strip() for bucket in buckets_str.split(",") if bucket.strip()]
+
+
 CredentialsOption = typer.Option(
     None,
     "--credentials-path",
@@ -152,9 +186,9 @@ TimestampDeltaOption = typer.Option(
 )
 
 UsecasesBucketOption = typer.Option(
-    "logstory-usecases-20241216",
+    None,
     "--usecases-bucket",
-    help="GCP Cloud Storage bucket with additional usecases",
+    help="Usecase source URI (gs://bucket, git@repo, etc.) - overrides config list",
 )
 
 
@@ -264,8 +298,35 @@ def usecases_list(
           print(f"  {log_type}")
 
 
-def _get_blobs(bucket_name, usecase=None):
-  client = storage.Client.create_anonymous_client()
+def _get_blobs(source_uri, usecase=None):
+  """Get blobs from usecase source, supporting multiple source types."""
+  source_type, identifier = parse_usecase_source(source_uri)
+
+  if source_type == "gcs":
+    return _get_gcs_blobs(identifier, usecase)
+  if source_type == "git":
+    raise NotImplementedError("Git source support not yet implemented")
+  if source_type == "s3":
+    raise NotImplementedError("S3 source support not yet implemented")
+  if source_type == "file":
+    raise NotImplementedError("File source support not yet implemented")
+  raise ValueError(f"Unsupported source type: {source_type}")
+
+
+def _get_gcs_blobs(bucket_name, usecase=None):
+  """Get blobs from GCS bucket, trying authenticated client first."""
+  client = None
+
+  # Try application default credentials first
+  try:
+    client = storage.Client()
+  except DefaultCredentialsError:
+    # Fall back to anonymous client for public buckets
+    try:
+      client = storage.Client.create_anonymous_client()
+    except Exception as e:
+      raise Exception(f"Could not create GCS client: {e}") from e
+
   bucket = client.bucket(bucket_name)
   if usecase:
     blobs = bucket.list_blobs(prefix=usecase)
@@ -278,34 +339,62 @@ def _get_blobs(bucket_name, usecase=None):
 def list_bucket_directories(
     bucket: str = UsecasesBucketOption,
 ):
-  """List usecases available for download from GCP bucket."""
-  bucket_name = bucket
-  blobs = _get_blobs(bucket_name)
+  """List usecases available for download from configured sources."""
+  buckets = [bucket] if bucket else get_usecases_buckets()
+
+  all_usecases = set()
+
+  for source_uri in buckets:
+    try:
+      blobs = _get_blobs(source_uri)
+      print(f"\nAvailable usecases in source '{source_uri}':")
+      for blob in blobs.pages:
+        prefixes = blob.prefixes
+        for prefix in prefixes:
+          if "docs" in prefix:
+            continue
+          prefix = prefix.strip("/")
+          print(f"- {prefix}")
+          all_usecases.add(prefix)
+    except Exception as e:
+      print(f"Warning: Could not access source '{source_uri}': {e}")
+      continue
+
+  if len(buckets) > 1:
+    print(f"\nAll available usecases: {', '.join(sorted(all_usecases))}")
+
+  return list(all_usecases)
+
+
+def _get_source_directories(source_uri: str) -> list[str]:
+  """Helper function to get source directories without printing."""
+  blobs = _get_blobs(source_uri)
   top_level_directories = []
-  print(f"\nAvailable usecases in bucket '{bucket_name}':")
   for blob in blobs.pages:
     prefixes = blob.prefixes
     for prefix in prefixes:
       if "docs" in prefix:
         continue
       prefix = prefix.strip("/")
-      print(f"- {prefix}")
       top_level_directories.append(prefix)
   return top_level_directories
 
 
-def _get_bucket_directories(bucket_name: str) -> list[str]:
-  """Helper function to get bucket directories without printing."""
-  blobs = _get_blobs(bucket_name)
-  top_level_directories = []
-  for blob in blobs.pages:
-    prefixes = blob.prefixes
-    for prefix in prefixes:
-      if "docs" in prefix:
-        continue
-      prefix = prefix.strip("/")
-      top_level_directories.append(prefix)
-  return top_level_directories
+def _get_all_source_directories() -> list[str]:
+  """Helper function to get directories from all configured sources."""
+  sources = get_usecases_buckets()
+  all_directories = set()
+
+  for source_uri in sources:
+    try:
+      directories = _get_source_directories(source_uri)
+      all_directories.update(directories)
+    except Exception as e:
+      # Skip inaccessible sources, but log the error
+      typer.echo(f"Debug: Could not access source '{source_uri}': {e}", err=True)
+      continue
+
+  return list(all_directories)
 
 
 @usecases_app.command("get")
@@ -313,17 +402,31 @@ def usecase_get(
     usecase: str = typer.Argument(..., help="Name of the usecase to download"),
     bucket: str = UsecasesBucketOption,
 ):
-  """Download a usecase from GCP bucket."""
-  bucket_name = bucket
+  """Download a usecase from configured sources."""
+  sources = [bucket] if bucket else get_usecases_buckets()
 
-  # Validate usecase exists in bucket
-  available_usecases = _get_bucket_directories(bucket_name)
-  if usecase not in available_usecases:
-    typer.echo(f"Error: Usecase '{usecase}' not found in bucket '{bucket_name}'")
-    available = ", ".join(available_usecases)
+  # Find which source(s) contain the usecase
+  found_source = None
+  for source_uri in sources:
+    try:
+      available_usecases = _get_source_directories(source_uri)
+      if usecase in available_usecases:
+        found_source = source_uri
+        break
+    except Exception as e:
+      typer.echo(f"Debug: Could not access source '{source_uri}': {e}", err=True)
+      continue
+
+  if not found_source:
+    typer.echo(f"Error: Usecase '{usecase}' not found in any configured source")
+    all_available = _get_all_source_directories()
+    available = ", ".join(sorted(all_available))
     typer.echo(f"Available usecases: {available}")
     raise typer.Exit(1)
-  blob_list = _get_blobs(bucket_name, usecase)
+
+  # Download from the found source
+  print(f"Downloading usecase '{usecase}' from source '{found_source}'")
+  blob_list = _get_blobs(found_source, usecase)
   for blob in blob_list:
     if blob.name.endswith("/"):
       continue

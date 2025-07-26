@@ -1,3 +1,37 @@
+---
+title: NETWORK_ANALYSIS
+description: Network analysis usecase providing logs for workshops on advanced search capabilities and statistical search for Google SecOps
+tags:
+  - network-analysis
+  - zeek
+  - bro
+  - workshops
+created: 2025-07-26
+updated: 2025-07-26
+events:
+  - log_type: BRO_JSON
+    product_name: Bro
+    vendor_name: Zeek
+    notes: ""
+entities:
+  - log_type: N/A
+    product_name: ""
+    vendor_name: ""
+    notes: ""
+rules:
+  - name: network_analysis
+    live: false
+    alerting: false
+    notes: ""
+saved_searches:
+  - name: Zeek_Investigative_Search
+    creator: jstoner@google.com
+    notes: ""
+reference_lists:
+  - name: N/A
+    type: ""
+    notes: ""
+---
 
 # NETWORK_ANALYSIS
 
@@ -29,7 +63,7 @@ This usecase provides logs for workshops:
 
 | Search Name                 | Creator             | Notes |
 |-----------------------------|---------------------|-------|
-| Zeek_Investigative_Search.  | jstoner@google.com  |       |
+| Zeek_Investigative_Search.  | j-stoner@users.noreply.github.com  |       |
 
 ## Reference Lists
 

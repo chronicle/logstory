@@ -37,6 +37,66 @@ logstory replay usecase RULES_SEARCH_WORKSHOP \
   --timestamp-delta=1d
 ```
 
+### Usecase Sources
+
+Logstory can source usecases from multiple sources using URI-style prefixes. Configure sources using the `LOGSTORY_USECASES_BUCKETS` environment variable:
+
+```bash
+# Single bucket (default)
+export LOGSTORY_USECASES_BUCKETS=gs://logstory-usecases-20241216
+
+# Multiple buckets (comma-separated)  
+export LOGSTORY_USECASES_BUCKETS=gs://logstory-usecases-20241216,gs://my-custom-bucket,gs://team-bucket
+
+# Backward compatibility (bare bucket names auto-prefixed with gs://)
+export LOGSTORY_USECASES_BUCKETS=logstory-usecases-20241216,my-custom-bucket
+```
+
+**Supported Source Types:**
+- **`gs://bucket-name`**: Google Cloud Storage buckets
+- **Future support planned**: `git@github.com:user/repo.git`, `s3://bucket-name`, `file://path`
+
+**Authentication:**
+- **Public buckets**: Accessed anonymously (no authentication required)
+- **Private buckets**: Requires `gcloud application-default login` credentials
+- The system automatically tries authenticated access first, then falls back to anonymous access
+
+**URI-Style Prefixes:**
+- Use `gs://` prefix for explicit GCS bucket specification
+- Bare bucket names automatically treated as GCS buckets (backward compatibility)
+- Future Git support: `git@github.com:user/usecases.git` or `https://github.com/user/usecases.git`
+
+**Commands:**
+```bash
+# List usecases from all configured sources
+logstory usecases list-available
+
+# Override source configuration for a single command
+logstory usecases list-available --usecases-bucket gs://my-specific-bucket
+
+# Download usecase (searches all configured sources)
+logstory usecases get MY_USECASE
+
+# Examples with different source types (when supported)
+logstory usecases list-available --usecases-bucket git@github.com:myorg/usecases.git
+```
+
+#### Migration from Pre-URI Configuration
+
+If you're upgrading from a version without URI-style prefixes:
+
+**Before:**
+```bash
+export LOGSTORY_USECASES_BUCKETS=logstory-usecases-20241216,my-bucket
+```
+
+**After (recommended):**
+```bash
+export LOGSTORY_USECASES_BUCKETS=gs://logstory-usecases-20241216,gs://my-bucket
+```
+
+**Note:** The old format still works (backward compatibility), but using explicit `gs://` prefixes is recommended for clarity and future compatibility.
+
 ### Customer ID
 
 (Required) This is your Google SecOps tenant's UUID4, which can be found at:
@@ -205,17 +265,30 @@ To make that easier:
 ```
 ❯ logstory usecases list-available
 
-Available usecases in bucket 'logstory-usecases-20241216':
+Available usecases in source 'gs://logstory-usecases-20241216':
 - EDR_WORKSHOP
 - RULES_SEARCH_WORKSHOP
+```
+
+For multiple sources:
+```
+❯ export LOGSTORY_USECASES_BUCKETS=gs://logstory-usecases-20241216,gs://my-private-bucket  
+❯ logstory usecases list-available
+
+Available usecases in source 'gs://logstory-usecases-20241216':
+- EDR_WORKSHOP
+- RULES_SEARCH_WORKSHOP
+
+Available usecases in source 'gs://my-private-bucket':
+- CUSTOM_USECASE
+- TEAM_ANALYSIS
+
+All available usecases: CUSTOM_USECASE, EDR_WORKSHOP, RULES_SEARCH_WORKSHOP, TEAM_ANALYSIS
 ```
 
 ```
 ❯ logstory usecases get EDR_WORKSHOP
-
-Available usecases in bucket 'logstory-usecases-20241216':
-- EDR_WORKSHOP
-- RULES_SEARCH_WORKSHOP
+Downloading usecase 'EDR_WORKSHOP' from source 'gs://logstory-usecases-20241216'
 Downloading EDR_WORKSHOP/EDR_WORKSHOP.md to [redacted]/logstory/usecases/EDR_WORKSHOP/EDR_WORKSHOP.md
 Downloading EDR_WORKSHOP/EVENTS/CS_DETECTS.log to [redacted]/logstory/src/logstory/usecases/EDR_WORKSHOP/EVENTS/CS_DETECTS.log
 Downloading EDR_WORKSHOP/EVENTS/CS_EDR.log to [redacted]/logstory/src/logstory/usecases/EDR_WORKSHOP/EVENTS/CS_EDR.log
