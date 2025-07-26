@@ -16,6 +16,7 @@
 import datetime
 import glob
 import os
+import shutil
 import uuid
 
 import typer
@@ -205,6 +206,7 @@ def _get_current_time():
 
 @usecases_app.command("list-installed")
 def usecases_list(
+    env_file: str | None = EnvFileOption,
     logtypes: bool = typer.Option(
         False, "--logtypes", help="Show logtypes for each usecase"
     ),
@@ -217,6 +219,9 @@ def usecases_list(
     entities: bool = EntitiesOption,
 ):
   """List locally installed usecases and optionally their logtypes."""
+  # Load environment file
+  load_env_file(env_file)
+  
   # Handle --open flag as a special case
   if open_usecase:
     import subprocess
@@ -315,7 +320,7 @@ def _get_blobs(source_uri, usecase=None):
   if source_type == "s3":
     raise NotImplementedError("S3 source support not yet implemented")
   if source_type == "file":
-    raise NotImplementedError("File source support not yet implemented")
+    return _get_file_blobs(identifier, usecase)
   raise ValueError(f"Unsupported source type: {source_type}")
 
 
@@ -341,11 +346,81 @@ def _get_gcs_blobs(bucket_name, usecase=None):
   return blobs
 
 
+class _FileBlob:
+  """Mock blob object for file system operations."""
+
+  def __init__(self, name: str, file_path: str):
+    self.name = name
+    self._file_path = file_path
+
+  def download_to_filename(self, destination: str):
+    """Copy file from source to destination."""
+    shutil.copy2(self._file_path, destination)
+
+
+class _FileBlobPage:
+  """Mock blob page for directory listing operations."""
+
+  def __init__(self, prefixes: list[str]):
+    self.prefixes = prefixes
+
+
+class _FileBlobCollection:
+  """Mock blob collection that mimics GCS blob list with pages."""
+
+  def __init__(self, pages: list[_FileBlobPage]):
+    self.pages = pages
+
+
+def _get_file_blobs(directory_path, usecase=None):
+  """Get blobs from local file system, mimicking GCS blob interface."""
+  if not os.path.exists(directory_path):
+    raise Exception(f"Directory does not exist: {directory_path}")
+
+  if not os.path.isdir(directory_path):
+    raise Exception(f"Path is not a directory: {directory_path}")
+
+  if usecase:
+    # Return files for a specific usecase (used for downloading)
+    usecase_path = os.path.join(directory_path, usecase)
+    if not os.path.exists(usecase_path):
+      raise Exception(f"Usecase directory does not exist: {usecase_path}")
+
+    blobs = []
+    for root, _dirs, files in os.walk(usecase_path):
+      for file in files:
+        file_path = os.path.join(root, file)
+        # Create relative path from the base directory for the blob name
+        relative_path = os.path.relpath(file_path, directory_path)
+        # Normalize path separators to forward slashes (like GCS)
+        blob_name = relative_path.replace(os.sep, "/")
+        blobs.append(_FileBlob(blob_name, file_path))
+
+    return blobs
+
+  # Return top-level directories (used for listing available usecases)
+  prefixes = []
+  try:
+    for item in os.listdir(directory_path):
+      item_path = os.path.join(directory_path, item)
+      if os.path.isdir(item_path):
+        # Add trailing slash to match GCS behavior
+        prefixes.append(f"{item}/")
+  except PermissionError as e:
+    raise Exception(f"Permission denied accessing directory: {directory_path}") from e
+
+  return _FileBlobCollection([_FileBlobPage(prefixes)])
+
+
 @usecases_app.command("list-available")
 def list_bucket_directories(
+    env_file: str | None = EnvFileOption,
     bucket: str = UsecasesBucketOption,
 ):
   """List usecases available for download from configured sources."""
+  # Load environment file
+  load_env_file(env_file)
+  
   buckets = [bucket] if bucket else get_usecases_buckets()
 
   all_usecases = set()
@@ -406,9 +481,13 @@ def _get_all_source_directories() -> list[str]:
 @usecases_app.command("get")
 def usecase_get(
     usecase: str = typer.Argument(..., help="Name of the usecase to download"),
+    env_file: str | None = EnvFileOption,
     bucket: str = UsecasesBucketOption,
 ):
   """Download a usecase from configured sources."""
+  # Load environment file
+  load_env_file(env_file)
+  
   sources = [bucket] if bucket else get_usecases_buckets()
 
   # Find which source(s) contain the usecase

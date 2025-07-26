@@ -33,6 +33,9 @@ If you have [uv](https://docs.astral.sh/uv/) installed, you can run logstory wit
 # Run directly with uvx (one-time execution)
 uvx logstory replay usecase RULES_SEARCH_WORKSHOP
 
+# Use with custom .env file
+uvx logstory usecases list-available --env-file .env
+
 # Or install in a managed environment with uv
 uv tool install logstory
 uv tool run logstory replay usecase RULES_SEARCH_WORKSHOP
@@ -105,8 +108,14 @@ Logstory can source usecases from multiple sources using URI-style prefixes. Con
 # Single bucket (default)
 export LOGSTORY_USECASES_BUCKETS=gs://logstory-usecases-20241216
 
-# Multiple buckets (comma-separated)
+# Multiple sources (comma-separated)
 export LOGSTORY_USECASES_BUCKETS=gs://logstory-usecases-20241216,gs://my-custom-bucket,gs://team-bucket
+
+# Mix GCS and local file system sources
+export LOGSTORY_USECASES_BUCKETS=gs://logstory-usecases-20241216,file:///path/to/local/usecases
+
+# Local file system only
+export LOGSTORY_USECASES_BUCKETS=file:///path/to/chronicle/usecases
 
 # Backward compatibility (bare bucket names auto-prefixed with gs://)
 export LOGSTORY_USECASES_BUCKETS=logstory-usecases-20241216,my-custom-bucket
@@ -114,15 +123,18 @@ export LOGSTORY_USECASES_BUCKETS=logstory-usecases-20241216,my-custom-bucket
 
 **Supported Source Types:**
 - **`gs://bucket-name`**: Google Cloud Storage buckets
-- **Future support planned**: `git@github.com:user/repo.git`, `s3://bucket-name`, `file://path`
+- **`file://path`**: Local file system directories
+- **Future support planned**: `git@github.com:user/repo.git`, `s3://bucket-name`
 
 **Authentication:**
-- **Public buckets**: Accessed anonymously (no authentication required)
-- **Private buckets**: Requires `gcloud application-default login` credentials
+- **GCS public buckets**: Accessed anonymously (no authentication required)
+- **GCS private buckets**: Requires `gcloud application-default login` credentials
+- **Local file system**: No authentication required (uses file system permissions)
 - The system automatically tries authenticated access first, then falls back to anonymous access
 
 **URI-Style Prefixes:**
 - Use `gs://` prefix for explicit GCS bucket specification
+- Use `file://` prefix for local file system directories (absolute paths required)
 - Bare bucket names automatically treated as GCS buckets (backward compatibility)
 - Future Git support: `git@github.com:user/usecases.git` or `https://github.com/user/usecases.git`
 
@@ -137,7 +149,11 @@ logstory usecases list-available --usecases-bucket gs://my-specific-bucket
 # Download usecase (searches all configured sources)
 logstory usecases get MY_USECASE
 
-# Examples with different source types (when supported)
+# Examples with different source types
+logstory usecases list-available --usecases-bucket file:///path/to/local/usecases
+logstory usecases get USECASE_NAME --usecases-bucket file:///path/to/local/usecases
+
+# Future Git support (when supported)
 logstory usecases list-available --usecases-bucket git@github.com:myorg/usecases.git
 ```
 
@@ -152,10 +168,14 @@ export LOGSTORY_USECASES_BUCKETS=logstory-usecases-20241216,my-bucket
 
 **After (recommended):**
 ```bash
+# GCS buckets with explicit prefixes
 export LOGSTORY_USECASES_BUCKETS=gs://logstory-usecases-20241216,gs://my-bucket
+
+# Or mix with local file system
+export LOGSTORY_USECASES_BUCKETS=gs://logstory-usecases-20241216,file:///path/to/local/usecases
 ```
 
-**Note:** The old format still works (backward compatibility), but using explicit `gs://` prefixes is recommended for clarity and future compatibility.
+**Note:** The old format still works (backward compatibility), but using explicit URI prefixes (`gs://`, `file://`) is recommended for clarity and future compatibility.
 
 ### Customer ID
 
@@ -260,8 +280,14 @@ logstory usecases list-installed --open NETWORK_ANALYSIS
 # List usecases available for download
 logstory usecases list-available
 
+# List usecases using custom .env file
+logstory usecases list-available --env-file .env.prod
+
 # Download a specific usecase
 logstory usecases get EDR_WORKSHOP
+
+# Download usecase using custom .env file
+logstory usecases get EDR_WORKSHOP --env-file .env.prod
 ```
 
 ### Replay Commands
@@ -293,7 +319,7 @@ LOGSTORY_LOCAL_LOG_DIR=/tmp/my-logs logstory replay all --local-file-output
 
 ### Common Options
 
-- `--env-file`: Path to .env file to load environment variables from
+- `--env-file`: Path to .env file to load environment variables from (available on all commands)
 - `--timestamp-delta`: Time offset (default: 1d). Examples: 1d, 1d1h, 1h30m
 - `--entities`: Load entities instead of events
 - `--region`: SecOps tenant region (default: US, env: LOGSTORY_REGION)

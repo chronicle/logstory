@@ -6,10 +6,18 @@ LogStory is used to update timestamps in telemetry (i.e. logs) and then replay t
 
 The stories are organized as "usecases", which always contain events and may contain entities, reference lists, and/or Yara-L 2.0 Detection Rules. Each usecase includes a ReadMe to describe its use.
 
-Only the RULES_SEARCH_WORKSHOP is included witht the PyPI package. Learning about and installing addition usecases is described in [usecases](./usecase_docs/ReadMe.md).
+Only the RULES_SEARCH_WORKSHOP is included with the PyPI package. Learning about and installing addition usecases is described in [usecases](./usecase_docs/ReadMe.md).
 
 ```{tip} It is strongly recommended to review each usecase before ingestion rather than importing them all at once.
 ```
+
+## Documentation
+
+For comprehensive documentation on using Logstory:
+
+- **[CLI Reference](cli-reference.md)** - Complete command reference with all options and examples
+- **[Configuration](configuration.md)** - Detailed configuration guide for all environments  
+- **[Local File System Sources](file-sources.md)** - Using `file://` URIs for Chronicle replay use cases and local development
 
 ## Installation
 
@@ -28,13 +36,25 @@ These are explained in depth later in this doc.
 
 ## Configuration
 
-After the subcommand, Logstory uses [Typer](https://typer.tiangolo.com/) for modern CLI argument and option handling. You can pass options directly on the command line like this:
+After the subcommand, Logstory uses [Typer](https://typer.tiangolo.com/) for modern CLI argument and option handling. You can provide configuration in several ways:
 
+**1. Command Line Options:**
 ```
 logstory replay usecase RULES_SEARCH_WORKSHOP \
   --customer-id=01234567-0123-4321-abcd-01234567890a \
   --credentials-path=/usr/local/google/home/dandye/.ssh/malachite-787fa7323a7d_bk_and_ing.json \
   --timestamp-delta=1d
+```
+
+**2. Environment Files (.env):**
+All commands support the `--env-file` option to load environment variables from a file:
+```bash
+# For usecases commands
+logstory usecases list-available --env-file .env.prod
+logstory usecases get MY_USECASE --env-file .env.dev
+
+# For replay commands
+logstory replay usecase RULES_SEARCH_WORKSHOP --env-file .env
 ```
 
 ### Usecase Sources
@@ -45,8 +65,14 @@ Logstory can source usecases from multiple sources using URI-style prefixes. Con
 # Single bucket (default)
 export LOGSTORY_USECASES_BUCKETS=gs://logstory-usecases-20241216
 
-# Multiple buckets (comma-separated)  
+# Multiple sources (comma-separated)  
 export LOGSTORY_USECASES_BUCKETS=gs://logstory-usecases-20241216,gs://my-custom-bucket,gs://team-bucket
+
+# Mix GCS and local file system sources
+export LOGSTORY_USECASES_BUCKETS=gs://logstory-usecases-20241216,file:///path/to/local/usecases
+
+# Local file system only
+export LOGSTORY_USECASES_BUCKETS=file:///path/to/chronicle/usecases
 
 # Backward compatibility (bare bucket names auto-prefixed with gs://)
 export LOGSTORY_USECASES_BUCKETS=logstory-usecases-20241216,my-custom-bucket
@@ -54,15 +80,18 @@ export LOGSTORY_USECASES_BUCKETS=logstory-usecases-20241216,my-custom-bucket
 
 **Supported Source Types:**
 - **`gs://bucket-name`**: Google Cloud Storage buckets
-- **Future support planned**: `git@github.com:user/repo.git`, `s3://bucket-name`, `file://path`
+- **`file://path`**: Local file system directories
+- **Future support planned**: `git@github.com:user/repo.git`, `s3://bucket-name`
 
 **Authentication:**
-- **Public buckets**: Accessed anonymously (no authentication required)
-- **Private buckets**: Requires `gcloud application-default login` credentials
+- **GCS public buckets**: Accessed anonymously (no authentication required)
+- **GCS private buckets**: Requires `gcloud application-default login` credentials
+- **Local file system**: No authentication required (uses file system permissions)
 - The system automatically tries authenticated access first, then falls back to anonymous access
 
 **URI-Style Prefixes:**
 - Use `gs://` prefix for explicit GCS bucket specification
+- Use `file://` prefix for local file system directories (absolute paths required)
 - Bare bucket names automatically treated as GCS buckets (backward compatibility)
 - Future Git support: `git@github.com:user/usecases.git` or `https://github.com/user/usecases.git`
 
@@ -77,7 +106,11 @@ logstory usecases list-available --usecases-bucket gs://my-specific-bucket
 # Download usecase (searches all configured sources)
 logstory usecases get MY_USECASE
 
-# Examples with different source types (when supported)
+# Examples with different source types
+logstory usecases list-available --usecases-bucket file:///path/to/local/usecases
+logstory usecases get USECASE_NAME --usecases-bucket file:///path/to/local/usecases
+
+# Future Git support (when supported)
 logstory usecases list-available --usecases-bucket git@github.com:myorg/usecases.git
 ```
 
@@ -92,10 +125,18 @@ export LOGSTORY_USECASES_BUCKETS=logstory-usecases-20241216,my-bucket
 
 **After (recommended):**
 ```bash
+# GCS buckets with explicit prefixes
 export LOGSTORY_USECASES_BUCKETS=gs://logstory-usecases-20241216,gs://my-bucket
+
+# Or mix with local file system
+export LOGSTORY_USECASES_BUCKETS=gs://logstory-usecases-20241216,file:///path/to/local/usecases
 ```
 
-**Note:** The old format still works (backward compatibility), but using explicit `gs://` prefixes is recommended for clarity and future compatibility.
+**Note:** The old format still works (backward compatibility), but using explicit URI prefixes (`gs://`, `file://`) is recommended for clarity and future compatibility.
+
+```{tip}
+For advanced configuration scenarios, environment files, CI/CD integration, and troubleshooting, see the comprehensive [Configuration Guide](configuration.md).
+```
 
 ### Customer ID
 
