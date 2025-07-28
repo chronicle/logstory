@@ -221,7 +221,7 @@ def usecases_list(
   """List locally installed usecases and optionally their logtypes."""
   # Load environment file
   load_env_file(env_file)
-  
+
   # Handle --open flag as a special case
   if open_usecase:
     import subprocess
@@ -420,7 +420,7 @@ def list_bucket_directories(
   """List usecases available for download from configured sources."""
   # Load environment file
   load_env_file(env_file)
-  
+
   buckets = [bucket] if bucket else get_usecases_buckets()
 
   all_usecases = set()
@@ -487,7 +487,7 @@ def usecase_get(
   """Download a usecase from configured sources."""
   # Load environment file
   load_env_file(env_file)
-  
+
   sources = [bucket] if bucket else get_usecases_buckets()
 
   # Find which source(s) contain the usecase

@@ -17,6 +17,7 @@ For comprehensive documentation on using Logstory:
 
 - **[CLI Reference](cli-reference.md)** - Complete command reference with all options and examples
 - **[Configuration](configuration.md)** - Detailed configuration guide for all environments  
+- **[.env File Reference](env-file.md)** - Complete guide to .env file format and all supported variables
 - **[Local File System Sources](file-sources.md)** - Using `file://` URIs for Chronicle replay use cases and local development
 
 ## Installation
@@ -55,6 +56,10 @@ logstory usecases get MY_USECASE --env-file .env.dev
 
 # For replay commands
 logstory replay usecase RULES_SEARCH_WORKSHOP --env-file .env
+```
+
+```{tip}
+For complete .env file syntax, all supported variables, and example configurations, see the [.env File Reference](env-file.md).
 ```
 
 ### Usecase Sources
