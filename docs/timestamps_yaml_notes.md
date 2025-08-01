@@ -220,6 +220,45 @@ This will show:
 - Overlapping patterns
 - Match counts
 
+## How LogStory Handles Overlapping Patterns
+
+### The Change Map Approach
+
+LogStory uses a sophisticated "change map" approach to handle cases where multiple timestamp patterns might match the same or overlapping text. This prevents corruption and ensures each timestamp is updated exactly once.
+
+#### How It Works
+
+1. **Collection Phase**: For each log line, all timestamp patterns are evaluated and their replacements are collected into a change map
+2. **Change Map Structure**: `(start_position, end_position, original_text) → replacement_text`
+3. **Deduplication**: If multiple patterns want to make the same change to the same text, it's treated as a single operation
+4. **Conflict Detection**: If patterns want different changes to the same text span, a warning is logged
+5. **Application Phase**: All unique changes are applied in reverse order (right to left) to preserve positions
+
+#### Example
+
+```yaml
+# Log line: "UtcTime: 2024-01-25 19:53:05, Data: 2024-01-25"
+
+# Pattern 1: Matches "UtcTime: 2024-01-25 19:53:05"
+# Pattern 2: Matches "2024-01-25 19:53:05" 
+# Pattern 3: Matches "2024-01-25" (both occurrences)
+
+# Change map after processing:
+# (0, 28, "UtcTime: 2024-01-25 19:53:05") → "UtcTime: 2025-07-31 19:53:05"
+# (9, 28, "2024-01-25 19:53:05") → "2025-07-31 19:53:05"
+# (9, 19, "2024-01-25") → "2025-07-31"
+# (36, 46, "2024-01-25") → "2025-07-31"
+
+# Result: Each unique span is updated exactly once
+```
+
+#### Benefits
+
+- **Prevents Double Updates**: Text is never updated multiple times by different patterns
+- **Intelligent Deduplication**: Same changes to the same text are recognized and deduplicated
+- **Explicit Conflict Handling**: Different changes to the same text are detected and logged
+- **Maintains Correctness**: Preserves log integrity by ensuring consistent updates
+
 ## Migration from Legacy Format
 
 If you're updating from the old format that used `epoch: true/false`:
