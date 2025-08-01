@@ -1,8 +1,23 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import re
+
 import yaml
 
 # Create a test YAML configuration
-yaml_content = """
+yaml_content = r"""
 WINDOWS_AD:
   api: unstructuredlogentries
   timestamps:
@@ -21,7 +36,7 @@ WINDOWS_AD:
 config = yaml.safe_load(yaml_content)
 
 # Your actual log line content
-test_string = 'e":0,"Created":"\/Date(1705615749000)\/","createTimeStamp":"\/Date(1705615749000)\/","Deleted"'
+test_string = r'e":0,"Created":"\/Date(1705615749000)\/","createTimeStamp":"\/Date(1705615749000)\/","Deleted"'
 
 print("Testing patterns from YAML:")
 print("=" * 60)
@@ -38,7 +53,7 @@ for ts_config in config["WINDOWS_AD"]["timestamps"]:
   # Test the pattern
   match = re.search(pattern, test_string)
   if match:
-    print(f"✓ MATCH!")
+    print("✓ MATCH!")
     print(f"  Full match: {match.group(0)}")
     print(
         f"  Group {ts_config['group']} (timestamp): {match.group(ts_config['group'])}"
@@ -49,7 +64,7 @@ for ts_config in config["WINDOWS_AD"]["timestamps"]:
           f" {match.group(ts_config['group']+1)}"
       )
   else:
-    print(f"✗ NO MATCH")
+    print("✗ NO MATCH")
 
 # Now let's test with different YAML escaping options
 print("\n" + "=" * 60)
@@ -58,13 +73,13 @@ print("=" * 60)
 
 yaml_variations = [
     # Option 1: Single quotes with escaped backslash
-    """pattern: '("Created":"\\/Date\\()(\d{10})(\d{3})' """,
+    """pattern: '("Created":"\\/Date\\()(\\d{10})(\\d{3})' """,
     # Option 2: Single quotes without escape
-    """pattern: '("Created":"\/Date\()(\d{10})(\d{3})' """,
+    r"""pattern: '("Created":"\/Date\()(\d{10})(\d{3})' """,
     # Option 3: Double quotes with proper escaping
     '''pattern: "(\\"Created\\":\\"\\\\/Date\\\\()(\\\\d{10})(\\\\d{3})"''',
     # Option 4: Literal scalar
-    """pattern: |-
+    r"""pattern: |-
   ("Created":"\/Date\()(\d{10})(\d{3})""",
 ]
 
@@ -81,7 +96,7 @@ for i, yaml_str in enumerate(yaml_variations):
     if match:
       print(f"  ✓ MATCH! Group 2: {match.group(2)}")
     else:
-      print(f"  ✗ NO MATCH")
+      print("  ✗ NO MATCH")
   except Exception as e:
     print(f"  ERROR: {e}")
 
@@ -98,4 +113,4 @@ match = re.search(debugger_pattern, test_string)
 if match:
   print(f"✓ MATCH! Group 2: {match.group(2)}")
 else:
-  print(f"✗ NO MATCH")
+  print("✗ NO MATCH")

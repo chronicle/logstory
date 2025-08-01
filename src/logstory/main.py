@@ -18,13 +18,22 @@ import json
 import os
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 import requests as real_requests
 import yaml
 from google.auth.transport import requests
 from google.cloud import secretmanager, storage
 from google.oauth2 import service_account
+
+
+# Type for match-like objects
+class MatchLike(Protocol):
+  """Protocol for objects that behave like regex matches."""
+  def start(self) -> int: ...
+  def end(self) -> int: ...
+  def group(self, n: int = 0) -> str: ...
+
 
 # Constants
 DEFAULT_YEAR_FOR_INCOMPLETE_TIMESTAMPS = 1900
@@ -273,7 +282,7 @@ def _calculate_timestamp_replacement(
     timestamp: dict[str, str],
     old_base_time: datetime.datetime,
     ts_delta_dict: dict[str, int],
-) -> tuple[re.Match[str], str] | None:
+) -> tuple[MatchLike, str] | None:
   """Calculates the replacement for a timestamp without modifying the text.
 
   Args:
@@ -289,12 +298,10 @@ def _calculate_timestamp_replacement(
   Returns:
     Tuple of (match object, replacement string) or None if no match
   """
-  group_index = int(timestamp["group"]) - 1
   ts_match = re.search(timestamp["pattern"], log_text)
   if ts_match:
-    # Return value is a tuple, cast it to list, so we can replace one item
-    groups = list(ts_match.groups())
-    event_timestamp = groups[group_index]
+    # Get the specific group we're updating
+    event_timestamp = ts_match.group(timestamp["group"])
     event_time = None
     is_filetime = False
     is_epoch = False
@@ -351,8 +358,26 @@ def _calculate_timestamp_replacement(
         # Use strftime with the dateformat
         new_event_timestamp = new_event_time.strftime(dateformat)
 
-      groups[group_index] = new_event_timestamp
-      return (ts_match, "".join(groups))
+      # Return a match object that represents ONLY the group we're changing
+      # Create a GroupMatch object that has the start/end of the specific group
+      class GroupMatch:
+
+        def __init__(self, match, group_num):
+          self.match = match
+          self.group_num = group_num
+
+        def start(self):
+          return self.match.start(self.group_num)
+
+        def end(self):
+          return self.match.end(self.group_num)
+
+        def group(self, n=0):
+          if n == 0:
+            return self.match.group(self.group_num)
+          return self.match.group(self.group_num)
+
+      return (GroupMatch(ts_match, timestamp["group"]), new_event_timestamp)
   return None
 
 
@@ -608,7 +633,9 @@ def usecase_replay_logtype(
 
       # Collect all timestamp replacements for this line using a change map
       # This prevents double-updates and handles overlapping patterns intelligently
-      change_map: dict[tuple[int, int, str], str] = {}  # (start, end, original_text) -> replacement_text
+      change_map: dict[tuple[int, int, str], str] = (
+          {}
+      )  # (start, end, original_text) -> replacement_text
 
       for ts_n, timestamp in enumerate(timestamp_map[log_type]["timestamps"]):
         replacement_info = _calculate_timestamp_replacement(

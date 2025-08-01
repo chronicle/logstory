@@ -4,9 +4,9 @@ This document outlines the remaining tasks and next steps for completing the Typ
 
 ## Current Status
 
-**Branch**: `typer`  
-**PR**: #28 - feat: migrate CLI from Abseil to Typer with environment file support  
-**Status**: DRAFT  
+**Branch**: `typer`
+**PR**: #28 - feat: migrate CLI from Abseil to Typer with environment file support
+**Status**: DRAFT
 
 ### Completed Items ✅
 

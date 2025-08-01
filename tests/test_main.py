@@ -1,3 +1,17 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import datetime
 import re
 import unittest
@@ -46,7 +60,7 @@ class TestFiletimeConversions(unittest.TestCase):
     result = filetime_to_datetime(filetime)
 
     self.assertIsInstance(result, datetime.datetime)
-    self.assertEqual(result.tzinfo, datetime.timezone.utc)
+    self.assertEqual(result.tzinfo, datetime.UTC)
 
     # Verify the conversion is approximately correct (within a few seconds)
     expected_year = 2024
@@ -79,7 +93,7 @@ class TestFiletimeConversions(unittest.TestCase):
     self.assertAlmostEqual(result, known_filetime, delta=10)
 
     # Test case 2: Unix epoch (Jan 1, 1970)
-    unix_epoch = datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
+    unix_epoch = datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)
     result_unix = datetime_to_filetime(unix_epoch)
     # Unix epoch in Windows filetime should equal EPOCH_AS_FILETIME
     from src.logstory.main import EPOCH_AS_FILETIME
@@ -89,7 +103,7 @@ class TestFiletimeConversions(unittest.TestCase):
   def test_filetime_conversion_round_trip(self):
     """Test that converting datetime -> filetime -> datetime preserves the value."""
     # Test with current time
-    original_dt = datetime.datetime.now(datetime.timezone.utc)
+    original_dt = datetime.datetime.now(datetime.UTC)
 
     # Round trip: datetime -> filetime -> datetime
     filetime = datetime_to_filetime(original_dt)
@@ -103,7 +117,7 @@ class TestFiletimeConversions(unittest.TestCase):
 
     # Test with specific historical date
     historical_dt = datetime.datetime(
-        2020, 6, 15, 14, 30, 45, 123456, tzinfo=datetime.timezone.utc
+        2020, 6, 15, 14, 30, 45, 123456, tzinfo=datetime.UTC
     )
     filetime2 = datetime_to_filetime(historical_dt)
     converted_dt2 = filetime_to_datetime(filetime2)
@@ -114,7 +128,7 @@ class TestFiletimeConversions(unittest.TestCase):
   def test_filetime_conversion_edge_cases(self):
     """Test edge cases for filetime conversions."""
     # Test Windows epoch
-    windows_epoch_dt = datetime.datetime(1601, 1, 1, tzinfo=datetime.timezone.utc)
+    windows_epoch_dt = datetime.datetime(1601, 1, 1, tzinfo=datetime.UTC)
     filetime_epoch = datetime_to_filetime(windows_epoch_dt)
     self.assertEqual(filetime_epoch, 0)
 
@@ -166,7 +180,7 @@ class TestFiletimeConversions(unittest.TestCase):
     # The new datetime should be the same time on the day that is (today - 1 day)
     # Since old_base_time is the same as original_dt, and ts_delta_dict is {"d": 1},
     # the new timestamp should be (current_date - 1 day) with the same time as original
-    current_date = datetime.datetime.now(datetime.timezone.utc).date()
+    current_date = datetime.datetime.now(datetime.UTC).date()
     expected_date = current_date - datetime.timedelta(days=1)
 
     # Check that the date was updated correctly
@@ -214,7 +228,7 @@ class TestFiletimeConversions(unittest.TestCase):
     new_dt = datetime.datetime.fromtimestamp(new_epoch)
 
     # The new datetime should be approximately 7 days ago
-    current_date = datetime.datetime.now(datetime.timezone.utc).date()
+    current_date = datetime.datetime.now(datetime.UTC).date()
     expected_date = current_date - datetime.timedelta(days=7)
 
     self.assertEqual(
