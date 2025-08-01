@@ -155,8 +155,7 @@ def _validate_timestamp_config(log_type: str, timestamp_map: dict[str, Any]) -> 
 
   for i, timestamp in enumerate(timestamps):
     # Check for required fields
-    # Note: 'epoch' is now optional since we're moving to dateformat-based approach
-    required_fields = ["name", "pattern", "group"]
+    required_fields = ["name", "pattern", "group", "dateformat"]
     for field in required_fields:
       if field not in timestamp:
         raise ValueError(
@@ -167,57 +166,29 @@ def _validate_timestamp_config(log_type: str, timestamp_map: dict[str, Any]) -> 
     if timestamp.get("base_time"):
       base_time_count += 1
 
-    # Check epoch/dateformat consistency
-    epoch = timestamp.get("epoch")
+    # Validate dateformat
     dateformat = timestamp.get("dateformat")
 
-    # New validation logic:
-    # 1. If dateformat is 'epoch' or 'windowsfiletime', no need for epoch field
-    # 2. If epoch field exists, validate for legacy compatibility
-    # 3. Either dateformat or epoch:true must be present
+    # Dateformat must be one of the three valid types:
+    # 1. 'epoch' - for Unix epoch timestamps
+    # 2. 'windowsfiletime' - for Windows FileTime format
+    # 3. A strftime format string (e.g., "%Y-%m-%d %H:%M:%S")
 
-    if dateformat in ["epoch", "windowsfiletime"]:
-      # These special dateformats don't need epoch field
-      if epoch is True:
-        raise ValueError(
-            f"Log type '{log_type}' timestamp {i} ({timestamp['name']}): "
-            f"dateformat='{dateformat}' should not have epoch=true"
-        )
-    elif epoch is True:
-      # Legacy epoch:true format
-      if dateformat:
-        raise ValueError(
-            f"Log type '{log_type}' timestamp {i} ({timestamp['name']}): epoch=true"
-            f" should not have dateformat field, but found '{dateformat}'"
-        )
-    elif epoch is False:
-      # Legacy epoch:false format
-      if not dateformat:
-        raise ValueError(
-            f"Log type '{log_type}' timestamp {i} ({timestamp['name']}): "
-            "epoch=false requires dateformat field"
-        )
-      if dateformat == "%s":
-        raise ValueError(
-            f"Log type '{log_type}' timestamp {i} ({timestamp['name']}): epoch=false"
-            " should not use dateformat='%s' (use dateformat='epoch' instead)"
-        )
-    else:
-      # No epoch field - dateformat must be present
-      if not dateformat:
-        raise ValueError(
-            f"Log type '{log_type}' timestamp {i} ({timestamp['name']}): "
-            "missing both 'epoch' and 'dateformat' fields - at least one is required"
-        )
+    if not dateformat:
+      raise ValueError(
+          f"Log type '{log_type}' timestamp {i} ({timestamp['name']}): "
+          "missing required 'dateformat' field"
+      )
 
     # Check field types
     if not isinstance(timestamp.get("name"), str):
       raise ValueError(f"Log type '{log_type}' timestamp {i}: 'name' must be string")
     if not isinstance(timestamp.get("pattern"), str):
       raise ValueError(f"Log type '{log_type}' timestamp {i}: 'pattern' must be string")
-    # Only check epoch type if it exists
-    if "epoch" in timestamp and not isinstance(timestamp.get("epoch"), bool):
-      raise ValueError(f"Log type '{log_type}' timestamp {i}: 'epoch' must be boolean")
+    if not isinstance(timestamp.get("dateformat"), str):
+      raise ValueError(
+          f"Log type '{log_type}' timestamp {i}: 'dateformat' must be string"
+      )
     if not isinstance(timestamp.get("group"), int) or timestamp.get("group") < 1:
       raise ValueError(
           f"Log type '{log_type}' timestamp {i}: 'group' must be positive integer"
@@ -338,16 +309,9 @@ def _update_timestamp(
       # Special handling for Windows FileTime
       is_filetime = True
       event_time = filetime_to_datetime(int(event_timestamp))
-    elif dateformat:
+    else:
       # Standard strptime format
       event_time = datetime.datetime.strptime(event_timestamp, dateformat)
-    elif timestamp.get("epoch"):
-      # Legacy support for epoch: true
-      is_epoch = True
-      event_time = datetime.datetime.fromtimestamp(int(event_timestamp))
-    else:
-      # No epoch or dateformat - skip this timestamp
-      return log_text
 
     if event_time:
       # `old_base_time` is the base t (bts) in the first line of the
@@ -596,34 +560,51 @@ def usecase_replay_logtype(
         use_case, logstory_exe_time, api_for_log_type
     )
     # base time stamp (BTS) determines the anchor point; others are relative
-    btspattern, btsgroup, btsformat, btsepoch = [
+    btspattern, btsgroup, btsformat = [
         (
             timestamp.get("pattern"),
             timestamp.get("group"),
             timestamp.get("dateformat"),
-            timestamp.get("epoch"),
         )
         for timestamp in timestamp_map[log_type]["timestamps"]
         if timestamp.get("base_time")
     ][0]
+
+    # First pass: Find all base_time timestamps and get the maximum
+    if old_base_time is None:
+      base_timestamps = []
+      for log_text in log_content.splitlines():
+        match = re.search(btspattern, log_text)
+        if match and match.groups():
+          timestamp_str = match.group(btsgroup)
+          try:
+            if btsformat == "epoch":
+              # Unix epoch timestamp
+              dt = datetime.datetime.fromtimestamp(int(timestamp_str))
+            elif btsformat == "windowsfiletime":
+              # Windows FileTime
+              dt = filetime_to_datetime(int(timestamp_str))
+            else:
+              # Standard strptime format
+              dt = datetime.datetime.strptime(timestamp_str, btsformat)
+            base_timestamps.append(dt)
+          except (ValueError, OverflowError) as e:
+            LOGGER.warning("Failed to parse base timestamp '%s': %s", timestamp_str, e)
+            continue
+
+      if base_timestamps:
+        old_base_time = max(base_timestamps)
+        LOGGER.debug(
+            "Selected maximum base_time from %d timestamps: %s",
+            len(base_timestamps),
+            old_base_time,
+        )
+      else:
+        LOGGER.error("No valid base_time timestamps found in log file")
+
+    # Second pass: Process log entries
     entries = []
     for line_no, log_text in enumerate(log_content.splitlines()):
-      if old_base_time is None:
-        old_base_match = re.search(btspattern, log_text)
-        if old_base_match and old_base_match.groups():
-          old_base = old_base_match.group(btsgroup)
-          if btsformat == "epoch":
-            # Unix epoch timestamp
-            old_base_time = datetime.datetime.fromtimestamp(int(old_base))
-          elif btsformat == "windowsfiletime":
-            # Windows FileTime
-            old_base_time = filetime_to_datetime(int(old_base))
-          elif btsformat:
-            # Standard strptime format
-            old_base_time = datetime.datetime.strptime(old_base, btsformat)
-          elif btsepoch:
-            # Legacy support for epoch:true
-            old_base_time = datetime.datetime.fromtimestamp(int(old_base))
 
       # for each timestamp in the yaml file
       for ts_n, timestamp in enumerate(timestamp_map[log_type]["timestamps"]):
