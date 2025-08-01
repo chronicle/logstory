@@ -206,19 +206,19 @@ WINDOWS_AD:
       pattern: '("whenChanged":"\\\/Date\()(\d{10})(\d{3})'
     - name: lastLogonWinFileTime
       pattern: '("lastLogon":)(\d{18})'
-      dateformat: 'filetime'
+      dateformat: 'windowsfiletime'
       group: 2
     - name: badPasswordTimeWinFileTime
       pattern: '("badPasswordTime":)(\d{18})'
-      dateformat: 'filetime'
+      dateformat: 'windowsfiletime'
       group: 2
     - name: lastLogonTimestampTimeWinFileTime
       pattern: '("lastLogonTimestamp":)(\d{18})'
-      dateformat: 'filetime'
+      dateformat: 'windowsfiletime'
       group: 2
     - name: pwdLastSetTimeWinFileTime
       pattern: '("pwdLastSet":)(\d{18})'
-      dateformat: 'filetime'
+      dateformat: 'windowsfiletime'
       group: 2
 WORKSPACE_USERS:
   api: unstructuredlogentries

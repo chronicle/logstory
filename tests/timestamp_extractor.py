@@ -95,7 +95,7 @@ def extract_timestamps_from_log_type(
         if dateformat == "epoch":
           # Unix epoch timestamp
           timestamp = datetime.fromtimestamp(int(timestamp_str), tz=UTC)
-        elif dateformat == "filetime":
+        elif dateformat == "windowsfiletime":
           # Windows FILETIME
           timestamp = windows_filetime_to_datetime(int(timestamp_str))
         else:
@@ -111,10 +111,6 @@ def extract_timestamps_from_log_type(
         # Skip invalid timestamps
         print(f"Failed to parse timestamp for {name}: {e}")
         continue
-
-    # Optional: uncomment for debugging pattern matching issues
-    # if match_count == 0:
-    #   print(f"No matches found for pattern {name}: {pattern}")
 
   return extracted_timestamps
 
@@ -158,7 +154,7 @@ def main():
   parser.add_argument(
       "--file",
       "-f",
-      default="/tmp/var/log/logstory/WINDOWS_AD.log",
+      default="/tmp/var/log/logstory/WINDOWS_AD.log",  # nosec B108
       help="Path to log file (default: /tmp/var/log/logstory/WINDOWS_AD.log)",
   )
   parser.add_argument(

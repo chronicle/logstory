@@ -30,6 +30,11 @@ from google.oauth2 import service_account
 DEFAULT_YEAR_FOR_INCOMPLETE_TIMESTAMPS = 1900
 BATCH_SIZE_THRESHOLD = 1000
 BATCH_BYTES_THRESHOLD = 500_000
+# Windows epoch (Jan 1, 1601) in Unix epoch (Jan 1, 1970) seconds
+# This is the difference in 100-nanosecond intervals between the two epochs.
+EPOCH_AS_FILETIME = 116444736000000000
+# Number of 100-nanosecond intervals in one second
+HUNDREDS_OF_NANOSECONDS = 10000000
 
 level = os.environ.get("PYTHONLOGLEVEL", "INFO").upper()
 try:  # main.py shouldn't need abseil
@@ -97,6 +102,30 @@ if service_account_info:  # optional to facilitate unit testing
   http_client = requests.AuthorizedSession(credentials)
 
 
+def filetime_to_datetime(filetime):
+  """Converts a Windows File Time to a Python datetime object.
+
+  Win File Time is a 64-bit integer representing 100-nanosecond intervals
+  since Jan 1, 1601 UTC.
+  """
+  # Calculate seconds since Unix epoch
+  seconds_since_unix_epoch = (filetime - EPOCH_AS_FILETIME) / HUNDREDS_OF_NANOSECONDS
+  # Create datetime object from Unix timestamp (UTC)
+  return datetime.datetime.fromtimestamp(seconds_since_unix_epoch, UTC)
+
+
+def datetime_to_filetime(dt):
+  """Converts a Python datetime object to a Windows File Time.
+
+  Win File Time is a 64-bit integer representing 100-nanosecond intervals
+  since Jan 1, 1601 UTC.
+  """
+  # Convert datetime to Unix timestamp (seconds since Jan 1, 1970 UTC)
+  unix_timestamp = dt.timestamp()
+  # Convert to 100-nanosecond intervals and add Windows epoch offset
+  return int(unix_timestamp * HUNDREDS_OF_NANOSECONDS + EPOCH_AS_FILETIME)
+
+
 def _get_timestamp_delta_dict(timestamp_delta: str) -> dict[str, int]:
   """Parses the timestamp delta string into a dictionary."""
   ts_delta_pairs = re.findall(r"(\d+)([dhm])", timestamp_delta)
@@ -126,7 +155,8 @@ def _validate_timestamp_config(log_type: str, timestamp_map: dict[str, Any]) -> 
 
   for i, timestamp in enumerate(timestamps):
     # Check for required fields
-    required_fields = ["name", "pattern", "epoch", "group"]
+    # Note: 'epoch' is now optional since we're moving to dateformat-based approach
+    required_fields = ["name", "pattern", "group"]
     for field in required_fields:
       if field not in timestamp:
         raise ValueError(
@@ -139,30 +169,54 @@ def _validate_timestamp_config(log_type: str, timestamp_map: dict[str, Any]) -> 
 
     # Check epoch/dateformat consistency
     epoch = timestamp.get("epoch")
-    has_dateformat = "dateformat" in timestamp
+    dateformat = timestamp.get("dateformat")
 
-    if epoch is True and has_dateformat:
-      raise ValueError(
-          f"Log type '{log_type}' timestamp {i} ({timestamp['name']}): epoch=true"
-          f" should not have dateformat field, but found '{timestamp['dateformat']}'"
-      )
-    if epoch is False and not has_dateformat:
-      raise ValueError(
-          f"Log type '{log_type}' timestamp {i} ({timestamp['name']}): "
-          "epoch=false requires dateformat field"
-      )
-    if epoch is False and timestamp.get("dateformat") == "%s":
-      raise ValueError(
-          f"Log type '{log_type}' timestamp {i} ({timestamp['name']}): "
-          "epoch=false should not use dateformat='%s' (use epoch=true instead)"
-      )
+    # New validation logic:
+    # 1. If dateformat is 'epoch' or 'windowsfiletime', no need for epoch field
+    # 2. If epoch field exists, validate for legacy compatibility
+    # 3. Either dateformat or epoch:true must be present
+
+    if dateformat in ["epoch", "windowsfiletime"]:
+      # These special dateformats don't need epoch field
+      if epoch is True:
+        raise ValueError(
+            f"Log type '{log_type}' timestamp {i} ({timestamp['name']}): "
+            f"dateformat='{dateformat}' should not have epoch=true"
+        )
+    elif epoch is True:
+      # Legacy epoch:true format
+      if dateformat:
+        raise ValueError(
+            f"Log type '{log_type}' timestamp {i} ({timestamp['name']}): epoch=true"
+            f" should not have dateformat field, but found '{dateformat}'"
+        )
+    elif epoch is False:
+      # Legacy epoch:false format
+      if not dateformat:
+        raise ValueError(
+            f"Log type '{log_type}' timestamp {i} ({timestamp['name']}): "
+            "epoch=false requires dateformat field"
+        )
+      if dateformat == "%s":
+        raise ValueError(
+            f"Log type '{log_type}' timestamp {i} ({timestamp['name']}): epoch=false"
+            " should not use dateformat='%s' (use dateformat='epoch' instead)"
+        )
+    else:
+      # No epoch field - dateformat must be present
+      if not dateformat:
+        raise ValueError(
+            f"Log type '{log_type}' timestamp {i} ({timestamp['name']}): "
+            "missing both 'epoch' and 'dateformat' fields - at least one is required"
+        )
 
     # Check field types
     if not isinstance(timestamp.get("name"), str):
       raise ValueError(f"Log type '{log_type}' timestamp {i}: 'name' must be string")
     if not isinstance(timestamp.get("pattern"), str):
       raise ValueError(f"Log type '{log_type}' timestamp {i}: 'pattern' must be string")
-    if not isinstance(timestamp.get("epoch"), bool):
+    # Only check epoch type if it exists
+    if "epoch" in timestamp and not isinstance(timestamp.get("epoch"), bool):
       raise ValueError(f"Log type '{log_type}' timestamp {i}: 'epoch' must be boolean")
     if not isinstance(timestamp.get("group"), int) or timestamp.get("group") < 1:
       raise ValueError(
@@ -271,12 +325,26 @@ def _update_timestamp(
     groups = list(ts_match.groups())
     event_timestamp = groups[group_index]
     event_time = None
-    if timestamp.get("epoch"):
-      dateformat = "%s"  # For output formatting
+    is_filetime = False
+    is_epoch = False
+
+    dateformat = timestamp.get("dateformat")
+
+    if dateformat == "epoch":
+      # Unix epoch timestamp
+      is_epoch = True
       event_time = datetime.datetime.fromtimestamp(int(event_timestamp))
-    elif timestamp.get("dateformat"):
-      dateformat = str(timestamp["dateformat"])
+    elif dateformat == "windowsfiletime":
+      # Special handling for Windows FileTime
+      is_filetime = True
+      event_time = filetime_to_datetime(int(event_timestamp))
+    elif dateformat:
+      # Standard strptime format
       event_time = datetime.datetime.strptime(event_timestamp, dateformat)
+    elif timestamp.get("epoch"):
+      # Legacy support for epoch: true
+      is_epoch = True
+      event_time = datetime.datetime.fromtimestamp(int(event_timestamp))
     else:
       # No epoch or dateformat - skip this timestamp
       return log_text
@@ -307,7 +375,18 @@ def _update_timestamp(
             minutes=ts_delta_dict.get("m", 0),
         )
         new_event_time = new_event_time - hm_delta
-      new_event_timestamp = new_event_time.strftime(dateformat)
+
+      # Format the new timestamp appropriately
+      if is_filetime:
+        # Convert back to Windows FileTime
+        new_event_timestamp = str(datetime_to_filetime(new_event_time))
+      elif is_epoch:
+        # Convert back to Unix epoch
+        new_event_timestamp = str(int(new_event_time.timestamp()))
+      else:
+        # Use strftime with the dateformat
+        new_event_timestamp = new_event_time.strftime(dateformat)
+
       groups[group_index] = new_event_timestamp
       log_text = re.sub(timestamp["pattern"], "".join(groups), log_text)
   return log_text
@@ -340,10 +419,10 @@ def _write_entries_to_local_file(
     LOGGER.error("Error creating directory %s: %s", log_path, e)
     raise
 
-  # Write entries to log file
+  # Write or overwrite entries to log file
   log_file_path = log_path / f"{log_type}.log"
   try:
-    with open(log_file_path, "a", encoding="utf-8") as f:
+    with open(log_file_path, "w", encoding="utf-8") as f:
       for entry in all_entries:
         try:
           # Handle different entry types
@@ -533,10 +612,18 @@ def usecase_replay_logtype(
         old_base_match = re.search(btspattern, log_text)
         if old_base_match and old_base_match.groups():
           old_base = old_base_match.group(btsgroup)
-          if btsepoch:
+          if btsformat == "epoch":
+            # Unix epoch timestamp
             old_base_time = datetime.datetime.fromtimestamp(int(old_base))
+          elif btsformat == "windowsfiletime":
+            # Windows FileTime
+            old_base_time = filetime_to_datetime(int(old_base))
           elif btsformat:
+            # Standard strptime format
             old_base_time = datetime.datetime.strptime(old_base, btsformat)
+          elif btsepoch:
+            # Legacy support for epoch:true
+            old_base_time = datetime.datetime.fromtimestamp(int(old_base))
 
       # for each timestamp in the yaml file
       for ts_n, timestamp in enumerate(timestamp_map[log_type]["timestamps"]):
