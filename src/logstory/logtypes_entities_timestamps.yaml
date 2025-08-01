@@ -16,42 +16,20 @@
 AZURE_AD_CONTEXT:
   api: unstructuredlogentries
   timestamps:
+    # PRESERVED: base_time entry
     - name: onPremisesLastSyncDateTime_base_time
       base_time: true
       dateformat: "%Y-%m-%dT%H:%M:%S"
       pattern: '("onPremisesLastSyncDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z)'
       epoch: false
       group: 2
-    - name: created_date_time
+    # NEW: Consolidated generic pattern
+    - name: AZURE_AD_generic_timestamp
       dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '("createdDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z)'
-      epoch: false
+      pattern: '("[^"]+DateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
       group: 2
-    - name: assigned_dt
-      dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '("assignedDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z)'
-      epoch: false
-      group: 2
-    - name: refresh_token_valid_from_dt
-      dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '("refreshTokensValidFromDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z)'
-      epoch: false
-      group: 2
-    - name: signin_session_valid_from_dt
-      dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '("signInSessionsValidFromDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z)'
-      epoch: false
-      group: 2
-    - name: approx_last_signin_dt
-      dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '("approximateLastSignInDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z)'
-      epoch: false
-      group: 2
-    - name: registration_dt
-      dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '("registrationDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z)'
-      epoch: false
-      group: 2
+      # Replaces: created_date_time, assigned_dt, refresh_token_valid_from_dt,
+      #          signin_session_valid_from_dt, approx_last_signin_dt, registration_dt
 GCP_BIGQUERY_CONTEXT:
   api: unstructuredlogentries
   timestamps:
@@ -81,32 +59,20 @@ GCP_COMPUTE_CONTEXT:
 GCP_DLP_CONTEXT:
   api: unstructuredlogentries
   timestamps:
+    # PRESERVED: base_time entry
     - name: gcp_dlp_entity_timestamp
       base_time: true
       dateformat: '%Y-%m-%dT%H:%M:%S'
       epoch: false
       group: 2
       pattern: '(timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")'
-    - name: gcp_dlp_entity_createTime
+    # NEW: Consolidated generic pattern
+    - name: GCP_DLP_generic_timestamp
       dateformat: '%Y-%m-%dT%H:%M:%S'
-      epoch: false
       group: 2
-      pattern: '(createTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")'
-    - name: gcp_dlp_entity_lastModifiedTime
-      dateformat: '%Y-%m-%dT%H:%M:%S'
-      epoch: false
-      group: 2
-      pattern: '(lastModifiedTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")'
-    - name: gcp_dlp_entity_expirationTime
-      dateformat: '%Y-%m-%dT%H:%M:%S'
-      epoch: false
-      group: 2
-      pattern: '(expirationTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")'
-    - name: gcp_dlp_entity_profileLastGenerated
-      dateformat: '%Y-%m-%dT%H:%M:%S'
-      epoch: false
-      group: 2
-      pattern: '(profileLastGenerated"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")'
+      pattern: '([^"]+Time"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+      # Replaces: gcp_dlp_entity_createTime, gcp_dlp_entity_lastModifiedTime,
+      #          gcp_dlp_entity_expirationTime, gcp_dlp_entity_profileLastGenerated
 GCP_IAM_ANALYSIS:
   api: entities
   timestamps:

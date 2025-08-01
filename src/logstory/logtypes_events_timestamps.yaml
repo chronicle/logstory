@@ -31,19 +31,23 @@ AWS_CLOUDTRAIL:
   api: unstructuredlogentries
   log_dir: /tmp/var/log/logstory
   timestamps:
+    # PRESERVED: base_time entry
     - name: event_time
       base_time: true
       dateformat: "%Y-%m-%dT%H:%M:%SZ"
       pattern: '(eventTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)(\s*")'
       group: 2
-    - name: creation_date
-      dateformat: "%Y-%m-%dT%H:%M:%SZ"
-      pattern: '(creationDate"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)(\s*")'
-      group: 2
+    # PRESERVED: Different format
     - name: create_date
       dateformat: "%b %d, %Y %H:%M:%S %p"
       pattern: '(createDate"\s*:\s*"?)([a-zA-Z]{3}\s\d+,\s\d{4}\s+\d+:\d+:\d+\s[AP]M)(\s*")'
       group: 2
+    # NEW: Consolidated generic pattern for ISO format
+    - name: AWS_CLOUDTRAIL_generic_iso_timestamp
+      dateformat: "%Y-%m-%dT%H:%M:%SZ"
+      pattern: '([^"]+"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)'
+      group: 2
+      # Replaces: creation_date
 
 AWS_WAF:
   api: unstructuredlogentries
@@ -167,19 +171,18 @@ GCP_CLOUDAUDIT:
   api: unstructuredlogentries
   log_dir: /tmp/var/log/logstory
   timestamps:
+    # PRESERVED: base_time entry
     - name: gcp_timestamp
       base_time: true
       dateformat: "%Y-%m-%dT%H:%M:%S"
       pattern: '(timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
       group: 2
-    - name: gcp_time
+    # NEW: Consolidated generic pattern
+    - name: GCP_generic_timestamp
       dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '(time"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      pattern: '([^"]+"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
       group: 2
-    - name: receiveTimestamp
-      dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '(receiveTimestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-      group: 2
+      # Replaces: gcp_time, receiveTimestamp
 
 GCP_CLOUD_NAT:
   api: unstructuredlogentries
@@ -255,59 +258,62 @@ GCP_SECURITYCENTER_THREAT:
   api: unstructuredlogentries
   log_dir: /tmp/var/log/logstory
   timestamps:
+    # PRESERVED: base_time entry
     - name: gcp_eventTime
       base_time: true
       dateformat: "%Y-%m-%dT%H:%M:%S"
       pattern: '("eventTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
       group: 2
-    - name: gcp_createTime
-      dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '("createTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-      group: 2
+    # PRESERVED: Different format
     - name: timestamp
       pattern: '("seconds":\s*")(\d{10})'
       dateformat: 'epoch'
       group: 2
+    # NEW: Consolidated generic pattern
+    - name: GCP_SECURITYCENTER_generic_timestamp
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '([^"]+Time"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+      group: 2
+      # Replaces: gcp_createTime
 
 GCP_SECURITYCENTER_MISCONFIGURATION:
   api: unstructuredlogentries
   log_dir: /tmp/var/log/logstory
   timestamps:
+    # PRESERVED: base_time entry
     - name: gcp_eventTime
       base_time: true
       dateformat: "%Y-%m-%dT%H:%M:%S"
       pattern: '("eventTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
       group: 2
-    - name: gcp_createTime
-      dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '("createTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-      group: 2
+    # PRESERVED: Different format
     - name: timestamp
       pattern: '("seconds":\s*")(\d{10})'
       dateformat: 'epoch'
       group: 2
+    # NEW: Consolidated generic pattern
+    - name: GCP_SECURITYCENTER_MISC_generic_timestamp
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '([^"]+Time"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+      group: 2
+      # Replaces: gcp_createTime
 
 GCP_VPC_FLOW:
   api: unstructuredlogentries
   log_dir: /tmp/var/log/logstory
   timestamps:
+    # PRESERVED: base_time entry
     - name: gcp_timestamp
       base_time: true
       dateformat: "%Y-%m-%dT%H:%M:%S"
       pattern: '(timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
       group: 2
-    - name: receiveTimestamp
+    # NEW: Consolidated generic pattern
+    - name: GCP_VPC_FLOW_generic_timestamp
       dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '(receiveTimestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      pattern: '([^"]+_?[Tt]ime[^"]*"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
       group: 2
-    - name: gcp_end_time
-      dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '(end_time"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-      group: 2
-    - name: gcp_start_time
-      dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '(start_time"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-      group: 2
+      # Replaces: receiveTimestamp, gcp_end_time, gcp_start_time
 
 GMAIL_LOGS:
   api: unstructuredlogentries
@@ -323,23 +329,18 @@ GUARDDUTY:
   api: unstructuredlogentries
   log_dir: /tmp/var/log/logstory
   timestamps:
+    # PRESERVED: base_time entry
     - name: updatedAt
       base_time: true
       dateformat: "%Y-%m-%dT%H:%M:%S"
       pattern: '("updatedAt"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
       group: 2
-    - name: createdAt
+    # NEW: Consolidated generic pattern
+    - name: GUARDDUTY_generic_timestamp
       dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '("createdAt"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      pattern: '("[^"]+At"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
       group: 2
-    - name: eventFirstSeen
-      dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '("eventFirstSeen"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-      group: 2
-    - name: eventLastSeen
-      dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '("eventLastSeen"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-      group: 2
+      # Replaces: createdAt, eventFirstSeen, eventLastSeen
 
 INFOBLOX_DHCP:
   api: unstructuredlogentries
@@ -379,23 +380,18 @@ OKTA:
   api: unstructuredlogentries
   log_dir: /tmp/var/log/logstory
   timestamps:
+    # PRESERVED: base_time entry
     - name: published
       base_time: true
       dateformat: "%Y-%m-%dT%H:%M:%S"
       pattern: '("published"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
       group: 2
-    - name: authMethodFirstVerificationTime
+    # NEW: Consolidated generic pattern
+    - name: OKTA_generic_timestamp
       dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '("authMethodFirstVerificationTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      pattern: '("[^"]+Time[^"]*"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
       group: 2
-    - name: authMethodSecondVerificationTime
-      dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '("authMethodSecondVerificationTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-      group: 2
-    - name: suspiciousActivityTimestamp
-      dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '("suspiciousActivityTimestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-      group: 2
+      # Replaces: authMethodFirstVerificationTime, authMethodSecondVerificationTime, suspiciousActivityTimestamp
 
 SURICATA_EVE:
   api: unstructuredlogentries
@@ -445,6 +441,7 @@ WINDOWS_SYSMON:
   api: unstructuredlogentries
   log_dir: /tmp/var/log/logstory
   timestamps:
+    # PRESERVED: base_time entry
     - name: UtcTimeQuotes
       base_time: true
       dateformat: "%Y-%m-%d %H:%M:%S"
@@ -459,10 +456,7 @@ WINDOWS_SYSMON:
         - '"UtcTime" :1970-01-01 00:00:00'
         - '"UtcTime": 1970-01-01 00:00:00'
         - '"UtcTime" : 1970-01-01 00:00:00'
-    - name: UtcTime
-      dateformat: "%Y-%m-%d %H:%M:%S"
-      pattern: '((?<!\w)UtcTime\s*:\s*)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
-      group: 2
+    # PRESERVED: Different formats
     - name: syslog_timestamp
       dateformat: "%b %d %H:%M:%S"
       pattern: '(<\d+>)([a-zA-Z]{3}\s+\d+\s+\d\d:\d\d:\d\d)'
@@ -471,41 +465,16 @@ WINDOWS_SYSMON:
       pattern: ("EventTime":)(\d+)(,)
       dateformat: 'epoch'
       group: 2
-    - name: EventTimeUTC
-      dateformat: "%Y-%m-%d %H:%M:%S"
-      pattern: '("EventTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
-      group: 2
     - name: EventReceivedTime
       pattern: ("EventReceivedTime":)(\d+)(,)
       dateformat: 'epoch'
       group: 2
-    - name: EventReceivedTimeUTC
+    # NEW: Consolidated generic pattern
+    - name: WINDOWS_SYSMON_generic_timestamp
       dateformat: "%Y-%m-%d %H:%M:%S"
-      pattern: '("EventReceivedTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
+      pattern: '([\w"]*Time[\w"]*\s*:\s*"?)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
       group: 2
-    - name: CreationUtcTime
-      dateformat: "%Y-%m-%d %H:%M:%S"
-      pattern: '((?<!\w)CreationUtcTime\s*:\s*)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
-      group: 2
-      examples:
-        - 'CreationUtcTime:1970-01-01 00:00:00'
-        - 'CreationUtcTime :1970-01-01 00:00:00'
-        - 'CreationUtcTime: 1970-01-01 00:00:00'
-        - 'CreationUtcTime : 1970-01-01 00:00:00'
-
-    - name: CreationUtcTimeQuotes
-      dateformat: "%Y-%m-%d %H:%M:%S"
-      pattern: '(CreationUtcTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
-      group: 2
-      examples:
-        - 'CreationUtcTime":"1970-01-01 00:00:00'
-        - 'CreationUtcTime" :"1970-01-01 00:00:00'
-        - 'CreationUtcTime": "1970-01-01 00:00:00'
-        - 'CreationUtcTime" : "1970-01-01 00:00:00'
-        - 'CreationUtcTime":1970-01-01 00:00:00'
-        - 'CreationUtcTime" :1970-01-01 00:00:00'
-        - 'CreationUtcTime": 1970-01-01 00:00:00'
-        - 'CreationUtcTime" : 1970-01-01 00:00:00'
+      # Replaces: UtcTime, EventTimeUTC, EventReceivedTimeUTC, CreationUtcTime, CreationUtcTimeQuotes
 
 POWERSHELL:
   api: unstructuredlogentries
@@ -567,6 +536,7 @@ WINEVTLOG:
   api: unstructuredlogentries
   log_dir: /tmp/var/log/logstory
   timestamps:
+    # PRESERVED: base_time and different formats
     - name: EventTime
       base_time: true
       pattern: ("EventTime":)(\d+)(,)
@@ -576,45 +546,39 @@ WINEVTLOG:
       dateformat: "%b %d %H:%M:%S"
       pattern: '(<\d+>)([a-zA-Z]{3}\s+\d+\s+\d\d:\d\d:\d\d)'
       group: 2
-    - name: EventTimeUTC
-      dateformat: "%Y-%m-%d %H:%M:%S"
-      pattern: '("EventTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})(\s*")'
-      group: 2
     - name: EventReceivedTime
       pattern: ("EventReceivedTime":)(\d+)(,)
       dateformat: 'epoch'
       group: 2
-    - name: EventReceivedTimeUTC
+    # NEW: Consolidated generic pattern
+    - name: WINEVTLOG_generic_timestamp
       dateformat: "%Y-%m-%d %H:%M:%S"
-      pattern: '("EventReceivedTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})(\s*")'
+      pattern: '("Event(?:Time|ReceivedTime)"\s*:\s*"?)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
       group: 2
+      # Replaces: EventTimeUTC, EventReceivedTimeUTC
 
 WINDOWS_DEFENDER_ATP:
   api: unstructuredlogentries
   log_dir: /tmp/var/log/logstory/var/log/microsoft/mdatp/
   timestamps:
+    # PRESERVED: base_time entry
     - name: time
       base_time: true
       dateformat: "%Y-%m-%dT%H:%M:%S"
       pattern: '("time"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
       group: 2
-    - name: Timestamp
+    # NEW: Consolidated generic pattern
+    - name: WINDOWS_DEFENDER_ATP_generic_timestamp
       dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '("Timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      pattern: '([^"]*(?:Time|Timestamp)[^"]*"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
       group: 2
-    - name: ProcessParentCreationTime
-      dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '(ProcessParentCreationTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-      group: 2
-    - name: ProcessCreationTime
-      dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '(ProcessCreationTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-      group: 2
+      # Replaces: Timestamp, ProcessParentCreationTime, ProcessCreationTime
 
 WINDOWS_DEFENDER_AV:
   api: unstructuredlogentries
   log_dir: /tmp/var/log/logstory
   timestamps:
+    # PRESERVED: base_time and different formats
     - name: EventTime
       base_time: true
       pattern: ("EventTime":)(\d+)(,)
@@ -628,68 +592,33 @@ WINDOWS_DEFENDER_AV:
       pattern: ("EventReceivedTime":)(\d+)(,)
       dateformat: 'epoch'
       group: 2
-    - name: DynamicSecurityIntelligenceCompilationTimestamp
+    # NEW: Consolidated generic pattern for US date format
+    - name: WINDOWS_DEFENDER_AV_generic_timestamp
       dateformat: "%m/%d/%Y %I:%M:%S %p"
-      pattern: '(Dynamic security intelligence Compilation Timestamp: )(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)'
+      pattern: '([^:]+(?:time|Timestamp)(?:[^:]*)?:\s*"?)(\d{1,2}/\d{1,2}/\d{4} \d{1,2}:\d{2}:\d{2} [AP]M)'
       group: 2
-    - name: DynamicSecurityIntelligenceCompilationTimestampQuotes
-      dateformat: "%m/%d/%Y %I:%M:%S %p"
-      pattern: '("Dynamic security intelligence Compilation Timestamp"\s*:\s*"?)(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)(\s*")'
-      group: 2
-    - name: LastQuickScanStartTime
-      dateformat: "%m/%d/%Y %I:%M:%S %p"
-      pattern: '(Last quick scan start time: )(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)'
-      group: 2
-    - name: LastQuickScanStartTimeQuotes
-      dateformat: "%m/%d/%Y %I:%M:%S %p"
-      pattern: '(Last quick scan start time"\s*:\s*"?)(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)(\s*")'
-      group: 2
-    - name: LastQuickScanEndTime
-      dateformat: "%m/%d/%Y %I:%M:%S %p"
-      pattern: '(Last quick scan end time: )(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)'
-      group: 2
-    - name: LastQuickScanEndTimeQuotes
-      dateformat: "%m/%d/%Y %I:%M:%S %p"
-      pattern: '(Last quick scan end time"\s*:\s*"?)(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)(\s*")'
-      group: 2
-    - name: Antivirus_security_intelligence_creation_time
-      dateformat: "%m/%d/%Y %I:%M:%S %p"
-      pattern: '(Antivirus security intelligence creation time: )(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)'
-      group: 2
-    - name: AV_security_intelligence_creation_time_quotes
-      dateformat: "%m/%d/%Y %I:%M:%S %p"
-      pattern: '(AV security intelligence creation time"\s*:\s*"?)(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)(\s*")'
-      group: 2
-    - name: AS_security_intelligence_creation_time_quotes
-      dateformat: "%m/%d/%Y %I:%M:%S %p"
-      pattern: '(AS security intelligence creation time"\s*:\s*"?)(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)(\s*")'
-      group: 2
-    - name: Antispyware_security_intelligence_creation_time
-      dateformat: "%m/%d/%Y %I:%M:%S %p"
-      pattern: '(Antispyware security intelligence creation time: )(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)'
-      group: 2
+      # Replaces all 10 security intelligence and scan time entries:
+      # DynamicSecurityIntelligenceCompilationTimestamp, DynamicSecurityIntelligenceCompilationTimestampQuotes,
+      # LastQuickScanStartTime, LastQuickScanStartTimeQuotes, LastQuickScanEndTime, LastQuickScanEndTimeQuotes,
+      # Antivirus_security_intelligence_creation_time, AV_security_intelligence_creation_time_quotes,
+      # AS_security_intelligence_creation_time_quotes, Antispyware_security_intelligence_creation_time
 
 MICROSOFT_DEFENDER_ENDPOINT:
   api: unstructuredlogentries
   log_dir: /tmp/var/log/logstory
   timestamps:
+    # PRESERVED: base_time entry
     - name: time
       base_time: true
       dateformat: "%Y-%m-%dT%H:%M:%S"
       pattern: '("time"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
       group: 2
-    - name: Timestamp
+    # NEW: Consolidated generic pattern
+    - name: MICROSOFT_DEFENDER_ENDPOINT_generic_timestamp
       dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '("Timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      pattern: '([^"]*(?:Time|Timestamp)[^"]*"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
       group: 2
-    - name: ProcessParentCreationTime
-      dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '(ProcessParentCreationTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-      group: 2
-    - name: ProcessCreationTime
-      dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '(ProcessCreationTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-      group: 2
+      # Replaces: Timestamp, ProcessParentCreationTime, ProcessCreationTime
 
 NIX_SYSTEM:
   api: unstructuredlogentries
@@ -705,19 +634,18 @@ OFFICE_365:
   api: unstructuredlogentries
   log_dir: /tmp/var/log/logstory
   timestamps:
+    # PRESERVED: base_time entry
     - name: creation_time
       base_time: true
       dateformat: "%Y-%m-%dT%H:%M:%S"
       pattern: '("CreationTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
       group: 2
-    - name: label_applied
+    # NEW: Consolidated generic pattern
+    - name: OFFICE_365_generic_timestamp
       dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '("LabelAppliedDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+      pattern: '("[^"]+(?:Time|DateTime|Sent)[^"]*":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
       group: 2
-    - name: sent
-      dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '("Sent":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
-      group: 2
+      # Replaces: label_applied, sent
 
 WORKSPACE_ACTIVITY:
   api: unstructuredlogentries
