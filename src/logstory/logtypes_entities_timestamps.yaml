@@ -16,13 +16,8 @@
 AZURE_AD_CONTEXT:
   api: unstructuredlogentries
   timestamps:
-    - name: BaseTimeStamp
+    - name: onPremisesLastSyncDateTime_base_time
       base_time: true
-      dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '("onPremisesLastSyncDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z)'
-      epoch: false
-      group: 2
-    - name: on_prem_last_sync_dt
       dateformat: "%Y-%m-%dT%H:%M:%S"
       pattern: '("onPremisesLastSyncDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z)'
       epoch: false

@@ -13,545 +13,491 @@
 # limitations under the License.
 
 ---
-  AUDITD:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: event_time
-        base_time: true
-        pattern: '(\s*?)(\d{10})(.\d+\s*)'
-        epoch: true
-        group: 2
-      - name: syslog_timestamp
-        dateformat: "%b %d %H:%M:%S"
-        pattern: '(<\d+>)([a-zA-Z]{3}\s+\d+\s+\d\d:\d\d:\d\d)'
-        epoch: false
-        group: 2
+AUDITD:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: event_time
+      base_time: true
+      pattern: '(\s*?)(\d{10})(.\d+\s*)'
+      dateformat: 'epoch'
+      group: 2
+    - name: syslog_timestamp
+      dateformat: "%b %d %H:%M:%S"
+      pattern: '(<\d+>)([a-zA-Z]{3}\s+\d+\s+\d\d:\d\d:\d\d)'
+      group: 2
 
-  AWS_CLOUDTRAIL:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: event_time
-        base_time: true
-        dateformat: "%Y-%m-%dT%H:%M:%SZ"
-        pattern: '(eventTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)(\s*")'
-        epoch: false
-        group: 2
-      - name: creation_date
-        dateformat: "%Y-%m-%dT%H:%M:%SZ"
-        pattern: '(creationDate"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)(\s*")'
-        epoch: false
-        group: 2
-      - name: create_date
-        dateformat: "%b %d, %Y %H:%M:%S %p"
-        pattern: '(createDate"\s*:\s*"?)([a-zA-Z]{3}\s\d+,\s\d{4}\s+\d+:\d+:\d+\s[AP]M)(\s*")'
-        epoch: false
-        group: 2
+AWS_CLOUDTRAIL:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: event_time
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%SZ"
+      pattern: '(eventTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)(\s*")'
+      group: 2
+    - name: creation_date
+      dateformat: "%Y-%m-%dT%H:%M:%SZ"
+      pattern: '(creationDate"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)(\s*")'
+      group: 2
+    - name: create_date
+      dateformat: "%b %d, %Y %H:%M:%S %p"
+      pattern: '(createDate"\s*:\s*"?)([a-zA-Z]{3}\s\d+,\s\d{4}\s+\d+:\d+:\d+\s[AP]M)(\s*")'
+      group: 2
 
-  AWS_WAF:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: timestamp
-        base_time: true
-        pattern: '("timestamp":\s*?)(\d{10})(.\d+\s*)'
-        epoch: true
-        group: 2
+AWS_WAF:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: timestamp
+      base_time: true
+      pattern: '("timestamp":\s*?)(\d{10})(.\d+\s*)'
+      dateformat: 'epoch'
+      group: 2
 
-  AZURE_AD:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: createdDateTime
-        base_time: true
-        dateformat: "%Y-%m-%dT%H:%M:%SZ"
-        pattern: '(createdDateTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)(\s*")'
-        epoch: false
-        group: 2
+AZURE_AD:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: createdDateTime
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%SZ"
+      pattern: '(createdDateTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)(\s*")'
+      group: 2
 
-  BRO_JSON:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory/usr/local/zeek/logs/current/
-    timestamps:
-      - name: zeek_ts
-        base_time: true
-        pattern: '("ts":\s*?)(\d{10})(.\d+\s*)'
-        epoch: true
-        group: 2
+BRO_JSON:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory/usr/local/zeek/logs/current/
+  timestamps:
+    - name: zeek_ts
+      base_time: true
+      pattern: '("ts":\s*?)(\d{10})(.\d+\s*)'
+      dateformat: 'epoch'
+      group: 2
 
-  CB_EDR:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory/usr/local/bin/cbagentd/logs/
-    timestamps:
-      - name: cb_edr_timestamp
-        base_time: true
-        pattern: '("timestamp":\s*)(\d{10})'
-        epoch: true
-        group: 2
+CB_EDR:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory/usr/local/bin/cbagentd/logs/
+  timestamps:
+    - name: cb_edr_timestamp
+      base_time: true
+      pattern: '("timestamp":\s*)(\d{10})'
+      dateformat: 'epoch'
+      group: 2
 
-  CHROME_MANAGEMENT:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory/var/log/chrome/
-    timestamps:
-      - name: chrome_timestamp
-        base_time: true
-        pattern: '("time":\s*")(\d{10})(.\d+\s*")?'
-        epoch: true
-        group: 2
+CHROME_MANAGEMENT:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory/var/log/chrome/
+  timestamps:
+    - name: chrome_timestamp
+      base_time: true
+      pattern: '("time":\s*")(\d{10})(.\d+\s*")?'
+      dateformat: 'epoch'
+      group: 2
 
-  CORELIGHT:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory/usr/local/corelight/logs/
-    timestamps:
-      - name: ts
-        base_time: true
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '("ts":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d{6}Z)'
-        epoch: false
-        group: 2
-      - name: corelight_leading
-        dateformat: "%b %d %H:%M:%S"
-        pattern: '(<134>)([a-zA-Z]{3}\s\d+\s\d{2}:\d{2}:\d{2})'
-        epoch: false
-        group: 2
-      - name: write_ts
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '("_write_ts":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d{6}Z)'
-        epoch: false
-        group: 2
+CORELIGHT:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory/usr/local/corelight/logs/
+  timestamps:
+    - name: ts
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("ts":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d{6}Z)'
+      group: 2
+    - name: corelight_leading
+      dateformat: "%b %d %H:%M:%S"
+      pattern: '(<134>)([a-zA-Z]{3}\s\d+\s\d{2}:\d{2}:\d{2})'
+      group: 2
+    - name: write_ts
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("_write_ts":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d{6}Z)'
+      group: 2
 
-  CS_DETECTS:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory/Library/CS/logs/
-    timestamps:
-      - name: all_timestamps
-        base_time: true
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
-        epoch: false
-        group: 1
+CS_DETECTS:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory/Library/CS/logs/
+  timestamps:
+    - name: all_timestamps
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+      group: 1
 
-  CS_EDR:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory/Library/CS/logs/
-    timestamps:
-      - name: cs_edr_timestamp
-        base_time: true
-        pattern: '("timestamp":\s*"?)(\d{10})'
-        epoch: true
-        group: 2
-      - name: ContextTimeStamp
-        pattern: '("ContextTimeStamp":\s*"?)(\d{10})'
-        epoch: true
-        group: 2
-      - name: OriginalEventTimeStamp
-        pattern: '("OriginalEventTimeStamp":\s*"?)(\d{10})'
-        epoch: true
-        group: 2
-      - name: ProcessStartTime
-        pattern: '("ProcessStartTime":\s*"?)(\d{10})'
-        epoch: true
-        group: 2
-      - name: AgentLocalTime
-        pattern: '("AgentLocalTime":\s*"?)(\d{10})'
-        epoch: true
-        group: 2
+CS_EDR:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory/Library/CS/logs/
+  timestamps:
+    - name: cs_edr_timestamp
+      base_time: true
+      pattern: '("timestamp":\s*"?)(\d{10})'
+      dateformat: 'epoch'
+      group: 2
+    - name: ContextTimeStamp
+      pattern: '("ContextTimeStamp":\s*"?)(\d{10})'
+      dateformat: 'epoch'
+      group: 2
+    - name: OriginalEventTimeStamp
+      pattern: '("OriginalEventTimeStamp":\s*"?)(\d{10})'
+      dateformat: 'epoch'
+      group: 2
+    - name: ProcessStartTime
+      pattern: '("ProcessStartTime":\s*"?)(\d{10})'
+      dateformat: 'epoch'
+      group: 2
+    - name: AgentLocalTime
+      pattern: '("AgentLocalTime":\s*"?)(\d{10})'
+      dateformat: 'epoch'
+      group: 2
 
-  FIREEYE_HX:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory/opt/fireeye/agent/log/
-    timestamps:
-      - name: base_fireeye_timestamp
-        base_time: true
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: ("event_at"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")
-        epoch: false
-        group: 2
-      - name: fireeye_timestamp
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: ("\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")
-        epoch: false
-        group: 2
+FIREEYE_HX:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory/opt/fireeye/agent/log/
+  timestamps:
+    - name: base_fireeye_timestamp
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: ("event_at"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")
+      group: 2
+    - name: fireeye_timestamp
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: ("\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")
+      group: 2
 
-  GCP_CLOUDAUDIT:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: gcp_timestamp
-        base_time: true
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '(timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
-      - name: gcp_time
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '(time"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
-      - name: receiveTimestamp
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '(receiveTimestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
+GCP_CLOUDAUDIT:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: gcp_timestamp
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '(timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
+    - name: gcp_time
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '(time"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
+    - name: receiveTimestamp
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '(receiveTimestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
 
-  GCP_CLOUD_NAT:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: gcp_timestamp
-        base_time: true
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '(timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
-      - name: receiveTimestamp
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '(receiveTimestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
+GCP_CLOUD_NAT:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: gcp_timestamp
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '(timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
+    - name: receiveTimestamp
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '(receiveTimestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
 
-  GCP_DNS:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: gcp_timestamp
-        base_time: true
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '(timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
-      - name: receiveTimestamp
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '(receiveTimestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
+GCP_DNS:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: gcp_timestamp
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '(timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
+    - name: receiveTimestamp
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '(receiveTimestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
 
-  GCP_FIREWALL:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: gcp_timestamp
-        base_time: true
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '(timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")'
-        epoch: false
-        group: 2
-      - name: gcp_receiveTimestamp
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '(receiveTimestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")'
-        epoch: false
-        group: 2
+GCP_FIREWALL:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: gcp_timestamp
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '(timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")'
+      group: 2
+    - name: gcp_receiveTimestamp
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '(receiveTimestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")'
+      group: 2
 
-  GCP_IDS:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: gcp_timestamp
-        base_time: true
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '(timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z")'
-        epoch: false
-        group: 2
-      - name: receiveTimestamp
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '(receiveTimestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
+GCP_IDS:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: gcp_timestamp
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '(timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z")'
+      group: 2
+    - name: receiveTimestamp
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '(receiveTimestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
 
-  GCP_LOADBALANCING:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: gcp_timestamp
-        base_time: true
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '(timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
-      - name: receiveTimestamp
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '(receiveTimestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
+GCP_LOADBALANCING:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: gcp_timestamp
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '(timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
+    - name: receiveTimestamp
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '(receiveTimestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
 
-  GCP_SECURITYCENTER_THREAT:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: gcp_eventTime
-        base_time: true
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '("eventTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
-      - name: gcp_createTime
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '("createTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
-      - name: timestamp
-        pattern: '("seconds":\s*")(\d{10})'
-        epoch: true
-        group: 2
+GCP_SECURITYCENTER_THREAT:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: gcp_eventTime
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("eventTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
+    - name: gcp_createTime
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("createTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
+    - name: timestamp
+      pattern: '("seconds":\s*")(\d{10})'
+      dateformat: 'epoch'
+      group: 2
 
-  GCP_SECURITYCENTER_MISCONFIGURATION:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: gcp_eventTime
-        base_time: true
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '("eventTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
-      - name: gcp_createTime
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '("createTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
-      - name: timestamp
-        pattern: '("seconds":\s*")(\d{10})'
-        epoch: true
-        group: 2
+GCP_SECURITYCENTER_MISCONFIGURATION:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: gcp_eventTime
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("eventTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
+    - name: gcp_createTime
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("createTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
+    - name: timestamp
+      pattern: '("seconds":\s*")(\d{10})'
+      dateformat: 'epoch'
+      group: 2
 
-  GCP_VPC_FLOW:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: gcp_timestamp
-        base_time: true
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '(timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
-      - name: receiveTimestamp
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '(receiveTimestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
-      - name: gcp_end_time
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '(end_time"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
-      - name: gcp_start_time
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '(start_time"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
+GCP_VPC_FLOW:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: gcp_timestamp
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '(timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
+    - name: receiveTimestamp
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '(receiveTimestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
+    - name: gcp_end_time
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '(end_time"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
+    - name: gcp_start_time
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '(start_time"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
 
-  GMAIL_LOGS:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: timestamp
-        base_time: true
-        pattern: '("timestamp_usec":\s+")(\d{10})(\d{6})'
-        epoch: true
-        group: 2
+GMAIL_LOGS:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: timestamp
+      base_time: true
+      pattern: '("timestamp_usec":\s+")(\d{10})(\d{6})'
+      dateformat: 'epoch'
+      group: 2
 
-  GUARDDUTY:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: updatedAt
-        base_time: true
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '("updatedAt"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
-      - name: createdAt
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '("createdAt"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
-      - name: eventFirstSeen
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '("eventFirstSeen"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
-      - name: eventLastSeen
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '("eventLastSeen"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
+GUARDDUTY:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: updatedAt
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("updatedAt"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
+    - name: createdAt
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("createdAt"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
+    - name: eventFirstSeen
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("eventFirstSeen"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
+    - name: eventLastSeen
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("eventLastSeen"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
 
-  INFOBLOX_DHCP:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: syslog_timestamp
-        base_time: true
-        dateformat: "%b %d %H:%M:%S"
-        pattern: '(<\d+>.*)([a-zA-Z]{3}\s+\d+\s+\d\d:\d\d:\d\d)'
-        epoch: false
-        group: 2
+INFOBLOX_DHCP:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: syslog_timestamp
+      base_time: true
+      dateformat: "%b %d %H:%M:%S"
+      pattern: '(<\d+>.*)([a-zA-Z]{3}\s+\d+\s+\d\d:\d\d:\d\d)'
+      group: 2
 
-  EXTRAHOP_DNS:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: syslog_timestamp
-        base_time: true
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '(<\d+>.*)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z)'
-        epoch: false
-        group: 2
+EXTRAHOP_DNS:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: syslog_timestamp
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '(<\d+>.*)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z)'
+      group: 2
 
-  LIMACHARLIE_EDR:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: TIMESTAMP
-        base_time: true
-        pattern: '("TIMESTAMP":)(\d{10})(\d{3})'
-        epoch: true
-        group: 2
-      - name: event_time
-        pattern: '("event_time":)(\d{10})(\d{3})'
-        epoch: true
-        group: 2
+LIMACHARLIE_EDR:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: TIMESTAMP
+      base_time: true
+      pattern: '("TIMESTAMP":)(\d{10})(\d{3})'
+      dateformat: 'epoch'
+      group: 2
+    - name: event_time
+      pattern: '("event_time":)(\d{10})(\d{3})'
+      dateformat: 'epoch'
+      group: 2
 
-  OKTA:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: published
-        base_time: true
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '("published"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
-      - name: authMethodFirstVerificationTime
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '("authMethodFirstVerificationTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
-      - name: authMethodSecondVerificationTime
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '("authMethodSecondVerificationTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
-      - name: suspiciousActivityTimestamp
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '("suspiciousActivityTimestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
+OKTA:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: published
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("published"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
+    - name: authMethodFirstVerificationTime
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("authMethodFirstVerificationTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
+    - name: authMethodSecondVerificationTime
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("authMethodSecondVerificationTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
+    - name: suspiciousActivityTimestamp
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("suspiciousActivityTimestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
 
-  SURICATA_EVE:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: timestamp
-        base_time: true
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '("timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
-        epoch: false
-        group: 2
-      - name: start
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '("start"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
-        epoch: false
-        group: 2
+SURICATA_EVE:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: timestamp
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+      group: 2
+    - name: start
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("start"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+      group: 2
 
-  TANIUM_TH:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: eventTimestamp
-        base_time: true
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '("eventTimestamp":\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+)'
-        epoch: false
-        group: 2
+TANIUM_TH:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: eventTimestamp
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("eventTimestamp":\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+)'
+      group: 2
 
-  UDM:
-    api: udmevents
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: udm_event_timestamp
-        base_time: true
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '("event_timestamp":|"eventTimestamp":\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
-        epoch: false
-        group: 2
+UDM:
+  api: udmevents
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: udm_event_timestamp
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("event_timestamp":|"eventTimestamp":\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+      group: 2
 
-  WINDOWS_DHCP:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: dhcp_timestamp
-        base_time: true
-        dateformat: "%m/%d/%y,%H:%M:%S"
-        pattern: '(,)(\d\d\/\d\d\/\d\d,\d\d:\d\d:\d\d)(,)'
-        epoch: false
-        group: 2
+WINDOWS_DHCP:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: dhcp_timestamp
+      base_time: true
+      dateformat: "%m/%d/%y,%H:%M:%S"
+      pattern: '(,)(\d\d\/\d\d\/\d\d,\d\d:\d\d:\d\d)(,)'
+      group: 2
 
-  WINDOWS_SYSMON:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: UtcTimeQuotes
-        base_time: true
-        dateformat: "%Y-%m-%d %H:%M:%S"
-        pattern: '("UtcTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
-        epoch: false
-        group: 2
-        examples:
-          - '"UtcTime":"1970-01-01 00:00:00'
-          - '"UtcTime" :"1970-01-01 00:00:00'
-          - '"UtcTime": "1970-01-01 00:00:00'
-          - '"UtcTime" : "1970-01-01 00:00:00'
-          - '"UtcTime":1970-01-01 00:00:00'
-          - '"UtcTime" :1970-01-01 00:00:00'
-          - '"UtcTime": 1970-01-01 00:00:00'
-          - '"UtcTime" : 1970-01-01 00:00:00'
-      - name: UtcTime
-        dateformat: "%Y-%m-%d %H:%M:%S"
-        pattern: '(UtcTime\s*:\s*)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
-        epoch: false
-        group: 2
-      - name: syslog_timestamp
-        dateformat: "%b %d %H:%M:%S"
-        pattern: '(<\d+>)([a-zA-Z]{3}\s+\d+\s+\d\d:\d\d:\d\d)'
-        epoch: false
-        group: 2
-      - name: EventTime
-        pattern: ("EventTime":)(\d+)(,)
-        epoch: true
-        group: 2
-      - name: EventTimeUTC
-        dateformat: "%Y-%m-%d %H:%M:%S"
-        pattern: '("EventTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
-        epoch: false
-        group: 2
-      - name: EventReceivedTime
-        pattern: ("EventReceivedTime":)(\d+)(,)
-        epoch: true
-        group: 2
-      - name: EventReceivedTimeUTC
-        dateformat: "%Y-%m-%d %H:%M:%S"
-        pattern: '("EventReceivedTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
-        epoch: false
-        group: 2
-      - name: CreationUtcTime
-        dateformat: "%Y-%m-%d %H:%M:%S"
-        pattern: '(CreationUtcTime\s*:\s*)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
-        epoch: false
-        group: 2
-        examples:
-          - 'CreationUtcTime:1970-01-01 00:00:00'
-          - 'CreationUtcTime :1970-01-01 00:00:00'
-          - 'CreationUtcTime: 1970-01-01 00:00:00'
-          - 'CreationUtcTime : 1970-01-01 00:00:00'
+WINDOWS_SYSMON:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: UtcTimeQuotes
+      base_time: true
+      dateformat: "%Y-%m-%d %H:%M:%S"
+      pattern: '("UtcTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
+      group: 2
+      examples:
+        - '"UtcTime":"1970-01-01 00:00:00'
+        - '"UtcTime" :"1970-01-01 00:00:00'
+        - '"UtcTime": "1970-01-01 00:00:00'
+        - '"UtcTime" : "1970-01-01 00:00:00'
+        - '"UtcTime":1970-01-01 00:00:00'
+        - '"UtcTime" :1970-01-01 00:00:00'
+        - '"UtcTime": 1970-01-01 00:00:00'
+        - '"UtcTime" : 1970-01-01 00:00:00'
+    - name: UtcTime
+      dateformat: "%Y-%m-%d %H:%M:%S"
+      pattern: '(UtcTime\s*:\s*)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
+      group: 2
+    - name: syslog_timestamp
+      dateformat: "%b %d %H:%M:%S"
+      pattern: '(<\d+>)([a-zA-Z]{3}\s+\d+\s+\d\d:\d\d:\d\d)'
+      group: 2
+    - name: EventTime
+      pattern: ("EventTime":)(\d+)(,)
+      dateformat: 'epoch'
+      group: 2
+    - name: EventTimeUTC
+      dateformat: "%Y-%m-%d %H:%M:%S"
+      pattern: '("EventTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
+      group: 2
+    - name: EventReceivedTime
+      pattern: ("EventReceivedTime":)(\d+)(,)
+      dateformat: 'epoch'
+      group: 2
+    - name: EventReceivedTimeUTC
+      dateformat: "%Y-%m-%d %H:%M:%S"
+      pattern: '("EventReceivedTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
+      group: 2
+    - name: CreationUtcTime
+      dateformat: "%Y-%m-%d %H:%M:%S"
+      pattern: '(CreationUtcTime\s*:\s*)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
+      group: 2
+      examples:
+        - 'CreationUtcTime:1970-01-01 00:00:00'
+        - 'CreationUtcTime :1970-01-01 00:00:00'
+        - 'CreationUtcTime: 1970-01-01 00:00:00'
+        - 'CreationUtcTime : 1970-01-01 00:00:00'
 
-      - name: CreationUtcTimeQuotes
-        dateformat: "%Y-%m-%d %H:%M:%S"
-        pattern: '(CreationUtcTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
-        epoch: false
-        group: 2
-        examples:
+    - name: CreationUtcTimeQuotes
+      dateformat: "%Y-%m-%d %H:%M:%S"
+      pattern: '(CreationUtcTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
+      group: 2
+      examples:
         - 'CreationUtcTime":"1970-01-01 00:00:00'
         - 'CreationUtcTime" :"1970-01-01 00:00:00'
         - 'CreationUtcTime": "1970-01-01 00:00:00'
@@ -561,304 +507,258 @@
         - 'CreationUtcTime": 1970-01-01 00:00:00'
         - 'CreationUtcTime" : 1970-01-01 00:00:00'
 
-  POWERSHELL:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory/Library/Logs/Microsoft/PowerShell/
-    timestamps:
-      - name: EventTime
-        pattern: ("EventTime":)(\d+)(,)
-        epoch: true
-        group: 2
-        base_time: true
-      - name: syslog_timestamp
-        dateformat: "%b %d %H:%M:%S"
-        pattern: '(<\d+>)([a-zA-Z]{3}\s+\d+\s+\d\d:\d\d:\d\d)'
-        epoch: false
-        group: 2
-      - name: EventReceivedTime
-        pattern: ("EventReceivedTime":)(\d+)(,)
-        epoch: true
-        group: 2
+POWERSHELL:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory/Library/Logs/Microsoft/PowerShell/
+  timestamps:
+    - name: EventTime
+      pattern: ("EventTime":)(\d+)(,)
+      dateformat: 'epoch'
+      group: 2
+      base_time: true
+    - name: syslog_timestamp
+      dateformat: "%b %d %H:%M:%S"
+      pattern: '(<\d+>)([a-zA-Z]{3}\s+\d+\s+\d\d:\d\d:\d\d)'
+      group: 2
+    - name: EventReceivedTime
+      pattern: ("EventReceivedTime":)(\d+)(,)
+      dateformat: 'epoch'
+      group: 2
 
-  SENTINEL_EDR:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: timestamp
-        base_time: true
-        pattern: '("@timestamp":)(\d{10})'
-        epoch: true
-        group: 2
-      - name: millisecondsSinceEpoch
-        pattern: '("millisecondsSinceEpoch"\s*:\s*"?)(\d{10})'
-        epoch: true
-        group: 2
+SENTINEL_EDR:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: timestamp
+      base_time: true
+      pattern: '("@timestamp":)(\d{10})'
+      dateformat: 'epoch'
+      group: 2
+    - name: millisecondsSinceEpoch
+      pattern: '("millisecondsSinceEpoch"\s*:\s*"?)(\d{10})'
+      dateformat: 'epoch'
+      group: 2
 
-  SEP:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: syslog_timestamp
-        base_time: true
-        dateformat: "%b %d %H:%M:%S"
-        pattern: '(<\d+>)([a-zA-Z]{3}\s+\d+\s+\d\d:\d\d:\d\d)'
-        epoch: false
-        group: 2
-      - name: time
-        dateformat: "%Y-%m-%d %H:%M:%S"
-        pattern: '(Event time: )(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
-        epoch: false
-        group: 2
+SEP:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: syslog_timestamp
+      base_time: true
+      dateformat: "%b %d %H:%M:%S"
+      pattern: '(<\d+>)([a-zA-Z]{3}\s+\d+\s+\d\d:\d\d:\d\d)'
+      group: 2
+    - name: time
+      dateformat: "%Y-%m-%d %H:%M:%S"
+      pattern: '(Event time: )(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
+      group: 2
 
-  SQUID_WEBPROXY:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: syslog_timestamp
-        base_time: true
-        pattern: '(\d{10})(.\d{3})'
-        epoch: true
-        group: 1
+SQUID_WEBPROXY:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: syslog_timestamp
+      base_time: true
+      pattern: '(\d{10})(.\d{3})'
+      dateformat: 'epoch'
+      group: 1
 
-  WINEVTLOG:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: EventTime
-        base_time: true
-        pattern: ("EventTime":)(\d+)(,)
-        epoch: true
-        group: 2
-      - name: syslog_timestamp
-        dateformat: "%b %d %H:%M:%S"
-        pattern: '(<\d+>)([a-zA-Z]{3}\s+\d+\s+\d\d:\d\d:\d\d)'
-        epoch: false
-        group: 2
-      - name: EventTimeUTC
-        dateformat: "%Y-%m-%d %H:%M:%S"
-        pattern: '("EventTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})(\s*")'
-        epoch: false
-        group: 2
-      - name: EventReceivedTime
-        pattern: ("EventReceivedTime":)(\d+)(,)
-        epoch: true
-        group: 2
-      - name: EventReceivedTimeUTC
-        dateformat: "%Y-%m-%d %H:%M:%S"
-        pattern: '("EventReceivedTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})(\s*")'
-        epoch: false
-        group: 2
+WINEVTLOG:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: EventTime
+      base_time: true
+      pattern: ("EventTime":)(\d+)(,)
+      dateformat: 'epoch'
+      group: 2
+    - name: syslog_timestamp
+      dateformat: "%b %d %H:%M:%S"
+      pattern: '(<\d+>)([a-zA-Z]{3}\s+\d+\s+\d\d:\d\d:\d\d)'
+      group: 2
+    - name: EventTimeUTC
+      dateformat: "%Y-%m-%d %H:%M:%S"
+      pattern: '("EventTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})(\s*")'
+      group: 2
+    - name: EventReceivedTime
+      pattern: ("EventReceivedTime":)(\d+)(,)
+      dateformat: 'epoch'
+      group: 2
+    - name: EventReceivedTimeUTC
+      dateformat: "%Y-%m-%d %H:%M:%S"
+      pattern: '("EventReceivedTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})(\s*")'
+      group: 2
 
-  WINDOWS_DEFENDER_ATP:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory/var/log/microsoft/mdatp/
-    timestamps:
-      - name: time
-        base_time: true
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '("time"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
-      - name: Timestamp
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '("Timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
-      - name: ProcessParentCreationTime
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '(ProcessParentCreationTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
-      - name: ProcessCreationTime
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '(ProcessCreationTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
+WINDOWS_DEFENDER_ATP:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory/var/log/microsoft/mdatp/
+  timestamps:
+    - name: time
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("time"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
+    - name: Timestamp
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("Timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
+    - name: ProcessParentCreationTime
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '(ProcessParentCreationTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
+    - name: ProcessCreationTime
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '(ProcessCreationTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
 
-  WINDOWS_DEFENDER_AV:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: EventTime
-        base_time: true
-        pattern: ("EventTime":)(\d+)(,)
-        epoch: true
-        group: 2
-      - name: syslog_timestamp
-        dateformat: "%b %d %H:%M:%S"
-        pattern: '(<\d+>)([a-zA-Z]{3}\s+\d+\s+\d\d:\d\d:\d\d)'
-        epoch: false
-        group: 2
-      - name: EventReceivedTime
-        pattern: ("EventReceivedTime":)(\d+)(,)
-        epoch: true
-        group: 2
-      - name: DynamicSecurityIntelligenceCompilationTimestamp
-        dateformat: "%m/%d/%Y %I:%M:%S %p"
-        pattern: '(Dynamic security intelligence Compilation Timestamp: )(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)'
-        epoch: false
-        group: 2
-      - name: DynamicSecurityIntelligenceCompilationTimestampQuotes
-        dateformat: "%m/%d/%Y %I:%M:%S %p"
-        pattern: '("Dynamic security intelligence Compilation Timestamp"\s*:\s*"?)(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)(\s*")'
-        epoch: false
-        group: 2
-      - name: LastQuickScanStartTime
-        dateformat: "%m/%d/%Y %I:%M:%S %p"
-        pattern: '(Last quick scan start time: )(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)'
-        epoch: false
-        group: 2
-      - name: LastQuickScanStartTimeQuotes
-        dateformat: "%m/%d/%Y %I:%M:%S %p"
-        pattern: '(Last quick scan start time"\s*:\s*"?)(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)(\s*")'
-        epoch: false
-        group: 2
-      - name: LastQuickScanEndTime
-        dateformat: "%m/%d/%Y %I:%M:%S %p"
-        pattern: '(Last quick scan end time: )(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)'
-        epoch: false
-        group: 2
-      - name: LastQuickScanEndTimeQuotes
-        dateformat: "%m/%d/%Y %I:%M:%S %p"
-        pattern: '(Last quick scan end time"\s*:\s*"?)(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)(\s*")'
-        epoch: false
-        group: 2
-      - name: Antivirus_security_intelligence_creation_time
-        dateformat: "%m/%d/%Y %I:%M:%S %p"
-        pattern: '(Antivirus security intelligence creation time: )(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)'
-        epoch: false
-        group: 2
-      - name: AV_security_intelligence_creation_time_quotes
-        dateformat: "%m/%d/%Y %I:%M:%S %p"
-        pattern: '(AV security intelligence creation time"\s*:\s*"?)(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)(\s*")'
-        epoch: false
-        group: 2
-      - name: AS_security_intelligence_creation_time_quotes
-        dateformat: "%m/%d/%Y %I:%M:%S %p"
-        pattern: '(AS security intelligence creation time"\s*:\s*"?)(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)(\s*")'
-        epoch: false
-        group: 2
-      - name: Antispyware_security_intelligence_creation_time
-        dateformat: "%m/%d/%Y %I:%M:%S %p"
-        pattern: '(Antispyware security intelligence creation time: )(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)'
-        epoch: false
-        group: 2
+WINDOWS_DEFENDER_AV:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: EventTime
+      base_time: true
+      pattern: ("EventTime":)(\d+)(,)
+      dateformat: 'epoch'
+      group: 2
+    - name: syslog_timestamp
+      dateformat: "%b %d %H:%M:%S"
+      pattern: '(<\d+>)([a-zA-Z]{3}\s+\d+\s+\d\d:\d\d:\d\d)'
+      group: 2
+    - name: EventReceivedTime
+      pattern: ("EventReceivedTime":)(\d+)(,)
+      dateformat: 'epoch'
+      group: 2
+    - name: DynamicSecurityIntelligenceCompilationTimestamp
+      dateformat: "%m/%d/%Y %I:%M:%S %p"
+      pattern: '(Dynamic security intelligence Compilation Timestamp: )(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)'
+      group: 2
+    - name: DynamicSecurityIntelligenceCompilationTimestampQuotes
+      dateformat: "%m/%d/%Y %I:%M:%S %p"
+      pattern: '("Dynamic security intelligence Compilation Timestamp"\s*:\s*"?)(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)(\s*")'
+      group: 2
+    - name: LastQuickScanStartTime
+      dateformat: "%m/%d/%Y %I:%M:%S %p"
+      pattern: '(Last quick scan start time: )(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)'
+      group: 2
+    - name: LastQuickScanStartTimeQuotes
+      dateformat: "%m/%d/%Y %I:%M:%S %p"
+      pattern: '(Last quick scan start time"\s*:\s*"?)(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)(\s*")'
+      group: 2
+    - name: LastQuickScanEndTime
+      dateformat: "%m/%d/%Y %I:%M:%S %p"
+      pattern: '(Last quick scan end time: )(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)'
+      group: 2
+    - name: LastQuickScanEndTimeQuotes
+      dateformat: "%m/%d/%Y %I:%M:%S %p"
+      pattern: '(Last quick scan end time"\s*:\s*"?)(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)(\s*")'
+      group: 2
+    - name: Antivirus_security_intelligence_creation_time
+      dateformat: "%m/%d/%Y %I:%M:%S %p"
+      pattern: '(Antivirus security intelligence creation time: )(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)'
+      group: 2
+    - name: AV_security_intelligence_creation_time_quotes
+      dateformat: "%m/%d/%Y %I:%M:%S %p"
+      pattern: '(AV security intelligence creation time"\s*:\s*"?)(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)(\s*")'
+      group: 2
+    - name: AS_security_intelligence_creation_time_quotes
+      dateformat: "%m/%d/%Y %I:%M:%S %p"
+      pattern: '(AS security intelligence creation time"\s*:\s*"?)(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)(\s*")'
+      group: 2
+    - name: Antispyware_security_intelligence_creation_time
+      dateformat: "%m/%d/%Y %I:%M:%S %p"
+      pattern: '(Antispyware security intelligence creation time: )(\d+/\d+/\d{4} \d+:\d+:\d+ [AP]M)'
+      group: 2
 
-  MICROSOFT_DEFENDER_ENDPOINT:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: time
-        base_time: true
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '("time"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
-      - name: Timestamp
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '("Timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
-      - name: ProcessParentCreationTime
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '(ProcessParentCreationTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
-      - name: ProcessCreationTime
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '(ProcessCreationTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
+MICROSOFT_DEFENDER_ENDPOINT:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: time
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("time"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
+    - name: Timestamp
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("Timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
+    - name: ProcessParentCreationTime
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '(ProcessParentCreationTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
+    - name: ProcessCreationTime
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '(ProcessCreationTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
 
-  NIX_SYSTEM:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: syslog_timestamp
-        base_time: true
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
-        epoch: false
-        group: 1
+NIX_SYSTEM:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: syslog_timestamp
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+      group: 1
 
-  OFFICE_365:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: creation_time
-        base_time: true
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '("CreationTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
-        epoch: false
-        group: 2
-      - name: label_applied
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '("LabelAppliedDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
-        epoch: false
-        group: 2
-      - name: sent
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '("Sent":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
-        epoch: false
-        group: 2
+OFFICE_365:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: creation_time
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("CreationTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+      group: 2
+    - name: label_applied
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("LabelAppliedDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+      group: 2
+    - name: sent
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("Sent":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+      group: 2
 
-  WINDOWS_AD:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: base_created
-        base_time: true
-        pattern: '("Created"\s*:\s*"\\\\\/Date\(-?)(\d{10})(\d{3})'
-        epoch: true
-        group: 2
-      - name: Date
-        pattern: '("\\\\\/Date\(-?)(\d{10})(\d{3})'
-        epoch: true
-        group: 2
+WORKSPACE_ACTIVITY:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: time
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("time"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
+      group: 2
 
-  WORKSPACE_ACTIVITY:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: time
-        base_time: true
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '("time"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*")'
-        epoch: false
-        group: 2
+WORKSPACE_ALERTS:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: time
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+      group: 1
 
-  WORKSPACE_ALERTS:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: time
-        base_time: true
-        dateformat: "%Y-%m-%dT%H:%M:%S"
-        pattern: '(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
-        epoch: false
-        group: 1
+ZSCALER_WEBPROXY:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: zscaler_event_timestamp
+      base_time: true
+      dateformat: "%Y-%m-%d %H:%M:%S"
+      pattern: '(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2})'
+      group: 1
 
-  ZSCALER_WEBPROXY:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: zscaler_event_timestamp
-        base_time: true
-        dateformat: "%Y-%m-%d %H:%M:%S"
-        pattern: '(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2})'
-        epoch: false
-        group: 1
-
-  GITHUB:
-    api: unstructuredlogentries
-    log_dir: /tmp/var/log/logstory
-    timestamps:
-      - name: created_at
-        base_time: true
-        pattern: '(\"created_at\":)(\d{10})(\d{3})'
-        epoch: true
-        group: 2
-      - name: timestamp
-        pattern: '("@timestamp":)(\d{10})'
-        epoch: true
-        group: 2
+GITHUB:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: created_at
+      base_time: true
+      pattern: '(\"created_at\":)(\d{10})(\d{3})'
+      dateformat: 'epoch'
+      group: 2
+    - name: timestamp
+      pattern: '("@timestamp":)(\d{10})'
+      dateformat: 'epoch'
+      group: 2
