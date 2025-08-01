@@ -62,11 +62,11 @@ GCP_BIGQUERY_CONTEXT:
   timestamps:
     - name: gcp_creationTime
       base_time: true
-      epoch: true
+      dateformat: 'epoch'
       group: 2
       pattern: '("creationTime":\s*"?)(\d{10})'
     - name: gcp_expirationTime
-      epoch: true
+      dateformat: 'epoch'
       group: 2
       pattern: '("expirationTime":\s*"?)(\d{10})'
 GCP_COMPUTE_CONTEXT:
@@ -117,7 +117,7 @@ GCP_IAM_ANALYSIS:
   timestamps:
     - name: gcp_iam_entity_timestamp
       base_time: true
-      epoch: true
+      dateformat: 'epoch'
       group: 2
       pattern: '("seconds":\s*"?)(\d+)(\s*")'
 GCP_IAM_CONTEXT:
@@ -134,7 +134,7 @@ MISP_IOC:
   timestamps:
     - name: time
       base_time: true
-      epoch: true
+      dateformat: 'epoch'
       group: 1
       pattern: '(\d{10})'
     - name: date
@@ -165,20 +165,60 @@ WINDOWS_AD_OLD:
   timestamps:
     - name: Date
       base_time: true
-      epoch: true
+      dateformat: 'epoch'
       group: 3
       pattern: '("\\/Date\()(-?)(\d{10})(\d{3})'
 WINDOWS_AD:
   api: unstructuredlogentries
   timestamps:
-    - name: CreatedDate
+    - name: Created
       base_time: true
-      epoch: true
+      dateformat: 'epoch'
       group: 2
       pattern: '("Created":"\\\/Date\()(\d{10})(\d{3})'
-    - name: Date
-      pattern: '(?<!Created":)("\\\/Date\()(\d{10})(\d{3})'
-      epoch: true
+    - name: whenCreatedDate
+      dateformat: 'epoch'
+      group: 2
+      pattern: '("whenCreated":"\\\/Date\()(\d{10})(\d{3})'
+    - name: LastLogonDate
+      dateformat: 'epoch'
+      group: 2
+      pattern: '("LastLogonDate":"\\\/Date\()(\d{10})(\d{3})'
+    - name: createTimeStamp
+      dateformat: 'epoch'
+      group: 2
+      pattern: '("createTimeStamp":"\\\/Date\()(\d{10})(\d{3})'
+    - name: Modified
+      dateformat: 'epoch'
+      group: 2
+      pattern: '("Modified":"\\\/Date\()(\d{10})(\d{3})'
+    - name: modifyTimeStamp
+      dateformat: 'epoch'
+      group: 2
+      pattern: '("modifyTimeStamp":"\\\/Date\()(\d{10})(\d{3})'
+    - name: PasswordLastSet
+      dateformat: 'epoch'
+      group: 2
+      pattern: '("PasswordLastSet":"\\\/Date\()(\d{10})(\d{3})'
+    - name: whenChanged
+      dateformat: 'epoch'
+      group: 2
+      pattern: '("whenChanged":"\\\/Date\()(\d{10})(\d{3})'
+    - name: lastLogonWinFileTime
+      pattern: '("lastLogon":)(\d{18})'
+      dateformat: 'filetime'
+      group: 2
+    - name: badPasswordTimeWinFileTime
+      pattern: '("badPasswordTime":)(\d{18})'
+      dateformat: 'filetime'
+      group: 2
+    - name: lastLogonTimestampTimeWinFileTime
+      pattern: '("lastLogonTimestamp":)(\d{18})'
+      dateformat: 'filetime'
+      group: 2
+    - name: pwdLastSetTimeWinFileTime
+      pattern: '("pwdLastSet":)(\d{18})'
+      dateformat: 'filetime'
       group: 2
 WORKSPACE_USERS:
   api: unstructuredlogentries

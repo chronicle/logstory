@@ -185,16 +185,24 @@ repos:
 
                         for i, ts in enumerate(timestamps):
                             # Check required fields
-                            required = ['name', 'pattern', 'epoch', 'group']
+                            required = ['name', 'pattern', 'group']
                             for field in required:
                                 if field not in ts:
                                     raise ValueError(f"{log_type}[{i}] missing {field}")
 
-                            # Check epoch/dateformat consistency
-                            if ts.get('epoch') is True and 'dateformat' in ts:
-                                raise ValueError(f"{log_type}[{i}] has epoch=true with dateformat")
-                            elif ts.get('epoch') is False and 'dateformat' not in ts:
-                                raise ValueError(f"{log_type}[{i}] has epoch=false without dateformat")
+                            # Check dateformat field is present (new consistent approach)
+                            if 'dateformat' not in ts:
+                                raise ValueError(f"{log_type}[{i}] missing dateformat")
+
+                            # Validate dateformat values
+                            valid_formats = ['epoch', 'filetime', '%Y-%m-%d', '%Y-%m-%dT%H:%M:%S']  # Add more as needed
+                            dateformat = ts.get('dateformat')
+                            if dateformat not in valid_formats and not dateformat.startswith('%'):
+                                print(f"⚠️  {log_type}[{i}] uses non-standard dateformat: {dateformat}")
+
+                            # Legacy support: allow epoch field but don't require it
+                            if 'epoch' in ts:
+                                print(f"ℹ️  {log_type}[{i}] uses legacy 'epoch' field alongside 'dateformat'")
 
                             if ts.get('base_time'):
                                 base_time_count += 1
