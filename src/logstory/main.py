@@ -268,13 +268,13 @@ def _get_current_time():
   return datetime.datetime.now(UTC)
 
 
-def _update_timestamp(
+def _calculate_timestamp_replacement(
     log_text: str,
     timestamp: dict[str, str],
     old_base_time: datetime.datetime,
     ts_delta_dict: dict[str, int],
-) -> str:
-  """Updates 1 timestamp in the line of log text based on provided parameters.
+) -> tuple[re.Match[str], str] | None:
+  """Calculates the replacement for a timestamp without modifying the text.
 
   Args:
     log_text: string containing timestamp and other text
@@ -287,7 +287,7 @@ def _update_timestamp(
       Note that the seconds and milliseconds are always preserved.
 
   Returns:
-    log_text: updated timestamp string
+    Tuple of (match object, replacement string) or None if no match
   """
   group_index = int(timestamp["group"]) - 1
   ts_match = re.search(timestamp["pattern"], log_text)
@@ -352,8 +352,8 @@ def _update_timestamp(
         new_event_timestamp = new_event_time.strftime(dateformat)
 
       groups[group_index] = new_event_timestamp
-      log_text = re.sub(timestamp["pattern"], "".join(groups), log_text)
-  return log_text
+      return (ts_match, "".join(groups))
+  return None
 
 
 def _write_entries_to_local_file(
@@ -606,15 +606,27 @@ def usecase_replay_logtype(
     entries = []
     for line_no, log_text in enumerate(log_content.splitlines()):
 
-      # for each timestamp in the yaml file
+      # Collect all timestamp replacements for this line
+      replacements = []
       for ts_n, timestamp in enumerate(timestamp_map[log_type]["timestamps"]):
-        log_text = _update_timestamp(
+        replacement_info = _calculate_timestamp_replacement(
             log_text,
             timestamp,
             old_base_time,
             ts_delta_dict,
         )
+        if replacement_info:
+          replacements.append(
+              (replacement_info[0], replacement_info[1], timestamp["pattern"])
+          )
         LOGGER.debug("Finished processing line N: %s, timestamp N: %s", line_no, ts_n)
+
+      # Apply all replacements in reverse order to preserve positions
+      # Sort by start position in reverse order
+      replacements.sort(key=lambda x: x[0].start(), reverse=True)
+      for match, replacement, _ in replacements:
+        # Use the match positions to do a precise replacement
+        log_text = log_text[: match.start()] + replacement + log_text[match.end() :]
 
       # accumulate all of the entries into memory
       LOGGER.debug("log_text after all ts updates: %s", log_text)
