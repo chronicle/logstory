@@ -1,0 +1,16 @@
+{
+    "folders": [
+        {
+            "path": "../../../../.."
+        },
+        {
+            "path": "../../../../../../../../../../private/tmp/var/log/logstory"
+        },
+        {
+            "path": "../../../../../../../logstory_regexer"
+        },
+        {
+            "path": "../../../../../../../all_usecases"
+        }
+    ]
+}

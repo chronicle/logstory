@@ -478,16 +478,8 @@ def _get_all_source_directories() -> list[str]:
   return list(all_directories)
 
 
-@usecases_app.command("get")
-def usecase_get(
-    usecase: str = typer.Argument(..., help="Name of the usecase to download"),
-    env_file: str | None = EnvFileOption,
-    bucket: str = UsecasesBucketOption,
-):
-  """Download a usecase from configured sources."""
-  # Load environment file
-  load_env_file(env_file)
-
+def _download_usecase(usecase: str, bucket: str = None) -> bool:
+  """Download a usecase from configured sources. Returns True if successful."""
   sources = [bucket] if bucket else get_usecases_buckets()
 
   # Find which source(s) contain the usecase
@@ -507,7 +499,7 @@ def usecase_get(
     all_available = _get_all_source_directories()
     available = ", ".join(sorted(all_available))
     typer.echo(f"Available usecases: {available}")
-    raise typer.Exit(1)
+    return False
 
   # Download from the found source
   print(f"Downloading usecase '{usecase}' from source '{found_source}'")
@@ -521,6 +513,23 @@ def usecase_get(
     os.makedirs(os.path.dirname(destination_file_name), exist_ok=True)
     print(f"Downloading {blob.name} to {destination_file_name}")
     blob.download_to_filename(destination_file_name)
+
+  return True
+
+
+@usecases_app.command("get")
+def usecase_get(
+    usecase: str = typer.Argument(..., help="Name of the usecase to download"),
+    env_file: str | None = EnvFileOption,
+    bucket: str = UsecasesBucketOption,
+):
+  """Download a usecase from configured sources."""
+  # Load environment file
+  load_env_file(env_file)
+
+  success = _download_usecase(usecase, bucket)
+  if not success:
+    raise typer.Exit(1)
 
 
 def _get_logtypes(usecase: str, entities: bool = False) -> list[str]:
@@ -642,17 +651,27 @@ def replay_usecase(
     entities: bool = EntitiesOption,
     timestamp_delta: str | None = TimestampDeltaOption,
     local_file_output: bool = LocalFileOutputOption,
+    get_if_missing: bool = typer.Option(
+        False, "--get", help="Download usecase if not already installed"
+    ),
 ):
   """Replay a specific usecase."""
+  # Load environment file first (needed for download logic)
+  load_env_file(env_file)
+
+  # Check if usecase exists and download if requested
+  if get_if_missing and usecase not in get_usecases():
+    print(f"Usecase '{usecase}' not found locally, downloading...")
+    success = _download_usecase(usecase)
+    if not success:
+      raise typer.Exit(1)
+
   # Skip credential validation if using local file output
   if not local_file_output:
     final_credentials, final_customer_id, final_region = _load_and_validate_params(
         env_file, credentials_path, customer_id, region
     )
     _set_environment_vars(final_credentials, final_customer_id, final_region)
-  else:
-    # Load env file but don't require credentials for local file output
-    load_env_file(env_file)
 
   usecases = [usecase]
   logtypes = _get_logtypes(usecase, entities=entities)

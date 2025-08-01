@@ -1,0 +1,30 @@
+================================================================================
+TIMESTAMP PATTERN ANALYSIS SUMMARY
+================================================================================
+
+Total log files analyzed: 2
+Files with timestamp matches: 2
+
+--------------------------------------------------------------------------------
+PATTERN RECOMMENDATIONS BY FILE:
+--------------------------------------------------------------------------------
+
+AZURE_AD_CONTEXT.log
+  Recommended log type: MISP_IOC
+  Total timestamp matches: 72
+  Most selective patterns:
+    1. time (matches: 7)
+    2. date (matches: 65)
+
+WINDOWS_AD.log
+  Recommended log type: MISP_IOC
+  Total timestamp matches: 44
+  Most selective patterns:
+    1. time (matches: 44)
+
+================================================================================
+PATTERN OVERLAP ANALYSIS:
+================================================================================
+
+AZURE_AD_CONTEXT.log (AZURE_AD_CONTEXT):
+  BaseTimeStamp [12453:12503] overlaps on_prem_last_sync_dt [12453:12503]

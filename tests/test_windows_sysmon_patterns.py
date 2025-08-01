@@ -44,7 +44,7 @@ class TestWindowsSysmonPatternsCorrected(unittest.TestCase):
 
     log_path = (
         Path(__file__).parent.parent
-        / "src/logstory/usecases/THW2/EVENTS/WINDOWS_SYSMON.log"
+        / "src/logstory/usecases/THW/EVENTS/WINDOWS_SYSMON.log"
     )
     with open(log_path) as f:
       cls.sample_log_line = f.readline().strip()

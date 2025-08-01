@@ -32,9 +32,9 @@ logstory usecases list-installed --open NETWORK_ANALYSIS
 **Options:**
 - `--env-file TEXT`: Path to .env file to load environment variables from
 - `--logtypes`: Show logtypes for each usecase
-- `--details`: Show full markdown content for each usecase  
+- `--details`: Show full markdown content for each usecase
 - `--open TEXT`: Open markdown file for specified usecase in VS Code
-- `--entities`: Show entity logtypes instead of event logtypes
+- `--entities`: Load Entities instead of Events
 
 **Examples:**
 ```bash
@@ -63,7 +63,7 @@ logstory usecases list-available --usecases-bucket gs://my-bucket
 
 **Options:**
 - `--env-file TEXT`: Path to .env file to load environment variables from
-- `--usecases-bucket TEXT`: Override configured sources with specific URI
+- `--usecases-bucket TEXT`: Usecase source URI (gs://bucket, git@repo, etc.) - overrides config list
 
 **Examples:**
 ```bash
@@ -92,7 +92,7 @@ logstory usecases get USECASE_NAME --usecases-bucket gs://specific-bucket
 
 **Options:**
 - `--env-file TEXT`: Path to .env file to load environment variables from
-- `--usecases-bucket TEXT`: Override configured sources with specific URI
+- `--usecases-bucket TEXT`: Usecase source URI (gs://bucket, git@repo, etc.) - overrides config list
 
 **Examples:**
 ```bash
@@ -108,8 +108,6 @@ logstory usecases get AWS --usecases-bucket gs://my-custom-bucket
 
 ## Replay Commands
 
-All replay commands require `--customer-id` and `--credentials-path` options unless using `--local-file-output`.
-
 ### `logstory replay all`
 
 Replay all installed usecases.
@@ -123,11 +121,11 @@ logstory replay all \
 
 **Options:**
 - `--env-file TEXT`: Path to .env file to load environment variables from
-- `--customer-id TEXT`: Customer ID for SecOps instance (env: LOGSTORY_CUSTOMER_ID)
-- `--credentials-path TEXT`: Path to JSON credentials file (env: LOGSTORY_CREDENTIALS_PATH)
-- `--region TEXT`: SecOps tenant region (default: US, env: LOGSTORY_REGION)
-- `--entities`: Load entities instead of events
-- `--timestamp-delta TEXT`: Time offset (default: 1d)
+- `--credentials-path, -c TEXT`: Path to JSON credentials for Ingestion API Service account (env: `LOGSTORY_CREDENTIALS_PATH`)
+- `--customer-id TEXT`: Customer ID for SecOps instance, found on `/settings/profile/` (env: `LOGSTORY_CUSTOMER_ID`)
+- `--region, -r TEXT`: SecOps tenant's region (Default=US). Used to set ingestion API base URL (env: `LOGSTORY_REGION`)
+- `--entities`: Load Entities instead of Events
+- `--timestamp-delta TEXT`: Determines how datetimes in logfiles are updated. Expressed in any/all: days, hours, minutes (d, h, m) (Default=1d). Examples: [1d, 1d1h, 1h1m, 1d1m, 1d1h1m, 1m1h, ...]. Setting only `Nd` preserves the original HH:MM:SS but updates date. Nh/Nm subtracts an additional offset from that datetime, to facilitate running logstory more than 1x per day.
 - `--local-file-output`: Write logs to local files instead of sending to API
 
 ### `logstory replay usecase`
@@ -141,7 +139,8 @@ logstory replay usecase USECASE_NAME \
   --credentials-path=/path/to/credentials.json
 ```
 
-**Options:** Same as `replay all`
+**Options:** Same as `replay all`, plus:
+- `--get`: Download usecase if not already installed
 
 **Examples:**
 ```bash
@@ -187,12 +186,12 @@ These options are available across different command groups:
 
 ### Configuration Options
 - `--env-file TEXT`: Load environment variables from specified .env file
-- `--customer-id TEXT`: SecOps tenant UUID4 (required for replay commands)
-- `--credentials-path TEXT`: Path to JSON credentials file (required for replay commands)
-- `--region TEXT`: SecOps tenant region (default: US)
+- `--credentials-path, -c TEXT`: Path to JSON credentials for Ingestion API Service account (env: `LOGSTORY_CREDENTIALS_PATH`)
+- `--customer-id TEXT`: Customer ID for SecOps instance, found on `/settings/profile/` (env: `LOGSTORY_CUSTOMER_ID`)
+- `--region, -r TEXT`: SecOps tenant's region (Default=US). Used to set ingestion API base URL (env: `LOGSTORY_REGION`)
 
 ### Source Options
-- `--usecases-bucket TEXT`: Override configured usecase sources
+- `--usecases-bucket TEXT`: Usecase source URI (gs://bucket, git@repo, etc.) - overrides config list
 
 ### Data Options
 - `--entities`: Work with entities instead of events
@@ -221,7 +220,7 @@ All CLI options can be set via environment variables:
 Configuration values are resolved in this order (highest to lowest priority):
 
 1. Command line options
-2. Environment variables  
+2. Environment variables
 3. .env file values (when `--env-file` is used)
 4. Default values
 
@@ -260,4 +259,3 @@ logstory replay usecase MONITORING --env-file .env.prod --timestamp-delta=1d
 export LOGSTORY_USECASES_BUCKETS=gs://prod-usecases,file:///local/custom-usecases
 logstory usecases list-available
 logstory usecases get CUSTOM_USECASE
-```

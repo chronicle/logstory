@@ -606,8 +606,10 @@ def usecase_replay_logtype(
     entries = []
     for line_no, log_text in enumerate(log_content.splitlines()):
 
-      # Collect all timestamp replacements for this line
-      replacements = []
+      # Collect all timestamp replacements for this line using a change map
+      # This prevents double-updates and handles overlapping patterns intelligently
+      change_map: dict[tuple[int, int, str], str] = {}  # (start, end, original_text) -> replacement_text
+
       for ts_n, timestamp in enumerate(timestamp_map[log_type]["timestamps"]):
         replacement_info = _calculate_timestamp_replacement(
             log_text,
@@ -616,17 +618,32 @@ def usecase_replay_logtype(
             ts_delta_dict,
         )
         if replacement_info:
-          replacements.append(
-              (replacement_info[0], replacement_info[1], timestamp["pattern"])
-          )
+          match, replacement = replacement_info
+          change_key = (match.start(), match.end(), match.group(0))
+
+          if change_key in change_map:
+            # Check if it's the same change or a conflict
+            if change_map[change_key] != replacement:
+              LOGGER.warning(
+                  "Timestamp replacement conflict at position %d-%d: '%s' -> '%s' vs"
+                  " '%s'",
+                  match.start(),
+                  match.end(),
+                  match.group(0),
+                  change_map[change_key],
+                  replacement,
+              )
+            # else: Same change, no-op
+          else:
+            change_map[change_key] = replacement
+
         LOGGER.debug("Finished processing line N: %s, timestamp N: %s", line_no, ts_n)
 
-      # Apply all replacements in reverse order to preserve positions
-      # Sort by start position in reverse order
-      replacements.sort(key=lambda x: x[0].start(), reverse=True)
-      for match, replacement, _ in replacements:
-        # Use the match positions to do a precise replacement
-        log_text = log_text[: match.start()] + replacement + log_text[match.end() :]
+      # Apply all unique replacements in reverse order to preserve positions
+      for (start, end, _), replacement in sorted(
+          change_map.items(), key=lambda x: x[0][0], reverse=True
+      ):
+        log_text = log_text[:start] + replacement + log_text[end:]
 
       # accumulate all of the entries into memory
       LOGGER.debug("log_text after all ts updates: %s", log_text)

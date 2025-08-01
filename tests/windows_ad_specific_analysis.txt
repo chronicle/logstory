@@ -1,0 +1,140 @@
+================================================================================
+TIMESTAMP PATTERN ANALYSIS REPORT
+================================================================================
+
+Log Type: WINDOWS_AD
+
+Log Line (first 200 chars):
+{"GivenName":"Stan","Surname":"Conrad","UserPrincipalName":"stan.conrad@lunarstiiiness.com","Enabled":true,"SamAccountName":"stan.conrad","SID":{"BinaryLength":28,"AccountDomainSid":{"BinaryLength":24...
+
+Log Line Length: 41761 characters
+
+--------------------------------------------------------------------------------
+PATTERN MATCHES:
+--------------------------------------------------------------------------------
+
+Pattern Name: Created
+Pattern: ("Created":"\\\/Date\()(\d{10})(\d{3})
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 3913:3944
+    Matched Text: "Created":"\/Date(1705615749000
+    Extracted Group: 1705615749
+----------------------------------------
+
+Pattern Name: LastLogonDate
+Pattern: ("LastLogonDate":"\\\/Date\()(\d{10})(\d{3})
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 4944:4981
+    Matched Text: "LastLogonDate":"\/Date(1705616525382
+    Extracted Group: 1705616525
+----------------------------------------
+
+Pattern Name: Modified
+Pattern: ("Modified":"\\\/Date\()(\d{10})(\d{3})
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 5590:5622
+    Matched Text: "Modified":"\/Date(1705951085000
+    Extracted Group: 1705951085
+----------------------------------------
+
+Pattern Name: PasswordLastSet
+Pattern: ("PasswordLastSet":"\\\/Date\()(\d{10})(\d{3})
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 39749:39788
+    Matched Text: "PasswordLastSet":"\/Date(1705615749207
+    Extracted Group: 1705615749
+----------------------------------------
+
+Pattern Name: badPasswordTimeWinFileTime
+Pattern: ("badPasswordTime":)(\d{18})
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 3637:3673
+    Matched Text: "badPasswordTime":133505027883351005
+    Extracted Group: 133505027883351005
+----------------------------------------
+
+Pattern Name: createTimeStamp
+Pattern: ("createTimeStamp":"\\\/Date\()(\d{10})(\d{3})
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 3949:3988
+    Matched Text: "createTimeStamp":"\/Date(1705615749000
+    Extracted Group: 1705615749
+----------------------------------------
+
+Pattern Name: lastLogonTimestampTimeWinFileTime
+Pattern: ("lastLogonTimestamp":)(\d{18})
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 4986:5025
+    Matched Text: "lastLogonTimestamp":133500901253824436
+    Extracted Group: 133500901253824436
+----------------------------------------
+
+Pattern Name: lastLogonWinFileTime
+Pattern: ("lastLogon":)(\d{18})
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 4913:4943
+    Matched Text: "lastLogon":133504425386052066
+    Extracted Group: 133504425386052066
+----------------------------------------
+
+Pattern Name: modifyTimeStamp
+Pattern: ("modifyTimeStamp":"\\\/Date\()(\d{10})(\d{3})
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 5627:5666
+    Matched Text: "modifyTimeStamp":"\/Date(1705951085000
+    Extracted Group: 1705951085
+----------------------------------------
+
+Pattern Name: pwdLastSetTimeWinFileTime
+Pattern: ("pwdLastSet":)(\d{18})
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 40395:40426
+    Matched Text: "pwdLastSet":133500893492070384
+    Extracted Group: 133500893492070384
+----------------------------------------
+
+Pattern Name: whenChanged
+Pattern: ("whenChanged":"\\\/Date\()(\d{10})(\d{3})
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 41681:41716
+    Matched Text: "whenChanged":"\/Date(1705951085000
+    Extracted Group: 1705951085
+----------------------------------------
+
+Pattern Name: whenCreatedDate
+Pattern: ("whenCreated":"\\\/Date\()(\d{10})(\d{3})
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 41721:41756
+    Matched Text: "whenCreated":"\/Date(1705615749000
+    Extracted Group: 1705615749
+----------------------------------------
+
+================================================================================
+OVERLAP ANALYSIS:
+================================================================================
+
+No overlapping matches found.
