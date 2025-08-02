@@ -1,0 +1,334 @@
+================================================================================
+TIMESTAMP PATTERN ANALYSIS REPORT
+================================================================================
+
+Log Type: AZURE_AD_CONTEXT
+
+Log Line (first 200 chars):
+{"accountEnabled":true,"ageGroup":null,"assignedLicenses":[{"disabledPlans":[],"skuId":"c42b9cae-ea4f-4ab7-9717-81576235ccac"}],"assignedPlans":[{"assignedDateTime":"2022-11-22T19:02:06Z","capabilityS...
+
+Log Line Length: 16039 characters
+
+--------------------------------------------------------------------------------
+PATTERN MATCHES:
+--------------------------------------------------------------------------------
+
+Pattern Name: BaseTimeStamp
+Pattern: ("onPremisesLastSyncDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z)
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 12453:12503
+    Matched Text: "onPremisesLastSyncDateTime":"2024-01-25T20:40:10Z
+    Extracted Group: 2024-01-25T20:40:10
+----------------------------------------
+
+Pattern Name: approx_last_signin_dt
+Pattern: ("approximateLastSignInDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z)
+Match Count: 0
+----------------------------------------
+
+Pattern Name: assigned_dt
+Pattern: ("assignedDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z)
+Match Count: 61
+Matches:
+  Match 1:
+    Position: 146:186
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 2:
+    Position: 294:334
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 3:
+    Position: 444:484
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 4:
+    Position: 593:633
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 5:
+    Position: 742:782
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 6:
+    Position: 894:934
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 7:
+    Position: 1053:1093
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 8:
+    Position: 1198:1238
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 9:
+    Position: 1347:1387
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 10:
+    Position: 1491:1531
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 11:
+    Position: 1661:1701
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 12:
+    Position: 1810:1850
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 13:
+    Position: 1968:2008
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 14:
+    Position: 2137:2177
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 15:
+    Position: 2288:2328
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 16:
+    Position: 2444:2484
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 17:
+    Position: 2606:2646
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 18:
+    Position: 2763:2803
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 19:
+    Position: 2912:2952
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 20:
+    Position: 3061:3101
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 21:
+    Position: 3215:3255
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 22:
+    Position: 3364:3404
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 23:
+    Position: 3513:3553
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 24:
+    Position: 3662:3702
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 25:
+    Position: 3818:3858
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 26:
+    Position: 3967:4007
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 27:
+    Position: 4133:4173
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 28:
+    Position: 4282:4322
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 29:
+    Position: 4431:4471
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 30:
+    Position: 4577:4617
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 31:
+    Position: 4745:4785
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 32:
+    Position: 4889:4929
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 33:
+    Position: 5045:5085
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 34:
+    Position: 5194:5234
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 35:
+    Position: 5344:5384
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 36:
+    Position: 5505:5545
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 37:
+    Position: 5653:5693
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 38:
+    Position: 5801:5841
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 39:
+    Position: 5950:5990
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 40:
+    Position: 6099:6139
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 41:
+    Position: 6268:6308
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 42:
+    Position: 6417:6457
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 43:
+    Position: 6568:6608
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 44:
+    Position: 6726:6766
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 45:
+    Position: 6885:6925
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 46:
+    Position: 7051:7091
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 47:
+    Position: 7200:7240
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 48:
+    Position: 7361:7401
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 49:
+    Position: 7510:7550
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 50:
+    Position: 7659:7699
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 51:
+    Position: 7808:7848
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 52:
+    Position: 7952:7992
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 53:
+    Position: 8104:8144
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 54:
+    Position: 8257:8297
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 55:
+    Position: 8406:8446
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 56:
+    Position: 8563:8603
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 57:
+    Position: 8733:8773
+    Matched Text: "assignedDateTime":"2022-11-22T19:02:06Z
+    Extracted Group: 2022-11-22T19:02:06
+  Match 58:
+    Position: 8883:8923
+    Matched Text: "assignedDateTime":"2023-10-25T22:00:44Z
+    Extracted Group: 2023-10-25T22:00:44
+  Match 59:
+    Position: 9040:9080
+    Matched Text: "assignedDateTime":"2023-10-25T22:00:44Z
+    Extracted Group: 2023-10-25T22:00:44
+  Match 60:
+    Position: 9189:9229
+    Matched Text: "assignedDateTime":"2023-10-25T22:00:44Z
+    Extracted Group: 2023-10-25T22:00:44
+  Match 61:
+    Position: 9334:9374
+    Matched Text: "assignedDateTime":"2023-10-25T22:00:44Z
+    Extracted Group: 2023-10-25T22:00:44
+----------------------------------------
+
+Pattern Name: created_date_time
+Pattern: ("createdDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z)
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 9687:9726
+    Matched Text: "createdDateTime":"2022-11-22T18:46:22Z
+    Extracted Group: 2022-11-22T18:46:22
+----------------------------------------
+
+Pattern Name: on_prem_last_sync_dt
+Pattern: ("onPremisesLastSyncDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z)
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 12453:12503
+    Matched Text: "onPremisesLastSyncDateTime":"2024-01-25T20:40:10Z
+    Extracted Group: 2024-01-25T20:40:10
+----------------------------------------
+
+Pattern Name: refresh_token_valid_from_dt
+Pattern: ("refreshTokensValidFromDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z)
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 15644:15698
+    Matched Text: "refreshTokensValidFromDateTime":"2024-01-08T16:09...
+    Extracted Group: 2024-01-08T16:09:28
+----------------------------------------
+
+Pattern Name: registration_dt
+Pattern: ("registrationDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z)
+Match Count: 0
+----------------------------------------
+
+Pattern Name: signin_session_valid_from_dt
+Pattern: ("signInSessionsValidFromDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z)
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 15831:15886
+    Matched Text: "signInSessionsValidFromDateTime":"2024-01-08T16:0...
+    Extracted Group: 2024-01-08T16:09:28
+----------------------------------------
+
+================================================================================
+OVERLAP ANALYSIS:
+================================================================================
+
+Found 1 overlapping matches:
+
+  BaseTimeStamp [12453:12503]
+  overlaps with
+  on_prem_last_sync_dt [12453:12503]

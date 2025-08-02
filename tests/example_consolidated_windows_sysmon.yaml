@@ -1,0 +1,54 @@
+# Example consolidation for WINDOWS_SYSMON
+# This shows how duplicate strftime formats can be consolidated
+
+WINDOWS_SYSMON:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    # PRESERVED: base_time entry (must remain as-is)
+    - name: UtcTimeQuotes
+      base_time: true
+      dateformat: "%Y-%m-%d %H:%M:%S"
+      pattern: '("UtcTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
+      group: 2
+      examples:
+        - '"UtcTime":"1970-01-01 00:00:00'
+        - '"UtcTime" :"1970-01-01 00:00:00'
+        - '"UtcTime": "1970-01-01 00:00:00'
+        - '"UtcTime" : "1970-01-01 00:00:00'
+        - '"UtcTime":1970-01-01 00:00:00'
+        - '"UtcTime" :1970-01-01 00:00:00'
+        - '"UtcTime": 1970-01-01 00:00:00'
+        - '"UtcTime" : 1970-01-01 00:00:00'
+
+    # PRESERVED: syslog_timestamp (different format)
+    - name: syslog_timestamp
+      dateformat: "%b %d %H:%M:%S"
+      pattern: '(<\d+>)([a-zA-Z]{3}\s+\d+\s+\d\d:\d\d:\d\d)'
+      group: 2
+
+    # PRESERVED: EventTime (epoch format)
+    - name: EventTime
+      pattern: ("EventTime":)(\d+)(,)
+      dateformat: 'epoch'
+      group: 2
+
+    # PRESERVED: EventReceivedTime (epoch format)
+    - name: EventReceivedTime
+      pattern: ("EventReceivedTime":)(\d+)(,)
+      dateformat: 'epoch'
+      group: 2
+
+    # NEW CONSOLIDATED PATTERN: Replaces 5 duplicate "%Y-%m-%d %H:%M:%S" entries
+    - name: WINDOWS_SYSMON_generic_timestamp
+      dateformat: "%Y-%m-%d %H:%M:%S"
+      # This generic pattern matches any field name followed by the timestamp format
+      # It will match: UtcTime, EventTime, EventReceivedTime, CreationUtcTime (with or without quotes)
+      pattern: '([\w"]*Time[\w"]*\s*:\s*"?)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
+      group: 2
+      # Replaces these 5 entries:
+      # - UtcTime (non-quoted version)
+      # - EventTimeUTC
+      # - EventReceivedTimeUTC
+      # - CreationUtcTime
+      # - CreationUtcTimeQuotes

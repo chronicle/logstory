@@ -1,0 +1,713 @@
+================================================================================
+TIMESTAMP PATTERN ANALYSIS REPORT
+================================================================================
+
+Log Type: AZURE_AD_CONTEXT
+
+Log Line (first 200 chars):
+{"GivenName":"Stan","Surname":"Conrad","UserPrincipalName":"stan.conrad@lunarstiiiness.com","Enabled":true,"SamAccountName":"stan.conrad","SID":{"BinaryLength":28,"AccountDomainSid":{"BinaryLength":24...
+
+Log Line Length: 41761 characters
+
+--------------------------------------------------------------------------------
+PATTERN MATCHES:
+--------------------------------------------------------------------------------
+
+Pattern Name: BaseTimeStamp
+Pattern: ("onPremisesLastSyncDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z)
+Match Count: 0
+----------------------------------------
+
+Pattern Name: approx_last_signin_dt
+Pattern: ("approximateLastSignInDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z)
+Match Count: 0
+----------------------------------------
+
+Pattern Name: assigned_dt
+Pattern: ("assignedDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z)
+Match Count: 0
+----------------------------------------
+
+Pattern Name: created_date_time
+Pattern: ("createdDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z)
+Match Count: 0
+----------------------------------------
+
+Pattern Name: on_prem_last_sync_dt
+Pattern: ("onPremisesLastSyncDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z)
+Match Count: 0
+----------------------------------------
+
+Pattern Name: refresh_token_valid_from_dt
+Pattern: ("refreshTokensValidFromDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z)
+Match Count: 0
+----------------------------------------
+
+Pattern Name: registration_dt
+Pattern: ("registrationDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z)
+Match Count: 0
+----------------------------------------
+
+Pattern Name: signin_session_valid_from_dt
+Pattern: ("signInSessionsValidFromDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z)
+Match Count: 0
+----------------------------------------
+
+================================================================================
+OVERLAP ANALYSIS:
+================================================================================
+
+No overlapping matches found.
+
+================================================================================
+TIMESTAMP PATTERN ANALYSIS REPORT
+================================================================================
+
+Log Type: GCP_BIGQUERY_CONTEXT
+
+Log Line (first 200 chars):
+{"GivenName":"Stan","Surname":"Conrad","UserPrincipalName":"stan.conrad@lunarstiiiness.com","Enabled":true,"SamAccountName":"stan.conrad","SID":{"BinaryLength":28,"AccountDomainSid":{"BinaryLength":24...
+
+Log Line Length: 41761 characters
+
+--------------------------------------------------------------------------------
+PATTERN MATCHES:
+--------------------------------------------------------------------------------
+
+Pattern Name: gcp_creationTime
+Pattern: ("creationTime":\s*"?)(\d{10})
+Match Count: 0
+----------------------------------------
+
+Pattern Name: gcp_expirationTime
+Pattern: ("expirationTime":\s*"?)(\d{10})
+Match Count: 0
+----------------------------------------
+
+================================================================================
+OVERLAP ANALYSIS:
+================================================================================
+
+No overlapping matches found.
+
+================================================================================
+TIMESTAMP PATTERN ANALYSIS REPORT
+================================================================================
+
+Log Type: GCP_COMPUTE_CONTEXT
+
+Log Line (first 200 chars):
+{"GivenName":"Stan","Surname":"Conrad","UserPrincipalName":"stan.conrad@lunarstiiiness.com","Enabled":true,"SamAccountName":"stan.conrad","SID":{"BinaryLength":28,"AccountDomainSid":{"BinaryLength":24...
+
+Log Line Length: 41761 characters
+
+--------------------------------------------------------------------------------
+PATTERN MATCHES:
+--------------------------------------------------------------------------------
+
+Pattern Name: gcp_creationTimestamp
+Pattern: (creationTimestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})
+Match Count: 0
+----------------------------------------
+
+Pattern Name: gcp_lastStartTimestamp
+Pattern: (lastStartTimestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})
+Match Count: 0
+----------------------------------------
+
+================================================================================
+OVERLAP ANALYSIS:
+================================================================================
+
+No overlapping matches found.
+
+================================================================================
+TIMESTAMP PATTERN ANALYSIS REPORT
+================================================================================
+
+Log Type: GCP_DLP_CONTEXT
+
+Log Line (first 200 chars):
+{"GivenName":"Stan","Surname":"Conrad","UserPrincipalName":"stan.conrad@lunarstiiiness.com","Enabled":true,"SamAccountName":"stan.conrad","SID":{"BinaryLength":28,"AccountDomainSid":{"BinaryLength":24...
+
+Log Line Length: 41761 characters
+
+--------------------------------------------------------------------------------
+PATTERN MATCHES:
+--------------------------------------------------------------------------------
+
+Pattern Name: gcp_dlp_entity_createTime
+Pattern: (createTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")
+Match Count: 0
+----------------------------------------
+
+Pattern Name: gcp_dlp_entity_expirationTime
+Pattern: (expirationTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")
+Match Count: 0
+----------------------------------------
+
+Pattern Name: gcp_dlp_entity_lastModifiedTime
+Pattern: (lastModifiedTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")
+Match Count: 0
+----------------------------------------
+
+Pattern Name: gcp_dlp_entity_profileLastGenerated
+Pattern: (profileLastGenerated"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")
+Match Count: 0
+----------------------------------------
+
+Pattern Name: gcp_dlp_entity_timestamp
+Pattern: (timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")
+Match Count: 0
+----------------------------------------
+
+================================================================================
+OVERLAP ANALYSIS:
+================================================================================
+
+No overlapping matches found.
+
+================================================================================
+TIMESTAMP PATTERN ANALYSIS REPORT
+================================================================================
+
+Log Type: GCP_IAM_ANALYSIS
+
+Log Line (first 200 chars):
+{"GivenName":"Stan","Surname":"Conrad","UserPrincipalName":"stan.conrad@lunarstiiiness.com","Enabled":true,"SamAccountName":"stan.conrad","SID":{"BinaryLength":28,"AccountDomainSid":{"BinaryLength":24...
+
+Log Line Length: 41761 characters
+
+--------------------------------------------------------------------------------
+PATTERN MATCHES:
+--------------------------------------------------------------------------------
+
+Pattern Name: gcp_iam_entity_timestamp
+Pattern: ("seconds":\s*"?)(\d+)(\s*")
+Match Count: 0
+----------------------------------------
+
+================================================================================
+OVERLAP ANALYSIS:
+================================================================================
+
+No overlapping matches found.
+
+================================================================================
+TIMESTAMP PATTERN ANALYSIS REPORT
+================================================================================
+
+Log Type: GCP_IAM_CONTEXT
+
+Log Line (first 200 chars):
+{"GivenName":"Stan","Surname":"Conrad","UserPrincipalName":"stan.conrad@lunarstiiiness.com","Enabled":true,"SamAccountName":"stan.conrad","SID":{"BinaryLength":28,"AccountDomainSid":{"BinaryLength":24...
+
+Log Line Length: 41761 characters
+
+--------------------------------------------------------------------------------
+PATTERN MATCHES:
+--------------------------------------------------------------------------------
+
+Pattern Name: gcp_Timestamp
+Pattern: (timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})
+Match Count: 0
+----------------------------------------
+
+================================================================================
+OVERLAP ANALYSIS:
+================================================================================
+
+No overlapping matches found.
+
+================================================================================
+TIMESTAMP PATTERN ANALYSIS REPORT
+================================================================================
+
+Log Type: MISP_IOC
+
+Log Line (first 200 chars):
+{"GivenName":"Stan","Surname":"Conrad","UserPrincipalName":"stan.conrad@lunarstiiiness.com","Enabled":true,"SamAccountName":"stan.conrad","SID":{"BinaryLength":28,"AccountDomainSid":{"BinaryLength":24...
+
+Log Line Length: 41761 characters
+
+--------------------------------------------------------------------------------
+PATTERN MATCHES:
+--------------------------------------------------------------------------------
+
+Pattern Name: date
+Pattern: (\d{4}-\d{2}-\d{2})
+Match Count: 0
+----------------------------------------
+
+Pattern Name: time
+Pattern: (\d{10})
+Match Count: 44
+Matches:
+  Match 1:
+    Position: 230:240
+    Matched Text: 3263964631
+    Extracted Group: 3263964631
+  Match 2:
+    Position: 241:251
+    Matched Text: 4121654051
+    Extracted Group: 4121654051
+  Match 3:
+    Position: 252:262
+    Matched Text: 1417071188
+    Extracted Group: 1417071188
+  Match 4:
+    Position: 282:292
+    Matched Text: 3263964631
+    Extracted Group: 3263964631
+  Match 5:
+    Position: 293:303
+    Matched Text: 4121654051
+    Extracted Group: 4121654051
+  Match 6:
+    Position: 304:314
+    Matched Text: 1417071188
+    Extracted Group: 1417071188
+  Match 7:
+    Position: 335:345
+    Matched Text: 3263964631
+    Extracted Group: 3263964631
+  Match 8:
+    Position: 346:356
+    Matched Text: 4121654051
+    Extracted Group: 4121654051
+  Match 9:
+    Position: 357:367
+    Matched Text: 1417071188
+    Extracted Group: 1417071188
+  Match 10:
+    Position: 3447:3457
+    Matched Text: 9223372036
+    Extracted Group: 9223372036
+  Match 11:
+    Position: 3655:3665
+    Matched Text: 1335050278
+    Extracted Group: 1335050278
+  Match 12:
+    Position: 3931:3941
+    Matched Text: 1705615749
+    Extracted Group: 1705615749
+  Match 13:
+    Position: 3975:3985
+    Matched Text: 1705615749
+    Extracted Group: 1705615749
+  Match 14:
+    Position: 4152:4162
+    Matched Text: 1705950883
+    Extracted Group: 1705950883
+  Match 15:
+    Position: 4178:4188
+    Matched Text: 1705950882
+    Extracted Group: 1705950882
+  Match 16:
+    Position: 4204:4214
+    Matched Text: 1705950881
+    Extracted Group: 1705950881
+  Match 17:
+    Position: 4230:4240
+    Matched Text: 1705950880
+    Extracted Group: 1705950880
+  Match 18:
+    Position: 4257:4267
+    Matched Text: 1162763059
+    Extracted Group: 1162763059
+  Match 19:
+    Position: 4497:4507
+    Matched Text: 0026588973
+    Extracted Group: 0026588973
+  Match 20:
+    Position: 4857:4867
+    Matched Text: 1706029188
+    Extracted Group: 1706029188
+  Match 21:
+    Position: 4925:4935
+    Matched Text: 1335044253
+    Extracted Group: 1335044253
+  Match 22:
+    Position: 4968:4978
+    Matched Text: 1705616525
+    Extracted Group: 1705616525
+  Match 23:
+    Position: 5007:5017
+    Matched Text: 1335009012
+    Extracted Group: 1335009012
+  Match 24:
+    Position: 5609:5619
+    Matched Text: 1705951085
+    Extracted Group: 1705951085
+  Match 25:
+    Position: 5653:5663
+    Matched Text: 1705951085
+    Extracted Group: 1705951085
+  Match 26:
+    Position: 22927:22937
+    Matched Text: 1073741824
+    Extracted Group: 1073741824
+  Match 27:
+    Position: 23129:23139
+    Matched Text: 7826266723
+    Extracted Group: 7826266723
+  Match 28:
+    Position: 23160:23170
+    Matched Text: 2667237826
+    Extracted Group: 2667237826
+  Match 29:
+    Position: 23191:23201
+    Matched Text: 7826266723
+    Extracted Group: 7826266723
+  Match 30:
+    Position: 23304:23314
+    Matched Text: 8821862825
+    Extracted Group: 8821862825
+  Match 31:
+    Position: 23354:23364
+    Matched Text: 1705615748
+    Extracted Group: 1705615748
+  Match 32:
+    Position: 39510:39520
+    Matched Text: 3263964631
+    Extracted Group: 3263964631
+  Match 33:
+    Position: 39521:39531
+    Matched Text: 4121654051
+    Extracted Group: 4121654051
+  Match 34:
+    Position: 39532:39542
+    Matched Text: 1417071188
+    Extracted Group: 1417071188
+  Match 35:
+    Position: 39562:39572
+    Matched Text: 3263964631
+    Extracted Group: 3263964631
+  Match 36:
+    Position: 39573:39583
+    Matched Text: 4121654051
+    Extracted Group: 4121654051
+  Match 37:
+    Position: 39584:39594
+    Matched Text: 1417071188
+    Extracted Group: 1417071188
+  Match 38:
+    Position: 39615:39625
+    Matched Text: 3263964631
+    Extracted Group: 3263964631
+  Match 39:
+    Position: 39626:39636
+    Matched Text: 4121654051
+    Extracted Group: 4121654051
+  Match 40:
+    Position: 39637:39647
+    Matched Text: 1417071188
+    Extracted Group: 1417071188
+  Match 41:
+    Position: 39775:39785
+    Matched Text: 1705615749
+    Extracted Group: 1705615749
+  Match 42:
+    Position: 40408:40418
+    Matched Text: 1335008934
+    Extracted Group: 1335008934
+  Match 43:
+    Position: 41703:41713
+    Matched Text: 1705951085
+    Extracted Group: 1705951085
+  Match 44:
+    Position: 41743:41753
+    Matched Text: 1705615749
+    Extracted Group: 1705615749
+----------------------------------------
+
+================================================================================
+OVERLAP ANALYSIS:
+================================================================================
+
+No overlapping matches found.
+
+================================================================================
+TIMESTAMP PATTERN ANALYSIS REPORT
+================================================================================
+
+Log Type: OKTA_USER_CONTEXT
+
+Log Line (first 200 chars):
+{"GivenName":"Stan","Surname":"Conrad","UserPrincipalName":"stan.conrad@lunarstiiiness.com","Enabled":true,"SamAccountName":"stan.conrad","SID":{"BinaryLength":28,"AccountDomainSid":{"BinaryLength":24...
+
+Log Line Length: 41761 characters
+
+--------------------------------------------------------------------------------
+PATTERN MATCHES:
+--------------------------------------------------------------------------------
+
+Pattern Name: lastLogin
+Pattern: (lastLogin"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")
+Match Count: 0
+----------------------------------------
+
+Pattern Name: lastUpdated
+Pattern: (lastUpdated"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")
+Match Count: 0
+----------------------------------------
+
+================================================================================
+OVERLAP ANALYSIS:
+================================================================================
+
+No overlapping matches found.
+
+================================================================================
+TIMESTAMP PATTERN ANALYSIS REPORT
+================================================================================
+
+Log Type: WINDOWS_AD_OLD
+
+Log Line (first 200 chars):
+{"GivenName":"Stan","Surname":"Conrad","UserPrincipalName":"stan.conrad@lunarstiiiness.com","Enabled":true,"SamAccountName":"stan.conrad","SID":{"BinaryLength":28,"AccountDomainSid":{"BinaryLength":24...
+
+Log Line Length: 41761 characters
+
+--------------------------------------------------------------------------------
+PATTERN MATCHES:
+--------------------------------------------------------------------------------
+
+Pattern Name: Date
+Pattern: ("\\/Date\()(-?)(\d{10})(\d{3})
+Match Count: 15
+Matches:
+  Match 1:
+    Position: 3923:3944
+    Matched Text: "\/Date(1705615749000
+    Extracted Group: 1705615749
+  Match 2:
+    Position: 3967:3988
+    Matched Text: "\/Date(1705615749000
+    Extracted Group: 1705615749
+  Match 3:
+    Position: 4144:4165
+    Matched Text: "\/Date(1705950883000
+    Extracted Group: 1705950883
+  Match 4:
+    Position: 4170:4191
+    Matched Text: "\/Date(1705950882000
+    Extracted Group: 1705950882
+  Match 5:
+    Position: 4196:4217
+    Matched Text: "\/Date(1705950881000
+    Extracted Group: 1705950881
+  Match 6:
+    Position: 4222:4243
+    Matched Text: "\/Date(1705950880000
+    Extracted Group: 1705950880
+  Match 7:
+    Position: 4248:4270
+    Matched Text: "\/Date(-1162763059100
+    Extracted Group: 1162763059
+  Match 8:
+    Position: 4849:4870
+    Matched Text: "\/Date(1706029188335
+    Extracted Group: 1706029188
+  Match 9:
+    Position: 4960:4981
+    Matched Text: "\/Date(1705616525382
+    Extracted Group: 1705616525
+  Match 10:
+    Position: 5601:5622
+    Matched Text: "\/Date(1705951085000
+    Extracted Group: 1705951085
+  Match 11:
+    Position: 5645:5666
+    Matched Text: "\/Date(1705951085000
+    Extracted Group: 1705951085
+  Match 12:
+    Position: 23346:23367
+    Matched Text: "\/Date(1705615748000
+    Extracted Group: 1705615748
+  Match 13:
+    Position: 39767:39788
+    Matched Text: "\/Date(1705615749207
+    Extracted Group: 1705615749
+  Match 14:
+    Position: 41695:41716
+    Matched Text: "\/Date(1705951085000
+    Extracted Group: 1705951085
+  Match 15:
+    Position: 41735:41756
+    Matched Text: "\/Date(1705615749000
+    Extracted Group: 1705615749
+----------------------------------------
+
+================================================================================
+OVERLAP ANALYSIS:
+================================================================================
+
+No overlapping matches found.
+
+================================================================================
+TIMESTAMP PATTERN ANALYSIS REPORT
+================================================================================
+
+Log Type: WINDOWS_AD
+
+Log Line (first 200 chars):
+{"GivenName":"Stan","Surname":"Conrad","UserPrincipalName":"stan.conrad@lunarstiiiness.com","Enabled":true,"SamAccountName":"stan.conrad","SID":{"BinaryLength":28,"AccountDomainSid":{"BinaryLength":24...
+
+Log Line Length: 41761 characters
+
+--------------------------------------------------------------------------------
+PATTERN MATCHES:
+--------------------------------------------------------------------------------
+
+Pattern Name: Created
+Pattern: ("Created":"\\\/Date\()(\d{10})(\d{3})
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 3913:3944
+    Matched Text: "Created":"\/Date(1705615749000
+    Extracted Group: 1705615749
+----------------------------------------
+
+Pattern Name: LastLogonDate
+Pattern: ("LastLogonDate":"\\\/Date\()(\d{10})(\d{3})
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 4944:4981
+    Matched Text: "LastLogonDate":"\/Date(1705616525382
+    Extracted Group: 1705616525
+----------------------------------------
+
+Pattern Name: Modified
+Pattern: ("Modified":"\\\/Date\()(\d{10})(\d{3})
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 5590:5622
+    Matched Text: "Modified":"\/Date(1705951085000
+    Extracted Group: 1705951085
+----------------------------------------
+
+Pattern Name: PasswordLastSet
+Pattern: ("PasswordLastSet":"\\\/Date\()(\d{10})(\d{3})
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 39749:39788
+    Matched Text: "PasswordLastSet":"\/Date(1705615749207
+    Extracted Group: 1705615749
+----------------------------------------
+
+Pattern Name: badPasswordTimeWinFileTime
+Pattern: ("badPasswordTime":)(\d{18})
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 3637:3673
+    Matched Text: "badPasswordTime":133505027883351005
+    Extracted Group: 133505027883351005
+----------------------------------------
+
+Pattern Name: createTimeStamp
+Pattern: ("createTimeStamp":"\\\/Date\()(\d{10})(\d{3})
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 3949:3988
+    Matched Text: "createTimeStamp":"\/Date(1705615749000
+    Extracted Group: 1705615749
+----------------------------------------
+
+Pattern Name: lastLogonTimestampTimeWinFileTime
+Pattern: ("lastLogonTimestamp":)(\d{18})
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 4986:5025
+    Matched Text: "lastLogonTimestamp":133500901253824436
+    Extracted Group: 133500901253824436
+----------------------------------------
+
+Pattern Name: lastLogonWinFileTime
+Pattern: ("lastLogon":)(\d{18})
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 4913:4943
+    Matched Text: "lastLogon":133504425386052066
+    Extracted Group: 133504425386052066
+----------------------------------------
+
+Pattern Name: modifyTimeStamp
+Pattern: ("modifyTimeStamp":"\\\/Date\()(\d{10})(\d{3})
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 5627:5666
+    Matched Text: "modifyTimeStamp":"\/Date(1705951085000
+    Extracted Group: 1705951085
+----------------------------------------
+
+Pattern Name: pwdLastSetTimeWinFileTime
+Pattern: ("pwdLastSet":)(\d{18})
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 40395:40426
+    Matched Text: "pwdLastSet":133500893492070384
+    Extracted Group: 133500893492070384
+----------------------------------------
+
+Pattern Name: whenChanged
+Pattern: ("whenChanged":"\\\/Date\()(\d{10})(\d{3})
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 41681:41716
+    Matched Text: "whenChanged":"\/Date(1705951085000
+    Extracted Group: 1705951085
+----------------------------------------
+
+Pattern Name: whenCreatedDate
+Pattern: ("whenCreated":"\\\/Date\()(\d{10})(\d{3})
+Match Count: 1
+Matches:
+  Match 1:
+    Position: 41721:41756
+    Matched Text: "whenCreated":"\/Date(1705615749000
+    Extracted Group: 1705615749
+----------------------------------------
+
+================================================================================
+OVERLAP ANALYSIS:
+================================================================================
+
+No overlapping matches found.
+
+================================================================================
+TIMESTAMP PATTERN ANALYSIS REPORT
+================================================================================
+
+Log Type: WORKSPACE_USERS
+
+Log Line (first 200 chars):
+{"GivenName":"Stan","Surname":"Conrad","UserPrincipalName":"stan.conrad@lunarstiiiness.com","Enabled":true,"SamAccountName":"stan.conrad","SID":{"BinaryLength":28,"AccountDomainSid":{"BinaryLength":24...
+
+Log Line Length: 41761 characters
+
+--------------------------------------------------------------------------------
+PATTERN MATCHES:
+--------------------------------------------------------------------------------
+
+Pattern Name: gcp_lastLoginTime
+Pattern: (lastLoginTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")
+Match Count: 0
+----------------------------------------
+
+================================================================================
+OVERLAP ANALYSIS:
+================================================================================
+
+No overlapping matches found.

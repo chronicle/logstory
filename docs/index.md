@@ -6,10 +6,19 @@ LogStory is used to update timestamps in telemetry (i.e. logs) and then replay t
 
 The stories are organized as "usecases", which always contain events and may contain entities, reference lists, and/or Yara-L 2.0 Detection Rules. Each usecase includes a ReadMe to describe its use.
 
-Only the RULES_SEARCH_WORKSHOP is included witht the PyPI package. Learning about and installing addition usecases is described in [usecases](./usecase_docs/ReadMe.md).
+Only the RULES_SEARCH_WORKSHOP is included with the PyPI package. Learning about and installing addition usecases is described in [usecases](./usecase_docs/ReadMe.md).
 
 ```{tip} It is strongly recommended to review each usecase before ingestion rather than importing them all at once.
 ```
+
+## Documentation
+
+For comprehensive documentation on using Logstory:
+
+- **[CLI Reference](cli-reference.md)** - Complete command reference with all options and examples
+- **[Configuration](configuration.md)** - Detailed configuration guide for all environments  
+- **[.env File Reference](env-file.md)** - Complete guide to .env file format and all supported variables
+- **[Local File System Sources](file-sources.md)** - Using `file://` URIs for Chronicle replay use cases and local development
 
 ## Installation
 
@@ -19,22 +28,119 @@ Logstory has a command line interface (CLI), written in Python, that is most eas
 $ pip install logstory
 ```
 
-The `logstory` CLI interface has subcommands, which take arguments like so:
+The `logstory` CLI interface uses command groups and subcommands with arguments like so:
 ```
-logstory usecase_replay RULES_SEARCH_WORKSHOP
+logstory replay usecase RULES_SEARCH_WORKSHOP
 ```
 
 These are explained in depth later in this doc.
 
 ## Configuration
 
-After the subcommand, Logstory uses Google's [Abseil](https://abseil.io/docs/python/quickstart.html) library for parameterization of the CLI (aka "flags"). Once installed, it is easiest to configure the CLI flags in an [Abseil flagfile](https://abseil.io/docs/python/guides/flags#a-note-about---flagfile) like this one:
+After the subcommand, Logstory uses [Typer](https://typer.tiangolo.com/) for modern CLI argument and option handling. You can provide configuration in several ways:
 
+**1. Command Line Options:**
 ```
-logstory usecase_replay RULES_SEARCH_WORKSHOP \
---customer_id=01234567-0123-4321-abcd-01234567890a \
---credentials_path=/usr/local/google/home/dandye/.ssh/malachite-787fa7323a7d_bk_and_ing.json \
---timestamp_delta=1d  # optional
+logstory replay usecase RULES_SEARCH_WORKSHOP \
+  --customer-id=01234567-0123-4321-abcd-01234567890a \
+  --credentials-path=/usr/local/google/home/dandye/.ssh/malachite-787fa7323a7d_bk_and_ing.json \
+  --timestamp-delta=1d
+```
+
+**2. Environment Files (.env):**
+All commands support the `--env-file` option to load environment variables from a file:
+```bash
+# For usecases commands
+logstory usecases list-available --env-file .env.prod
+logstory usecases get MY_USECASE --env-file .env.dev
+
+# For replay commands
+logstory replay usecase RULES_SEARCH_WORKSHOP --env-file .env
+```
+
+```{tip}
+For complete .env file syntax, all supported variables, and example configurations, see the [.env File Reference](env-file.md).
+```
+
+### Usecase Sources
+
+Logstory can source usecases from multiple sources using URI-style prefixes. Configure sources using the `LOGSTORY_USECASES_BUCKETS` environment variable:
+
+```bash
+# Single bucket (default)
+export LOGSTORY_USECASES_BUCKETS=gs://logstory-usecases-20241216
+
+# Multiple sources (comma-separated)  
+export LOGSTORY_USECASES_BUCKETS=gs://logstory-usecases-20241216,gs://my-custom-bucket,gs://team-bucket
+
+# Mix GCS and local file system sources
+export LOGSTORY_USECASES_BUCKETS=gs://logstory-usecases-20241216,file:///path/to/local/usecases
+
+# Local file system only
+export LOGSTORY_USECASES_BUCKETS=file:///path/to/chronicle/usecases
+
+# Backward compatibility (bare bucket names auto-prefixed with gs://)
+export LOGSTORY_USECASES_BUCKETS=logstory-usecases-20241216,my-custom-bucket
+```
+
+**Supported Source Types:**
+- **`gs://bucket-name`**: Google Cloud Storage buckets
+- **`file://path`**: Local file system directories
+- **Future support planned**: `git@github.com:user/repo.git`, `s3://bucket-name`
+
+**Authentication:**
+- **GCS public buckets**: Accessed anonymously (no authentication required)
+- **GCS private buckets**: Requires `gcloud application-default login` credentials
+- **Local file system**: No authentication required (uses file system permissions)
+- The system automatically tries authenticated access first, then falls back to anonymous access
+
+**URI-Style Prefixes:**
+- Use `gs://` prefix for explicit GCS bucket specification
+- Use `file://` prefix for local file system directories (absolute paths required)
+- Bare bucket names automatically treated as GCS buckets (backward compatibility)
+- Future Git support: `git@github.com:user/usecases.git` or `https://github.com/user/usecases.git`
+
+**Commands:**
+```bash
+# List usecases from all configured sources
+logstory usecases list-available
+
+# Override source configuration for a single command
+logstory usecases list-available --usecases-bucket gs://my-specific-bucket
+
+# Download usecase (searches all configured sources)
+logstory usecases get MY_USECASE
+
+# Examples with different source types
+logstory usecases list-available --usecases-bucket file:///path/to/local/usecases
+logstory usecases get USECASE_NAME --usecases-bucket file:///path/to/local/usecases
+
+# Future Git support (when supported)
+logstory usecases list-available --usecases-bucket git@github.com:myorg/usecases.git
+```
+
+#### Migration from Pre-URI Configuration
+
+If you're upgrading from a version without URI-style prefixes:
+
+**Before:**
+```bash
+export LOGSTORY_USECASES_BUCKETS=logstory-usecases-20241216,my-bucket
+```
+
+**After (recommended):**
+```bash
+# GCS buckets with explicit prefixes
+export LOGSTORY_USECASES_BUCKETS=gs://logstory-usecases-20241216,gs://my-bucket
+
+# Or mix with local file system
+export LOGSTORY_USECASES_BUCKETS=gs://logstory-usecases-20241216,file:///path/to/local/usecases
+```
+
+**Note:** The old format still works (backward compatibility), but using explicit URI prefixes (`gs://`, `file://`) is recommended for clarity and future compatibility.
+
+```{tip}
+For advanced configuration scenarios, environment files, CI/CD integration, and troubleshooting, see the comprehensive [Configuration Guide](configuration.md).
 ```
 
 ### Customer ID
@@ -66,10 +172,10 @@ The image below shows that original timestamps on 2023-06-23 (top two subplots) 
 When timestamp_delta is set to 0d (zero days), only year, month, and day are updated (to today) and the hours, minutes, seconds, and milliseconds are preserved. That hour may be in the future, so when timestamp_delta is set to 1d the year, month, and day are set to today minus 1 day and the hours, minutes, seconds, and milliseconds are preserved.
 
 ```{tip}
-For best results, use a cron jobs to run the usecase daily at 12:01am with `--timestamp_delta=1d`.
+For best results, use a cron jobs to run the usecase daily at 12:01am with `--timestamp-delta=1d`.
 ```
 
-You may also provide `Nh` for offsetting by the hour, which is mainly useful if you want to replay the same log file multiple times per day (and prevend deduplication). Likewise, `Nm` offsets by minutes. These can be combined. For example, on the day of writing (Dec 13, 2024)`--timestamp_delta=1d1h1m` changes an original timestamp from/to:
+You may also provide `Nh` for offsetting by the hour, which is mainly useful if you want to replay the same log file multiple times per day (and prevent deduplication). Likewise, `Nm` offsets by minutes. These can be combined. For example, on the day of writing (Dec 13, 2024)`--timestamp-delta=1d1h1m` changes an original timestamp from/to:
 ```
 2021-12-01T13:37:42.123Z1
 2024-12-12T12:36:42.123Z1
@@ -134,23 +240,32 @@ LogStory automatically validates timestamp configurations at runtime to ensure:
 
 If configuration validation fails, LogStory will provide clear error messages indicating the specific log type, timestamp, and issue found.
 
-## Flags and flag files
+## Command Structure
 
-Assuming your flagfile is named config.cfg, you can use it to define all of the required flags and then invoke with:
-
-```
-logstory usecase_replay_logtype RULES_SEARCH_WORKSHOP POWERSHELL --flagfile=config.cfg
-```
-
-That updates timestamps and all uploads from a single logfile in a single usecase. The following updates timestamps and uploads only entities (rather than events) from and overrides the timestamp_delta in the flagfile (if it is specified):
+Logstory uses a modern CLI structure with command groups. You can replay specific logtypes like this:
 
 ```
-logstory usecase_replay_logtype RULES_SEARCH_WORKSHOP POWERSHELL --flagfile=config.cfg --timestamp_delta=0d --entities
+logstory replay logtype RULES_SEARCH_WORKSHOP POWERSHELL \
+  --customer-id=01234567-0123-4321-abcd-01234567890a \
+  --credentials-path=/path/to/credentials.json
 ```
 
-You can increase verbocity with by prepending the python log level:
+That updates timestamps and uploads from a single logfile in a single usecase. The following updates timestamps and uploads only entities (rather than events):
+
 ```
-PYTHONLOGLEVEL=DEBUG logstory usecase_replay RULES_SEARCH_WORKSHOP --flagfile=config.cfg --timestamp_delta=0d
+logstory replay logtype RULES_SEARCH_WORKSHOP POWERSHELL \
+  --customer-id=01234567-0123-4321-abcd-01234567890a \
+  --credentials-path=/path/to/credentials.json \
+  --timestamp-delta=0d \
+  --entities
+```
+
+You can increase verbosity by prepending the python log level:
+```
+PYTHONLOGLEVEL=DEBUG logstory replay usecase RULES_SEARCH_WORKSHOP \
+  --customer-id=01234567-0123-4321-abcd-01234567890a \
+  --credentials-path=/path/to/credentials.json \
+  --timestamp-delta=0d
 ```
 
 For more usage, see `logstory --help`
@@ -194,20 +309,32 @@ gs://logstory-usecases-20241216/EDR_WORKSHOP \
 
 To make that easier:
 ```
-❯ logstory usecases_list_available
+❯ logstory usecases list-available
 
-Available usecases in bucket 'logstory-usecases-20241216':
+Available usecases in source 'gs://logstory-usecases-20241216':
 - EDR_WORKSHOP
 - RULES_SEARCH_WORKSHOP
-['EDR_WORKSHOP', 'RULES_SEARCH_WORKSHOP']
+```
+
+For multiple sources:
+```
+❯ export LOGSTORY_USECASES_BUCKETS=gs://logstory-usecases-20241216,gs://my-private-bucket  
+❯ logstory usecases list-available
+
+Available usecases in source 'gs://logstory-usecases-20241216':
+- EDR_WORKSHOP
+- RULES_SEARCH_WORKSHOP
+
+Available usecases in source 'gs://my-private-bucket':
+- CUSTOM_USECASE
+- TEAM_ANALYSIS
+
+All available usecases: CUSTOM_USECASE, EDR_WORKSHOP, RULES_SEARCH_WORKSHOP, TEAM_ANALYSIS
 ```
 
 ```
-❯ logstory usecase_get EDR_WORKSHOP
-
-Available usecases in bucket 'logstory-usecases-20241216':
-- EDR_WORKSHOP
-- RULES_SEARCH_WORKSHOP
+❯ logstory usecases get EDR_WORKSHOP
+Downloading usecase 'EDR_WORKSHOP' from source 'gs://logstory-usecases-20241216'
 Downloading EDR_WORKSHOP/EDR_WORKSHOP.md to [redacted]/logstory/usecases/EDR_WORKSHOP/EDR_WORKSHOP.md
 Downloading EDR_WORKSHOP/EVENTS/CS_DETECTS.log to [redacted]/logstory/src/logstory/usecases/EDR_WORKSHOP/EVENTS/CS_DETECTS.log
 Downloading EDR_WORKSHOP/EVENTS/CS_EDR.log to [redacted]/logstory/src/logstory/usecases/EDR_WORKSHOP/EVENTS/CS_EDR.log
@@ -215,9 +342,7 @@ Downloading EDR_WORKSHOP/EVENTS/WINDOWS_SYSMON.log to [redacted]/logstory/src/lo
 ```
 
 ```
-❯ logstory usecase_list
-Unknown command: usecase_list
-❯ logstory usecases_list
+❯ logstory usecases list-installed
 #
 # EDR_WORKSHOP
 #

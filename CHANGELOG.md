@@ -4,7 +4,25 @@
 
 ## Unreleased
 
+### Changed
+- **BREAKING**: Migrated CLI from Abseil to Typer with command groups and subcommands
+  - Command structure now uses groups: `logstory usecases COMMAND` and `logstory replay COMMAND`
+  - Flag names changed to use hyphens: `--customer-id` instead of `--customer_id`
+  - Improved help system with auto-generated documentation
+  - Better error handling and validation
+  - See README.md for command migration guide
+- Improved `list-installed` command with better default behavior
+  - Default now shows just usecase names (clean and scannable)
+  - `--details` flag shows full markdown content (previous default behavior)
+  - `--logtypes` flag shows logtypes with clean indentation
+
 ### Added
+- `--open` flag for `usecases list-installed` to open markdown files in VS Code
+- `--details` flag for `usecases list-installed` to show full markdown content
+- Environment file support with `--env-file` option for configuration management
+- Support for environment variables: `LOGSTORY_CUSTOMER_ID`, `LOGSTORY_CREDENTIALS_PATH`, `LOGSTORY_REGION`
+- Automatic loading of `.env` file if present in working directory
+- Multiple environment configuration support (e.g., `.env.prod`, `.env.dev`)
 - Comprehensive pre-commit hooks configuration for code quality
   - Python linting with ruff
   - Python formatting with pyink (2-space indentation)

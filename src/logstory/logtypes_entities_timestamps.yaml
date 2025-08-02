@@ -13,22 +13,38 @@
 # limitations under the License.
 
 ---
-  GCP_BIGQUERY_CONTEXT:
-    api: unstructuredlogentries
-    timestamps:
+AZURE_AD_CONTEXT:
+  api: unstructuredlogentries
+  timestamps:
+    # PRESERVED: base_time entry
+    - name: onPremisesLastSyncDateTime_base_time
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("onPremisesLastSyncDateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(Z)'
+      epoch: false
+      group: 2
+    # NEW: Consolidated generic pattern
+    - name: AZURE_AD_generic_timestamp
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("[^"]+DateTime":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+      group: 2
+      # Replaces: created_date_time, assigned_dt, refresh_token_valid_from_dt,
+      #          signin_session_valid_from_dt, approx_last_signin_dt, registration_dt
+GCP_BIGQUERY_CONTEXT:
+  api: unstructuredlogentries
+  timestamps:
     - name: gcp_creationTime
       base_time: true
-      epoch: true
+      dateformat: 'epoch'
       group: 2
       pattern: '("creationTime":\s*"?)(\d{10})'
     - name: gcp_expirationTime
-      epoch: true
+      dateformat: 'epoch'
       group: 2
       pattern: '("expirationTime":\s*"?)(\d{10})'
-
-  GCP_COMPUTE_CONTEXT:
-    api: unstructuredlogentries
-    timestamps:
+GCP_COMPUTE_CONTEXT:
+  api: unstructuredlogentries
+  timestamps:
     - name: gcp_creationTimestamp
       dateformat: '%Y-%m-%dT%H:%M:%S'
       base_time: true
@@ -40,62 +56,46 @@
       epoch: false
       group: 2
       pattern: '(lastStartTimestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
-
-  GCP_DLP_CONTEXT:
-    api: unstructuredlogentries
-    timestamps:
+GCP_DLP_CONTEXT:
+  api: unstructuredlogentries
+  timestamps:
+    # PRESERVED: base_time entry
     - name: gcp_dlp_entity_timestamp
       base_time: true
       dateformat: '%Y-%m-%dT%H:%M:%S'
       epoch: false
       group: 2
       pattern: '(timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")'
-    - name: gcp_dlp_entity_createTime
+    # NEW: Consolidated generic pattern
+    - name: GCP_DLP_generic_timestamp
       dateformat: '%Y-%m-%dT%H:%M:%S'
-      epoch: false
       group: 2
-      pattern: '(createTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")'
-    - name: gcp_dlp_entity_lastModifiedTime
-      dateformat: '%Y-%m-%dT%H:%M:%S'
-      epoch: false
-      group: 2
-      pattern: '(lastModifiedTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")'
-    - name: gcp_dlp_entity_expirationTime
-      dateformat: '%Y-%m-%dT%H:%M:%S'
-      epoch: false
-      group: 2
-      pattern: '(expirationTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")'
-    - name: gcp_dlp_entity_profileLastGenerated
-      dateformat: '%Y-%m-%dT%H:%M:%S'
-      epoch: false
-      group: 2
-      pattern: '(profileLastGenerated"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")'
-
-  GCP_IAM_ANALYSIS:
-    api: entities
-    timestamps:
+      pattern: '([^"]+Time"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+      # Replaces: gcp_dlp_entity_createTime, gcp_dlp_entity_lastModifiedTime,
+      #          gcp_dlp_entity_expirationTime, gcp_dlp_entity_profileLastGenerated
+GCP_IAM_ANALYSIS:
+  api: entities
+  timestamps:
     - name: gcp_iam_entity_timestamp
       base_time: true
-      epoch: true
+      dateformat: 'epoch'
       group: 2
       pattern: '("seconds":\s*"?)(\d+)(\s*")'
-
-  GCP_IAM_CONTEXT:
-    api: unstructuredlogentries
-    timestamps:
+GCP_IAM_CONTEXT:
+  api: unstructuredlogentries
+  timestamps:
     - name: gcp_Timestamp
       base_time: true
       dateformat: '%Y-%m-%dT%H:%M:%S'
       epoch: false
       group: 2
       pattern: '(timestamp"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
-
-  MISP_IOC:
-    api: unstructuredlogentries
-    timestamps:
+MISP_IOC:
+  api: unstructuredlogentries
+  timestamps:
     - name: time
       base_time: true
-      epoch: true
+      dateformat: 'epoch'
       group: 1
       pattern: '(\d{10})'
     - name: date
@@ -103,14 +103,13 @@
       epoch: false
       group: 1
       pattern: '(\d{4}-\d{2}-\d{2})'
-
-  OKTA_USER_CONTEXT:
-    api: unstructuredlogentries
-    btsepoch: false
-    btsformat: '%Y-%m-%dT%H:%M:%S'
-    btsgroup: 2
-    btspattern: '(lastLogin"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")'
-    timestamps:
+OKTA_USER_CONTEXT:
+  api: unstructuredlogentries
+  btsepoch: false
+  btsformat: '%Y-%m-%dT%H:%M:%S'
+  btsgroup: 2
+  btspattern: '(lastLogin"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")'
+  timestamps:
     - name: lastLogin
       dateformat: '%Y-%m-%dT%H:%M:%S'
       base_time: true
@@ -122,19 +121,69 @@
       epoch: false
       group: 2
       pattern: '(lastUpdated"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z\s*|Z")'
-
-  WINDOWS_AD:
-    api: unstructuredlogentries
-    timestamps:
+WINDOWS_AD_OLD:
+  api: unstructuredlogentries
+  timestamps:
     - name: Date
       base_time: true
-      epoch: true
+      dateformat: 'epoch'
       group: 3
       pattern: '("\\/Date\()(-?)(\d{10})(\d{3})'
-
-  WORKSPACE_USERS:
-    api: unstructuredlogentries
-    timestamps:
+WINDOWS_AD:
+  api: unstructuredlogentries
+  timestamps:
+    - name: Created
+      base_time: true
+      dateformat: 'epoch'
+      group: 2
+      pattern: '("Created":"\\\/Date\()(\d{10})(\d{3})'
+    - name: whenCreatedDate
+      dateformat: 'epoch'
+      group: 2
+      pattern: '("whenCreated":"\\\/Date\()(\d{10})(\d{3})'
+    - name: LastLogonDate
+      dateformat: 'epoch'
+      group: 2
+      pattern: '("LastLogonDate":"\\\/Date\()(\d{10})(\d{3})'
+    - name: createTimeStamp
+      dateformat: 'epoch'
+      group: 2
+      pattern: '("createTimeStamp":"\\\/Date\()(\d{10})(\d{3})'
+    - name: Modified
+      dateformat: 'epoch'
+      group: 2
+      pattern: '("Modified":"\\\/Date\()(\d{10})(\d{3})'
+    - name: modifyTimeStamp
+      dateformat: 'epoch'
+      group: 2
+      pattern: '("modifyTimeStamp":"\\\/Date\()(\d{10})(\d{3})'
+    - name: PasswordLastSet
+      dateformat: 'epoch'
+      group: 2
+      pattern: '("PasswordLastSet":"\\\/Date\()(\d{10})(\d{3})'
+    - name: whenChanged
+      dateformat: 'epoch'
+      group: 2
+      pattern: '("whenChanged":"\\\/Date\()(\d{10})(\d{3})'
+    - name: lastLogonWinFileTime
+      pattern: '("lastLogon":)(\d{18})'
+      dateformat: 'windowsfiletime'
+      group: 2
+    - name: badPasswordTimeWinFileTime
+      pattern: '("badPasswordTime":)(\d{18})'
+      dateformat: 'windowsfiletime'
+      group: 2
+    - name: lastLogonTimestampTimeWinFileTime
+      pattern: '("lastLogonTimestamp":)(\d{18})'
+      dateformat: 'windowsfiletime'
+      group: 2
+    - name: pwdLastSetTimeWinFileTime
+      pattern: '("pwdLastSet":)(\d{18})'
+      dateformat: 'windowsfiletime'
+      group: 2
+WORKSPACE_USERS:
+  api: unstructuredlogentries
+  timestamps:
     - name: gcp_lastLoginTime
       base_time: true
       dateformat: '%Y-%m-%dT%H:%M:%S'

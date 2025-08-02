@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "logstory"
-version = "0.1.4"
+version = "1.0.0"
 authors = [
   { name = "Google Cloud Security" },
 ]
@@ -17,7 +17,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "absl-py == 2.1",
+    "typer[all] >= 0.12.0",
     "google-cloud-storage == 2.10",
     "google-cloud-secret-manager ~= 2.16.0", # Updated version
     "setuptools >= 61.0", # Added setuptools
@@ -25,6 +25,7 @@ dependencies = [
     "google-auth == 2.23",
     "oyaml >= 1.0",
     "requests ~= 2.32.3",
+    "python-dotenv >= 1.0.0",
 ]
 
 [project.urls]

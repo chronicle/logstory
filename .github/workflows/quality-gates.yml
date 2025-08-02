@@ -160,7 +160,7 @@ jobs:
 
                   for i, ts in enumerate(timestamps):
                       # Required fields check
-                      required = ['name', 'pattern', 'epoch', 'group']
+                      required = ['name', 'pattern', 'dateformat', 'group']
                       for field in required:
                           if field not in ts:
                               errors.append(f'{log_type}[{i}]: Missing {field}')
@@ -171,14 +171,10 @@ jobs:
                       except re.error as e:
                           errors.append(f'{log_type}[{i}]: Invalid regex pattern: {e}')
 
-                      # Epoch/dateformat consistency
-                      epoch = ts.get('epoch')
-                      has_dateformat = 'dateformat' in ts
-
-                      if epoch is True and has_dateformat:
-                          errors.append(f'{log_type}[{i}]: epoch=true should not have dateformat')
-                      elif epoch is False and not has_dateformat:
-                          errors.append(f'{log_type}[{i}]: epoch=false requires dateformat')
+                      # Dateformat validation
+                      dateformat = ts.get('dateformat')
+                      if not dateformat:
+                          errors.append(f'{log_type}[{i}]: Missing dateformat field')
 
                       # Base time validation
                       if ts.get('base_time'):

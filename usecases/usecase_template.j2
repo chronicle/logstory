@@ -1,0 +1,95 @@
+# {{ title }}
+
+## Introduction
+
+{{ description }}
+
+{% if tags %}
+**Tags**: {{ tags | join(', ') }}
+{% endif %}
+
+{% if created %}
+**Created**: {{ created }}
+{% endif %}
+
+{% if updated %}
+**Updated**: {{ updated }}
+{% endif %}
+
+{% if run_frequency %}
+## Run Frequency
+
+{% if run_frequency.events %}
+**Events**: {{ run_frequency.events }}
+{% endif %}
+
+{% if run_frequency.entities %}
+**Entities**: {{ run_frequency.entities }}
+{% endif %}
+{% endif %}
+
+{% if data_rbac %}
+## Data RBAC
+
+**Note**: {{ data_rbac }}
+{% endif %}
+
+## Events
+
+{% if events and events | length > 0 and events[0].log_type != "N/A" %}
+| Log Type | Product Name | Vendor Name | Notes |
+|----------|--------------|-------------|-------|
+{% for event in events %}
+| {{ event.log_type }} | {{ event.product_name }} | {{ event.vendor_name }} | {{ event.notes | default('') }} |
+{% endfor %}
+{% else %}
+No events configured for this usecase.
+{% endif %}
+
+## Entities
+
+{% if entities and entities | length > 0 and entities[0].log_type != "N/A" %}
+| Log Type | Product Name | Vendor Name | Notes |
+|----------|--------------|-------------|-------|
+{% for entity in entities %}
+| {{ entity.log_type }} | {{ entity.product_name }} | {{ entity.vendor_name }} | {{ entity.notes | default('') }} |
+{% endfor %}
+{% else %}
+No entities configured for this usecase.
+{% endif %}
+
+## Rules
+
+{% if rules and rules | length > 0 and rules[0].name != "" %}
+| Rule Name | Live | Alerting | Notes |
+|-----------|------|----------|-------|
+{% for rule in rules %}
+| {{ rule.name }} | {{ rule.live | title }} | {{ rule.alerting | title }} | {{ rule.notes | default('') }} |
+{% endfor %}
+{% else %}
+No rules configured for this usecase.
+{% endif %}
+
+{% if saved_searches and saved_searches | length > 0 and saved_searches[0].name != "N/A" %}
+## Saved Searches
+
+| Search Name | Creator | Notes |
+|-------------|---------|-------|
+{% for search in saved_searches %}
+| {{ search.name }} | {{ search.creator | default('') }} | {{ search.notes | default('') }} |
+{% endfor %}
+{% endif %}
+
+{% if reference_lists and reference_lists | length > 0 and reference_lists[0].name != "N/A" %}
+## Reference Lists
+
+| List Name | Type | Notes |
+|-----------|------|-------|
+{% for ref_list in reference_lists %}
+| {{ ref_list.name }} | {{ ref_list.type | default('') }} | {{ ref_list.notes | default('') }} |
+{% endfor %}
+{% endif %}
+
+---
+
+*This document was generated from YAML frontmatter using the usecase template.*

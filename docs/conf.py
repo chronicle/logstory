@@ -76,7 +76,7 @@ try:
       capture_output=True,
       text=True,
       check=True,
-      timeout=10
+      timeout=10,
   )
   git_version = result.stdout.strip()
 except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):

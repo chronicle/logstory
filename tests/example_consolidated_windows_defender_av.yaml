@@ -1,0 +1,44 @@
+# Example consolidation for WINDOWS_DEFENDER_AV
+# This shows how 10 duplicate strftime formats can be consolidated to 1
+
+WINDOWS_DEFENDER_AV:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    # PRESERVED: base_time entry (must remain as-is)
+    - name: EventTime
+      base_time: true
+      pattern: ("EventTime":)(\d+)(,)
+      dateformat: 'epoch'
+      group: 2
+
+    # PRESERVED: syslog_timestamp (different format)
+    - name: syslog_timestamp
+      dateformat: "%b %d %H:%M:%S"
+      pattern: '(<\d+>)([a-zA-Z]{3}\s+\d+\s+\d\d:\d\d:\d\d)'
+      group: 2
+
+    # PRESERVED: EventReceivedTime (epoch format)
+    - name: EventReceivedTime
+      pattern: ("EventReceivedTime":)(\d+)(,)
+      dateformat: 'epoch'
+      group: 2
+
+    # NEW CONSOLIDATED PATTERN: Replaces 10 duplicate "%m/%d/%Y %I:%M:%S %p" entries
+    - name: WINDOWS_DEFENDER_AV_generic_timestamp
+      dateformat: "%m/%d/%Y %I:%M:%S %p"
+      # This generic pattern matches any text followed by the US date/time format
+      # It will match all the various security intelligence and scan time fields
+      pattern: '([^:]+(?:time|Timestamp)(?:[^:]*)?:\s*"?)(\d{1,2}/\d{1,2}/\d{4} \d{1,2}:\d{2}:\d{2} [AP]M)'
+      group: 2
+      # Replaces these 10 entries:
+      # - DynamicSecurityIntelligenceCompilationTimestamp
+      # - DynamicSecurityIntelligenceCompilationTimestampQuotes
+      # - LastQuickScanStartTime
+      # - LastQuickScanStartTimeQuotes
+      # - LastQuickScanEndTime
+      # - LastQuickScanEndTimeQuotes
+      # - Antivirus_security_intelligence_creation_time
+      # - AV_security_intelligence_creation_time_quotes
+      # - AS_security_intelligence_creation_time_quotes
+      # - Antispyware_security_intelligence_creation_time

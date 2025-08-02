@@ -17,7 +17,8 @@ import datetime
 import json
 import os
 import re
-from typing import Any
+from pathlib import Path
+from typing import Any, Protocol
 
 import requests as real_requests
 import yaml
@@ -25,10 +26,24 @@ from google.auth.transport import requests
 from google.cloud import secretmanager, storage
 from google.oauth2 import service_account
 
+
+# Type for match-like objects
+class MatchLike(Protocol):
+  """Protocol for objects that behave like regex matches."""
+  def start(self) -> int: ...
+  def end(self) -> int: ...
+  def group(self, n: int = 0) -> str: ...
+
+
 # Constants
 DEFAULT_YEAR_FOR_INCOMPLETE_TIMESTAMPS = 1900
 BATCH_SIZE_THRESHOLD = 1000
 BATCH_BYTES_THRESHOLD = 500_000
+# Windows epoch (Jan 1, 1601) in Unix epoch (Jan 1, 1970) seconds
+# This is the difference in 100-nanosecond intervals between the two epochs.
+EPOCH_AS_FILETIME = 116444736000000000
+# Number of 100-nanosecond intervals in one second
+HUNDREDS_OF_NANOSECONDS = 10000000
 
 level = os.environ.get("PYTHONLOGLEVEL", "INFO").upper()
 try:  # main.py shouldn't need abseil
@@ -96,6 +111,30 @@ if service_account_info:  # optional to facilitate unit testing
   http_client = requests.AuthorizedSession(credentials)
 
 
+def filetime_to_datetime(filetime):
+  """Converts a Windows File Time to a Python datetime object.
+
+  Win File Time is a 64-bit integer representing 100-nanosecond intervals
+  since Jan 1, 1601 UTC.
+  """
+  # Calculate seconds since Unix epoch
+  seconds_since_unix_epoch = (filetime - EPOCH_AS_FILETIME) / HUNDREDS_OF_NANOSECONDS
+  # Create datetime object from Unix timestamp (UTC)
+  return datetime.datetime.fromtimestamp(seconds_since_unix_epoch, UTC)
+
+
+def datetime_to_filetime(dt):
+  """Converts a Python datetime object to a Windows File Time.
+
+  Win File Time is a 64-bit integer representing 100-nanosecond intervals
+  since Jan 1, 1601 UTC.
+  """
+  # Convert datetime to Unix timestamp (seconds since Jan 1, 1970 UTC)
+  unix_timestamp = dt.timestamp()
+  # Convert to 100-nanosecond intervals and add Windows epoch offset
+  return int(unix_timestamp * HUNDREDS_OF_NANOSECONDS + EPOCH_AS_FILETIME)
+
+
 def _get_timestamp_delta_dict(timestamp_delta: str) -> dict[str, int]:
   """Parses the timestamp delta string into a dictionary."""
   ts_delta_pairs = re.findall(r"(\d+)([dhm])", timestamp_delta)
@@ -125,7 +164,7 @@ def _validate_timestamp_config(log_type: str, timestamp_map: dict[str, Any]) -> 
 
   for i, timestamp in enumerate(timestamps):
     # Check for required fields
-    required_fields = ["name", "pattern", "epoch", "group"]
+    required_fields = ["name", "pattern", "group", "dateformat"]
     for field in required_fields:
       if field not in timestamp:
         raise ValueError(
@@ -136,24 +175,18 @@ def _validate_timestamp_config(log_type: str, timestamp_map: dict[str, Any]) -> 
     if timestamp.get("base_time"):
       base_time_count += 1
 
-    # Check epoch/dateformat consistency
-    epoch = timestamp.get("epoch")
-    has_dateformat = "dateformat" in timestamp
+    # Validate dateformat
+    dateformat = timestamp.get("dateformat")
 
-    if epoch is True and has_dateformat:
-      raise ValueError(
-          f"Log type '{log_type}' timestamp {i} ({timestamp['name']}): epoch=true"
-          f" should not have dateformat field, but found '{timestamp['dateformat']}'"
-      )
-    if epoch is False and not has_dateformat:
-      raise ValueError(
-          f"Log type '{log_type}' timestamp {i} ({timestamp['name']}): "
-          "epoch=false requires dateformat field"
-      )
-    if epoch is False and timestamp.get("dateformat") == "%s":
+    # Dateformat must be one of the three valid types:
+    # 1. 'epoch' - for Unix epoch timestamps
+    # 2. 'windowsfiletime' - for Windows FileTime format
+    # 3. A strftime format string (e.g., "%Y-%m-%d %H:%M:%S")
+
+    if not dateformat:
       raise ValueError(
           f"Log type '{log_type}' timestamp {i} ({timestamp['name']}): "
-          "epoch=false should not use dateformat='%s' (use epoch=true instead)"
+          "missing required 'dateformat' field"
       )
 
     # Check field types
@@ -161,8 +194,10 @@ def _validate_timestamp_config(log_type: str, timestamp_map: dict[str, Any]) -> 
       raise ValueError(f"Log type '{log_type}' timestamp {i}: 'name' must be string")
     if not isinstance(timestamp.get("pattern"), str):
       raise ValueError(f"Log type '{log_type}' timestamp {i}: 'pattern' must be string")
-    if not isinstance(timestamp.get("epoch"), bool):
-      raise ValueError(f"Log type '{log_type}' timestamp {i}: 'epoch' must be boolean")
+    if not isinstance(timestamp.get("dateformat"), str):
+      raise ValueError(
+          f"Log type '{log_type}' timestamp {i}: 'dateformat' must be string"
+      )
     if not isinstance(timestamp.get("group"), int) or timestamp.get("group") < 1:
       raise ValueError(
           f"Log type '{log_type}' timestamp {i}: 'group' must be positive integer"
@@ -242,13 +277,13 @@ def _get_current_time():
   return datetime.datetime.now(UTC)
 
 
-def _update_timestamp(
+def _calculate_timestamp_replacement(
     log_text: str,
     timestamp: dict[str, str],
     old_base_time: datetime.datetime,
     ts_delta_dict: dict[str, int],
-) -> str:
-  """Updates 1 timestamp in the line of log text based on provided parameters.
+) -> tuple[MatchLike, str] | None:
+  """Calculates the replacement for a timestamp without modifying the text.
 
   Args:
     log_text: string containing timestamp and other text
@@ -258,27 +293,32 @@ def _update_timestamp(
       the updated timestamp will be now() - [Nd]days -[Nh]hours - [Nm]mins
       ex. 2024-03-14T13:37:42.123456Z and {d: 1, h: 1, m: 1} ->
           2024-03-13T12:36:42.123456Z
-      Note that the seconds and miliseconds are always preserved.
+      Note that the seconds and milliseconds are always preserved.
 
   Returns:
-    log_text: updated timestamp string
+    Tuple of (match object, replacement string) or None if no match
   """
-  group_index = int(timestamp["group"]) - 1
   ts_match = re.search(timestamp["pattern"], log_text)
   if ts_match:
-    # Return value is a tuple, cast it to list, so we can replace one item
-    groups = list(ts_match.groups())
-    event_timestamp = groups[group_index]
+    # Get the specific group we're updating
+    event_timestamp = ts_match.group(timestamp["group"])
     event_time = None
-    if timestamp.get("epoch"):
-      dateformat = "%s"  # For output formatting
+    is_filetime = False
+    is_epoch = False
+
+    dateformat = timestamp.get("dateformat")
+
+    if dateformat == "epoch":
+      # Unix epoch timestamp
+      is_epoch = True
       event_time = datetime.datetime.fromtimestamp(int(event_timestamp))
-    elif timestamp.get("dateformat"):
-      dateformat = str(timestamp["dateformat"])
-      event_time = datetime.datetime.strptime(event_timestamp, dateformat)
+    elif dateformat == "windowsfiletime":
+      # Special handling for Windows FileTime
+      is_filetime = True
+      event_time = filetime_to_datetime(int(event_timestamp))
     else:
-      # No epoch or dateformat - skip this timestamp
-      return log_text
+      # Standard strptime format
+      event_time = datetime.datetime.strptime(event_timestamp, dateformat)
 
     if event_time:
       # `old_base_time` is the base t (bts) in the first line of the
@@ -306,10 +346,96 @@ def _update_timestamp(
             minutes=ts_delta_dict.get("m", 0),
         )
         new_event_time = new_event_time - hm_delta
-      new_event_timestamp = new_event_time.strftime(dateformat)
-      groups[group_index] = new_event_timestamp
-      log_text = re.sub(timestamp["pattern"], "".join(groups), log_text)
-  return log_text
+
+      # Format the new timestamp appropriately
+      if is_filetime:
+        # Convert back to Windows FileTime
+        new_event_timestamp = str(datetime_to_filetime(new_event_time))
+      elif is_epoch:
+        # Convert back to Unix epoch
+        new_event_timestamp = str(int(new_event_time.timestamp()))
+      else:
+        # Use strftime with the dateformat
+        new_event_timestamp = new_event_time.strftime(dateformat)
+
+      # Return a match object that represents ONLY the group we're changing
+      # Create a GroupMatch object that has the start/end of the specific group
+      class GroupMatch:
+
+        def __init__(self, match, group_num):
+          self.match = match
+          self.group_num = group_num
+
+        def start(self):
+          return self.match.start(self.group_num)
+
+        def end(self):
+          return self.match.end(self.group_num)
+
+        def group(self, n=0):
+          if n == 0:
+            return self.match.group(self.group_num)
+          return self.match.group(self.group_num)
+
+      return (GroupMatch(ts_match, timestamp["group"]), new_event_timestamp)
+  return None
+
+
+def _write_entries_to_local_file(
+    log_type: str,
+    all_entries: list[dict[str, str]],
+    log_dir: str | None = None,
+) -> None:
+  """Write entries to local log files instead of sending to API.
+
+  Args:
+    log_type: The log type name for the filename
+    all_entries: List of log entries to write
+    log_dir: Directory to write log files to (defaults to /tmp/var/log/logstory)
+  """
+  # Get log directory from environment or use default
+  if log_dir is None:
+    log_dir = os.getenv("LOGSTORY_LOCAL_LOG_DIR", "/tmp/var/log/logstory")
+
+  # Create directory if it doesn't exist
+  log_path = Path(log_dir)
+  try:
+    log_path.mkdir(parents=True, exist_ok=True)
+  except PermissionError:
+    LOGGER.error("Permission denied creating directory: %s", log_path)
+    raise
+  except Exception as e:
+    LOGGER.error("Error creating directory %s: %s", log_path, e)
+    raise
+
+  # Write or overwrite entries to log file
+  log_file_path = log_path / f"{log_type}.log"
+  try:
+    with open(log_file_path, "w", encoding="utf-8") as f:
+      for entry in all_entries:
+        try:
+          # Handle different entry types
+          if isinstance(entry, dict) and "logText" in entry:
+            # unstructuredlogentries format
+            f.write(entry["logText"] + "\n")
+          elif isinstance(entry, dict):
+            # udmevents/entities format - write as JSON
+            f.write(json.dumps(entry) + "\n")
+          else:
+            # fallback for other formats
+            f.write(str(entry) + "\n")
+        except Exception as e:
+          LOGGER.error("Error writing entry to %s: %s", log_file_path, e)
+          continue
+
+    LOGGER.info("Successfully wrote %d entries to %s", len(all_entries), log_file_path)
+
+  except PermissionError:
+    LOGGER.error("Permission denied writing to file: %s", log_file_path)
+    raise
+  except Exception as e:
+    LOGGER.error("Error writing to file %s: %s", log_file_path, e)
+    raise
 
 
 def _post_entries_in_batches(
@@ -317,8 +443,16 @@ def _post_entries_in_batches(
     log_type: str,
     all_entries: list[dict[str, str]],
     ingestion_labels: list[dict[str, str]],
+    local_file_output: bool = False,
+    log_dir: str | None = None,
 ):
-  """Posts entries to the ingestion API in batches."""
+  """Posts entries to the ingestion API in batches or writes to local files."""
+  # If local file output is enabled, write all entries to file and return
+  if local_file_output:
+    _write_entries_to_local_file(log_type, all_entries, log_dir)
+    return
+
+  # Original API posting logic
   entries_bytes = 0
   entries = []
   for i, entry in enumerate(all_entries):
@@ -343,7 +477,9 @@ def _post_entries_in_batches(
 
 
 # pylint: disable-next=g-bare-generic
-def post_entries(api: str, log_type: str, entries: list, ingestion_labels: list[dict[str, Any]]):
+def post_entries(
+    api: str, log_type: str, entries: list, ingestion_labels: list[dict[str, Any]]
+):
   """Send the provided entries to the appropriate ingestion API method.
 
   Args:
@@ -406,6 +542,7 @@ def usecase_replay_logtype(
     timestamp_delta: str | None = None,
     ts_map_path: str | None = "./",
     entities: bool | None = False,
+    local_file_output: bool = False,
 ) -> datetime.datetime | None:
   """Replays log data for a specific use case and log type.
 
@@ -418,9 +555,10 @@ def usecase_replay_logtype(
      to apply to each timestamp pattern match.
     ts_map_path: disk location of the yaml files
     entities: bool for Entities (True) vs Events (False)
+    local_file_output: bool to write to local files instead of API
 
   Returns:
-    old_base_time: so that subequent logtypes/usecases can all use the same value
+    old_base_time: so that subsequent logtypes/usecases can all use the same value
   """
   timestamp_delta = timestamp_delta or "1d"
   ts_delta_dict = _get_timestamp_delta_dict(timestamp_delta)
@@ -440,41 +578,99 @@ def usecase_replay_logtype(
     _validate_timestamp_config(log_type, timestamp_map)
 
     api_for_log_type = timestamp_map[log_type]["api"]
+    # Get optional log_dir from YAML config, defaults to None for backwards compatibility
+    log_type_log_dir = timestamp_map[log_type].get("log_dir")
     log_content = _get_log_content(use_case, log_type, entities)
     ingestion_labels = _get_ingestion_labels(
         use_case, logstory_exe_time, api_for_log_type
     )
     # base time stamp (BTS) determines the anchor point; others are relative
-    btspattern, btsgroup, btsformat, btsepoch = [
+    btspattern, btsgroup, btsformat = [
         (
             timestamp.get("pattern"),
             timestamp.get("group"),
             timestamp.get("dateformat"),
-            timestamp.get("epoch"),
         )
         for timestamp in timestamp_map[log_type]["timestamps"]
         if timestamp.get("base_time")
     ][0]
+
+    # First pass: Find all base_time timestamps and get the maximum
+    if old_base_time is None:
+      base_timestamps = []
+      for log_text in log_content.splitlines():
+        match = re.search(btspattern, log_text)
+        if match and match.groups():
+          timestamp_str = match.group(btsgroup)
+          try:
+            if btsformat == "epoch":
+              # Unix epoch timestamp
+              dt = datetime.datetime.fromtimestamp(int(timestamp_str))
+            elif btsformat == "windowsfiletime":
+              # Windows FileTime
+              dt = filetime_to_datetime(int(timestamp_str))
+            else:
+              # Standard strptime format
+              dt = datetime.datetime.strptime(timestamp_str, btsformat)
+            base_timestamps.append(dt)
+          except (ValueError, OverflowError) as e:
+            LOGGER.warning("Failed to parse base timestamp '%s': %s", timestamp_str, e)
+            continue
+
+      if base_timestamps:
+        old_base_time = max(base_timestamps)
+        LOGGER.debug(
+            "Selected maximum base_time from %d timestamps: %s",
+            len(base_timestamps),
+            old_base_time,
+        )
+      else:
+        LOGGER.error("No valid base_time timestamps found in log file")
+
+    # Second pass: Process log entries
     entries = []
     for line_no, log_text in enumerate(log_content.splitlines()):
-      if old_base_time is None:
-        old_base_match = re.search(btspattern, log_text)
-        if old_base_match and old_base_match.groups():
-          old_base = old_base_match.group(btsgroup)
-          if btsepoch:
-            old_base_time = datetime.datetime.fromtimestamp(int(old_base))
-          elif btsformat:
-            old_base_time = datetime.datetime.strptime(old_base, btsformat)
 
-      # for each timestamp in the yaml file
+      # Collect all timestamp replacements for this line using a change map
+      # This prevents double-updates and handles overlapping patterns intelligently
+      change_map: dict[tuple[int, int, str], str] = (
+          {}
+      )  # (start, end, original_text) -> replacement_text
+
       for ts_n, timestamp in enumerate(timestamp_map[log_type]["timestamps"]):
-        log_text = _update_timestamp(
+        replacement_info = _calculate_timestamp_replacement(
             log_text,
             timestamp,
             old_base_time,
             ts_delta_dict,
         )
+        if replacement_info:
+          match, replacement = replacement_info
+          change_key = (match.start(), match.end(), match.group(0))
+
+          if change_key in change_map:
+            # Check if it's the same change or a conflict
+            if change_map[change_key] != replacement:
+              LOGGER.warning(
+                  "Timestamp replacement conflict at position %d-%d: '%s' -> '%s' vs"
+                  " '%s'",
+                  match.start(),
+                  match.end(),
+                  match.group(0),
+                  change_map[change_key],
+                  replacement,
+              )
+            # else: Same change, no-op
+          else:
+            change_map[change_key] = replacement
+
         LOGGER.debug("Finished processing line N: %s, timestamp N: %s", line_no, ts_n)
+
+      # Apply all unique replacements in reverse order to preserve positions
+      for (start, end, _), replacement in sorted(
+          change_map.items(), key=lambda x: x[0][0], reverse=True
+      ):
+        log_text = log_text[:start] + replacement + log_text[end:]
 
       # accumulate all of the entries into memory
       LOGGER.debug("log_text after all ts updates: %s", log_text)
@@ -492,6 +688,8 @@ def usecase_replay_logtype(
         log_type,
         entries,
         ingestion_labels,
+        local_file_output,
+        log_type_log_dir,
     )
   return old_base_time
 
