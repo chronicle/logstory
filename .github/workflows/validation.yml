@@ -61,9 +61,9 @@ jobs:
         echo "🧪 Running comprehensive timestamp validation tests..."
         python test_yaml.py
 
-    - name: Check for epoch/dateformat conflicts
+    - name: Check for dateformat consistency
       run: |
-        echo "🔍 Checking for epoch=true with dateformat conflicts..."
+        echo "🔍 Checking for dateformat consistency..."
         python -c "
         import yaml
         import sys
@@ -73,31 +73,31 @@ jobs:
             'src/logstory/logtypes_events_timestamps.yaml'
         ]
 
-        total_conflicts = 0
+        total_issues = 0
 
         for file in files:
             with open(file) as f:
                 data = yaml.safe_load(f)
 
-            conflicts = 0
+            issues = 0
             for log_type, entry in data.items():
                 if 'timestamps' not in entry:
                     continue
                 for i, ts in enumerate(entry['timestamps']):
-                    if ts.get('epoch') is True and 'dateformat' in ts:
-                        print(f'❌ {file}:{log_type}:timestamp[{i}] has epoch=true with dateformat=\"{ts[\"dateformat\"]}\"')
-                        conflicts += 1
+                    if 'dateformat' not in ts:
+                        print(f'❌ {file}:{log_type}:timestamp[{i}] missing dateformat field')
+                        issues += 1
 
-            if conflicts == 0:
-                print(f'✅ {file} - No epoch/dateformat conflicts found')
+            if issues == 0:
+                print(f'✅ {file} - All timestamps have dateformat')
             else:
-                total_conflicts += conflicts
+                total_issues += issues
 
-        if total_conflicts > 0:
-            print(f'❌ Found {total_conflicts} epoch/dateformat conflicts')
+        if total_issues > 0:
+            print(f'❌ Found {total_issues} dateformat issues')
             sys.exit(1)
         else:
-            print('✅ All timestamp configurations are clean!')
+            print('✅ All timestamp configurations are consistent!')
         "
 
     - name: Validate log type coverage
@@ -178,18 +178,15 @@ jobs:
             timestamps = entry_data['timestamps']
             base_time_count = 0
             for i, timestamp in enumerate(timestamps):
-                required_fields = ['name', 'pattern', 'epoch', 'group']
+                required_fields = ['name', 'pattern', 'dateformat', 'group']
                 for field in required_fields:
                     if field not in timestamp:
                         raise ValueError(f'Missing required field: {field}')
                 if timestamp.get('base_time'):
                     base_time_count += 1
-                epoch = timestamp.get('epoch')
-                has_dateformat = 'dateformat' in timestamp
-                if epoch is True and has_dateformat:
-                    raise ValueError(f'epoch=true should not have dateformat field')
-                elif epoch is False and not has_dateformat:
-                    raise ValueError(f'epoch=false requires dateformat field')
+                dateformat = timestamp.get('dateformat')
+                if not dateformat:
+                    raise ValueError(f'Missing dateformat field')
             if base_time_count != 1:
                 raise ValueError(f'Expected 1 base_time, got {base_time_count}')
 
@@ -200,7 +197,7 @@ jobs:
                 'timestamps': [{
                     'name': 'test_time',
                     'base_time': True,
-                    'epoch': True,
+                    'dateformat': 'epoch',
                     'group': 1,
                     'pattern': r'(\d{10})'
                 }]
@@ -221,8 +218,7 @@ jobs:
                 'timestamps': [{
                     'name': 'test_time',
                     'base_time': True,
-                    'epoch': True,
-                    'dateformat': '%s',  # This should cause failure
+                    # Missing dateformat field - this should cause failure
                     'group': 1,
                     'pattern': r'(\d{10})'
                 }]

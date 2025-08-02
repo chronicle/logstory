@@ -59,16 +59,13 @@ jobs:
                 timestamps = entry_data['timestamps']
                 base_time_count = sum(1 for ts in timestamps if ts.get('base_time'))
                 for i, timestamp in enumerate(timestamps):
-                    required_fields = ['name', 'pattern', 'epoch', 'group']
+                    required_fields = ['name', 'pattern', 'dateformat', 'group']
                     for field in required_fields:
                         if field not in timestamp:
                             raise ValueError(f'Missing field {field} in timestamp {i}')
-                    epoch = timestamp.get('epoch')
-                    has_dateformat = 'dateformat' in timestamp
-                    if epoch is True and has_dateformat:
-                        raise ValueError(f'Timestamp {i} has epoch=true but also dateformat')
-                    elif epoch is False and not has_dateformat:
-                        raise ValueError(f'Timestamp {i} has epoch=false but no dateformat')
+                    dateformat = timestamp.get('dateformat')
+                    if not dateformat:
+                        raise ValueError(f'Timestamp {i} missing dateformat field')
                 if base_time_count != 1:
                     raise ValueError(f'Expected 1 base_time, got {base_time_count}')
                 print(f'✅ Validation passed for {log_type}')
