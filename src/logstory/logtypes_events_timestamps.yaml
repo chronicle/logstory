@@ -153,6 +153,64 @@ CS_EDR:
       dateformat: 'epoch'
       group: 2
 
+DUO_ACTIVITY:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory/
+  timestamps:
+    - name: base_timestamp
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: ("ts":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})
+      group: 2
+    - name: other_timestamps
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})
+      group: 1
+    - name: timestamp
+      dateformat: 'epoch'
+      pattern: '("timestamp":)(\d{10})(,)'
+      group: 2
+    - name: timestamp
+      dateformat: 'epoch'
+      pattern: '("timestamp":)(\d{10})(,)'
+      group: 2
+
+DUO_ADMIN:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory/
+  timestamps:
+    - name: base_timestamp
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: ("isotimestamp":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})
+      group: 2
+    - name: other_timestamps
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})
+      group: 1
+    - name: timestamp
+      dateformat: 'epoch'
+      pattern: '("timestamp":)(\d{10})(,)'
+      group: 2
+
+DUO_AUTH:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory/
+  timestamps:
+    - name: base_timestamp
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: ("isotimestamp":")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})
+      group: 2
+    - name: other_timestamps
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})
+      group: 1
+    - name: timestamp
+      dateformat: 'epoch'
+      pattern: '("timestamp":)(\d{10})(,)'
+      group: 2
+
 FIREEYE_HX:
   api: unstructuredlogentries
   log_dir: /tmp/var/log/logstory/opt/fireeye/agent/log/
