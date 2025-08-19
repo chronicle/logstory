@@ -185,16 +185,25 @@ https://${code}.backstory.chronicle.security/settings/profile
 
 ### Credentials Path
 
-(Required)  The credentials provided use the [Google Security Operations Ingestion API](https://cloud.google.com/chronicle/docs/reference/ingestion-api). This is *NOT* the newer RESTful v1alpha Ingestion API (yet, but that is future work).
+(Required) Logstory supports two ingestion APIs:
+
+1. **Legacy Malachite API** (default for backward compatibility)
+   - Uses the [Google Security Operations Ingestion API](https://cloud.google.com/chronicle/docs/reference/ingestion-api)
+   - Download credentials from: https://${code}.backstory.chronicle.security/settings/collection-agent
+
+2. **New Chronicle REST API** (recommended for new deployments)
+   - Uses the modern Chronicle v1alpha REST API
+   - Requires Google Cloud project ID
+   - Supports additional features like forwarder management and service account impersonation
+
+**Auto-Detection:** Logstory automatically detects which API to use based on your credentials, or you can explicitly specify with `--api-type=rest` or `--api-type=legacy`.
+
+**Migration Guide:** See [REST_API_MIGRATION.md](docs/REST_API_MIGRATION.md) for detailed migration instructions.
 
 **Getting API authentication credentials**
 
-"Your Google Security Operations representative will provide you with a Google Developer Service Account Credential to enable the API client to communicate with the API."[[reference](https://cloud.google.com/chronicle/docs/reference/ingestion-api#getting_api_authentication_credentials)]
-
-
-**Update:** you can now download the ingestion authentication file from your SecOps tenant's settings page:
-
-https://${code}.backstory.chronicle.security/settings/collection-agent
+- **Legacy API:** "Your Google Security Operations representative will provide you with a Google Developer Service Account Credential to enable the API client to communicate with the API."[[reference](https://cloud.google.com/chronicle/docs/reference/ingestion-api#getting_api_authentication_credentials)]
+- **REST API:** Create a service account in Google Cloud Console with Chronicle API permissions
 
 ### Timestamp BTS
 

@@ -198,6 +198,39 @@ LocalFileOutputOption = typer.Option(
     help="Write logs to local files instead of sending to API",
 )
 
+ApiTypeOption = typer.Option(
+    None,
+    "--api-type",
+    help=(
+        "Ingestion API type: 'legacy' or 'rest' (auto-detect if not specified). "
+        "(env: LOGSTORY_API_TYPE)"
+    ),
+)
+
+ProjectIdOption = typer.Option(
+    None,
+    "--project-id",
+    help="Google Cloud project ID (required for REST API). (env: LOGSTORY_PROJECT_ID)",
+)
+
+ForwarderNameOption = typer.Option(
+    None,
+    "--forwarder-name",
+    help=(
+        "Custom forwarder name for REST API (default: Logstory-REST-Forwarder). "
+        "(env: LOGSTORY_FORWARDER_NAME)"
+    ),
+)
+
+ImpersonateServiceAccountOption = typer.Option(
+    None,
+    "--impersonate-service-account",
+    help=(
+        "Service account email to impersonate (REST API only). "
+        "(env: LOGSTORY_IMPERSONATE_SERVICE_ACCOUNT)"
+    ),
+)
+
 
 def _get_current_time():
   """Returns the current time in UTC."""
@@ -602,6 +635,10 @@ def _set_environment_vars(
     credentials_path: str | None,
     customer_id: str | None,
     region: str | None,
+    api_type: str | None = None,
+    project_id: str | None = None,
+    forwarder_name: str | None = None,
+    impersonate_service_account: str | None = None,
 ):
   """Set environment variables from CLI parameters."""
   if customer_id:
@@ -615,6 +652,21 @@ def _set_environment_vars(
   if region:
     os.environ["REGION"] = region
 
+  # Set new REST API related environment variables
+  if api_type:
+    os.environ["LOGSTORY_API_TYPE"] = api_type
+    typer.echo(f"API Type: {api_type}")
+
+  if project_id:
+    os.environ["LOGSTORY_PROJECT_ID"] = project_id
+    typer.echo(f"Project ID: {project_id}")
+
+  if forwarder_name:
+    os.environ["LOGSTORY_FORWARDER_NAME"] = forwarder_name
+
+  if impersonate_service_account:
+    os.environ["LOGSTORY_IMPERSONATE_SERVICE_ACCOUNT"] = impersonate_service_account
+
 
 @replay_app.command("all")
 def replay_all_usecases(
@@ -625,6 +677,10 @@ def replay_all_usecases(
     entities: bool = EntitiesOption,
     timestamp_delta: str | None = TimestampDeltaOption,
     local_file_output: bool = LocalFileOutputOption,
+    api_type: str | None = ApiTypeOption,
+    project_id: str | None = ProjectIdOption,
+    forwarder_name: str | None = ForwarderNameOption,
+    impersonate_service_account: str | None = ImpersonateServiceAccountOption,
 ):
   """Replay all usecases."""
   # Skip credential validation if using local file output
@@ -632,10 +688,28 @@ def replay_all_usecases(
     final_credentials, final_customer_id, final_region = _load_and_validate_params(
         env_file, credentials_path, customer_id, region
     )
-    _set_environment_vars(final_credentials, final_customer_id, final_region)
+    _set_environment_vars(
+        final_credentials,
+        final_customer_id,
+        final_region,
+        api_type,
+        project_id,
+        forwarder_name,
+        impersonate_service_account,
+    )
   else:
     # Load env file but don't require credentials for local file output
     load_env_file(env_file)
+    # Still set API-related environment variables for local file output
+    _set_environment_vars(
+        None,
+        None,
+        region,
+        api_type,
+        project_id,
+        forwarder_name,
+        impersonate_service_account,
+    )
 
   usecases = get_usecases()
   _replay_usecases(usecases, "*", entities, timestamp_delta, local_file_output)
@@ -654,6 +728,10 @@ def replay_usecase(
     get_if_missing: bool = typer.Option(
         False, "--get", help="Download usecase if not already installed"
     ),
+    api_type: str | None = ApiTypeOption,
+    project_id: str | None = ProjectIdOption,
+    forwarder_name: str | None = ForwarderNameOption,
+    impersonate_service_account: str | None = ImpersonateServiceAccountOption,
 ):
   """Replay a specific usecase."""
   # Load environment file first (needed for download logic)
@@ -671,7 +749,26 @@ def replay_usecase(
     final_credentials, final_customer_id, final_region = _load_and_validate_params(
         env_file, credentials_path, customer_id, region
     )
-    _set_environment_vars(final_credentials, final_customer_id, final_region)
+    _set_environment_vars(
+        final_credentials,
+        final_customer_id,
+        final_region,
+        api_type,
+        project_id,
+        forwarder_name,
+        impersonate_service_account,
+    )
+  else:
+    # Still set API-related environment variables for local file output
+    _set_environment_vars(
+        None,
+        None,
+        region,
+        api_type,
+        project_id,
+        forwarder_name,
+        impersonate_service_account,
+    )
 
   usecases = [usecase]
   logtypes = _get_logtypes(usecase, entities=entities)
@@ -689,6 +786,10 @@ def replay_usecase_logtype(
     entities: bool = EntitiesOption,
     timestamp_delta: str | None = TimestampDeltaOption,
     local_file_output: bool = LocalFileOutputOption,
+    api_type: str | None = ApiTypeOption,
+    project_id: str | None = ProjectIdOption,
+    forwarder_name: str | None = ForwarderNameOption,
+    impersonate_service_account: str | None = ImpersonateServiceAccountOption,
 ):
   """Replay specific logtypes from a usecase."""
   # Skip credential validation if using local file output
@@ -696,10 +797,28 @@ def replay_usecase_logtype(
     final_credentials, final_customer_id, final_region = _load_and_validate_params(
         env_file, credentials_path, customer_id, region
     )
-    _set_environment_vars(final_credentials, final_customer_id, final_region)
+    _set_environment_vars(
+        final_credentials,
+        final_customer_id,
+        final_region,
+        api_type,
+        project_id,
+        forwarder_name,
+        impersonate_service_account,
+    )
   else:
     # Load env file but don't require credentials for local file output
     load_env_file(env_file)
+    # Still set API-related environment variables for local file output
+    _set_environment_vars(
+        None,
+        None,
+        region,
+        api_type,
+        project_id,
+        forwarder_name,
+        impersonate_service_account,
+    )
 
   usecases = [usecase]
   logtype_list = [lt.strip() for lt in logtypes.split(",")]
@@ -748,7 +867,7 @@ def _replay_usecases(
     metadata.ingested_timestamp.seconds >= {int(logstory_exe_time.timestamp())}
     metadata.ingestion_labels["log_replay"]="true"
     metadata.ingestion_labels["replayed_from"]="logstory"
-    metadata.ingestion_labels["usecase_name"]="{use_case}"
+    metadata.ingestion_labels["source_usecase"]="{use_case}"
     """)
 
 

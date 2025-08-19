@@ -26,13 +26,28 @@ from google.auth.transport import requests
 from google.cloud import secretmanager, storage
 from google.oauth2 import service_account
 
+# Import the new abstraction modules
+try:
+  from .auth import create_auth_handler, detect_auth_type
+  from .ingestion import create_ingestion_backend
+except ImportError:
+  # Fallback for when running as main module
+  from auth import create_auth_handler, detect_auth_type
+  from ingestion import create_ingestion_backend
+
 
 # Type for match-like objects
 class MatchLike(Protocol):
   """Protocol for objects that behave like regex matches."""
-  def start(self) -> int: ...
-  def end(self) -> int: ...
-  def group(self, n: int = 0) -> str: ...
+
+  def start(self) -> int:
+    ...
+
+  def end(self) -> int:
+    ...
+
+  def group(self, n: int = 0) -> str:
+    ...
 
 
 # Constants
@@ -87,7 +102,18 @@ INGESTION_API_BASE_URL = (
 BUCKET_NAME = os.environ.get("BUCKET_NAME")
 UTC = datetime.UTC
 
+# New configuration for REST API
+API_TYPE = os.environ.get("LOGSTORY_API_TYPE")
+PROJECT_ID = os.environ.get("LOGSTORY_PROJECT_ID")
+FORWARDER_NAME = os.environ.get("LOGSTORY_FORWARDER_NAME")
+IMPERSONATE_SERVICE_ACCOUNT = os.environ.get("LOGSTORY_IMPERSONATE_SERVICE_ACCOUNT")
+
+# Global variables for backend and client
 storage_client = None
+ingestion_backend = None
+http_client = None  # Will be set based on API type
+
+# Initialize storage client if running in cloud function
 if os.getenv("SECRET_MANAGER_CREDENTIALS"):  # Running in a cloud function
   secretmanager_client = secretmanager.SecretManagerServiceClient()
   storage_client = storage.Client()
@@ -101,13 +127,40 @@ elif CREDENTIALS_PATH:  # Running locally with credentials
 else:
   service_account_info = None
 
-# Create a credential using SA Credential and Ingestion API Scope.
-if service_account_info:  # optional to facilitate unit testing
+# Create authentication and backend based on API type
+if service_account_info or CREDENTIALS_PATH or SECRET_MANAGER_CREDENTIALS:
+  # Detect API type if not explicitly set
+  detected_api_type = API_TYPE or detect_auth_type(
+      CREDENTIALS_PATH, service_account_info
+  )
+
+  # Create appropriate auth handler
+  auth_handler = create_auth_handler(
+      api_type=detected_api_type,
+      credentials_path=CREDENTIALS_PATH,
+      service_account_info=service_account_info,
+      secret_manager_credentials=SECRET_MANAGER_CREDENTIALS,
+      impersonate_service_account=IMPERSONATE_SERVICE_ACCOUNT,
+  )
+
+  # Get HTTP client from auth handler
+  http_client = auth_handler.get_http_client()
+
+  # Create ingestion backend if we have customer ID
+  if CUSTOMER_ID:
+    ingestion_backend = create_ingestion_backend(
+        auth_handler=auth_handler,
+        customer_id=CUSTOMER_ID,
+        api_type=detected_api_type,
+        project_id=PROJECT_ID,
+        region=REGION,
+        forwarder_name=FORWARDER_NAME,
+    )
+# Legacy fallback for backward compatibility when no auth is configured
+elif service_account_info:
   credentials = service_account.Credentials.from_service_account_info(
       service_account_info, scopes=SCOPES
   )
-
-  # Build an HTTP client which can make authorized OAuth requests.
   http_client = requests.AuthorizedSession(credentials)
 
 
@@ -490,6 +543,30 @@ def post_entries(
   Returns:
     None
   """
+  # Use new backend abstraction if available
+  if ingestion_backend:
+    try:
+      if api == "unstructuredlogentries":
+        ingestion_backend.post_unstructured_logs(log_type, entries, ingestion_labels)
+      elif api == "udmevents":
+        ingestion_backend.post_udm_events(entries, ingestion_labels)
+      elif api == "entities":
+        ingestion_backend.post_entities(log_type, entries, ingestion_labels)
+      else:
+        raise ValueError(f"Unknown API type: {api}")
+      LOGGER.info(
+          "Successfully posted entries using %s backend",
+          ingestion_backend.__class__.__name__,
+      )
+      return
+    except Exception as e:
+      LOGGER.error("Backend ingestion failed: %s", e)
+      # Fall through to legacy code if backend fails
+
+  # Legacy code path for backward compatibility
+  if not http_client:
+    raise RuntimeError("No HTTP client available for ingestion")
+
   if api == "unstructuredlogentries":
     uri = f"{INGESTION_API_BASE_URL}/v2/unstructuredlogentries:batchCreate"
     body = json.dumps({
@@ -751,7 +828,7 @@ def main(request=None, enabled=False):  # pylint: disable=unused-argument
         "    metadata.log_type = %s\n"
         '    metadata.ingestion_labels["replayed_from"] = "logstory"\n'
         '    metadata.ingestion_labels["log_replay"] = "true"\n'
-        '    metadata.ingestion_labels["usecase_name"] = "%s"',
+        '    metadata.ingestion_labels["source_usecase"] = "%s"',
         int(logstory_exe_time.timestamp()),
         log_type,
         use_case,
