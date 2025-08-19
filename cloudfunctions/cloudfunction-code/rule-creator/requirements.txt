@@ -1,6 +1,0 @@
-oyaml >= 1.0
-requests < 2.32
-google-cloud-storage== 2.10.0
-google-cloud-secret-manager==2.0.0
-google-api-python-client==2.98.0
-google-auth==2.23.0

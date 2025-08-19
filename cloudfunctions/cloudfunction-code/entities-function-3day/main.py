@@ -1,1 +1,0 @@
-../../../src/logstory/main.py
