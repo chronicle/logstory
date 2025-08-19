@@ -19,6 +19,23 @@ export LOGSTORY_CUSTOMER_ID=7e977ce4-f45d-43b2-aea0-52f8b66acd80
 export REGION=us-central1
 ```
 
+## Deployment Method: Makefile vs Terraform
+
+This project uses **Makefile** for Cloud Run deployment instead of Terraform because:
+- **Simpler** - Direct gcloud commands, no HCL syntax
+- **Faster** - No terraform plan/apply cycle
+- **No state management** - No terraform state file issues
+- **Transparent** - See exactly what commands run
+- **Already integrated** - Makefile has all targets ready
+
+Quick deployment:
+```bash
+make docker-build         # Build Docker image
+make docker-push          # Push to GCR
+make deploy-cloudrun-all  # Deploy all 4 jobs
+make schedule-cloudrun-all # Set up schedulers
+```
+
 ## Complete Deployment Workflow
 
 ### 1. Create Secret in Secret Manager (if not already exists)
