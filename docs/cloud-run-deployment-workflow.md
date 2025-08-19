@@ -278,6 +278,98 @@ gcloud run jobs create logstory-aws-only \
   # ... other flags
 ```
 
+### Override CMD at Deploy Time
+You can use the same base image and override the command for each job:
+
+```bash
+# Build once
+gcloud builds submit --tag gcr.io/$PROJECT_ID/logstory:base -f Dockerfile.minimal .
+
+# Deploy with different commands
+gcloud run jobs create logstory-events-24h \
+  --image gcr.io/$PROJECT_ID/logstory:base \
+  --command "logstory" \
+  --args "replay,all,--timestamp-delta=1d" \
+  # ... other flags
+
+gcloud run jobs create logstory-entities-3day \
+  --image gcr.io/$PROJECT_ID/logstory:base \
+  --command "logstory" \
+  --args "replay,all,--entities,--timestamp-delta=3d" \
+  # ... other flags
+```
+
+## Testing Locally with Docker
+
+```bash
+# Build the image
+docker build -t logstory-test -f Dockerfile.minimal .
+
+# Run with environment variables
+docker run \
+  -e LOGSTORY_CUSTOMER_ID="your-uuid" \
+  -e LOGSTORY_CREDENTIALS="$(cat credentials.json)" \
+  -e LOGSTORY_REGION="US" \
+  -e TIMESTAMP_DELTA="1d" \
+  logstory-test
+
+# Or override the command
+docker run \
+  -e LOGSTORY_CUSTOMER_ID="your-uuid" \
+  -e LOGSTORY_CREDENTIALS="$(cat credentials.json)" \
+  logstory-test \
+  logstory replay all --entities --timestamp-delta=3d
+```
+
+## Dockerfile Options
+
+### Dockerfile.minimal (Production - from PyPI)
+```dockerfile
+FROM python:3.11-slim
+RUN pip install --no-cache-dir logstory>=1.0.0
+WORKDIR /app
+CMD ["logstory", "replay", "all"]
+```
+
+### Dockerfile.wheel (Testing - from local wheel)
+```dockerfile
+FROM python:3.11-slim
+COPY dist/logstory-*.whl /tmp/
+RUN pip install --no-cache-dir /tmp/logstory-*.whl && rm /tmp/logstory-*.whl
+WORKDIR /app
+CMD ["logstory", "replay", "all"]
+```
+
+### Dockerfile.uvx (Dynamic - always latest)
+```dockerfile
+FROM python:3.11-slim
+RUN pip install --no-cache-dir uv
+WORKDIR /app
+CMD ["uvx", "logstory", "replay", "all"]
+```
+
+## Comparison of Approaches
+
+| Approach | Build Required | Dockerfile | Runtime Install | Flexibility |
+|----------|---------------|------------|-----------------|-------------|
+| Cloud Run Jobs (no Docker) | No | No | pip install at runtime | High |
+| Docker with pip | Yes (once) | 4 lines | No | Medium |
+| Docker with uvx | Yes (once) | 4 lines | uvx installs at runtime | High |
+| Docker with wheel | Yes (each change) | 5 lines | No | High for testing |
+
+## Why Use Docker?
+
+1. **Faster cold starts** - No pip install at runtime (unless using uvx)
+2. **Version pinning** - Container has specific version baked in
+3. **Consistency** - Same image across all environments
+4. **Portability** - Can run anywhere Docker runs
+
+## Why NOT Use Docker?
+
+1. **Cloud Run Jobs with python:3.11-slim** - Even simpler, no build step
+2. **Always latest** - Using uvx or pip install gets latest version
+3. **No registry needed** - No need to manage container images
+
 ## Troubleshooting
 
 ### Authentication Errors
