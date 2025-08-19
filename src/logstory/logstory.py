@@ -81,7 +81,24 @@ def load_env_file(env_file: str | None = None) -> None:
 
 # Global options for replay commands
 def get_credentials_default():
-  """Get credentials path from environment variable."""
+  """Get credentials path or JSON from environment variables."""
+  # Check for direct credentials JSON first
+  credentials_json = os.getenv("LOGSTORY_CREDENTIALS")
+  if credentials_json:
+    # Write to temp file and return path
+    import tempfile
+    import json
+    try:
+      # Validate it's valid JSON
+      json.loads(credentials_json)
+      # Create temp file
+      with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        f.write(credentials_json)
+        return f.name
+    except json.JSONDecodeError:
+      typer.echo("Warning: LOGSTORY_CREDENTIALS contains invalid JSON")
+  
+  # Fall back to credentials path
   return os.getenv("LOGSTORY_CREDENTIALS_PATH")
 
 
@@ -609,15 +626,13 @@ def _load_and_validate_params(
   final_customer_id = customer_id or get_customer_id_default()
   final_region = region or get_region_default()
   final_api_type = api_type or os.environ.get("LOGSTORY_API_TYPE", "").lower()
-  final_impersonate = impersonate_service_account or os.environ.get("LOGSTORY_IMPERSONATE_SERVICE_ACCOUNT")
+  final_impersonate = impersonate_service_account or os.environ.get(
+      "LOGSTORY_IMPERSONATE_SERVICE_ACCOUNT"
+  )
 
   # Check if ADC is available when using impersonation with REST API
   has_adc = has_application_default_credentials()
-  can_use_adc = (
-      has_adc
-      and final_impersonate
-      and final_api_type == "rest"
-  )
+  can_use_adc = has_adc and final_impersonate and final_api_type == "rest"
 
   # Validate required parameters
   if not final_customer_id or (not final_credentials and not can_use_adc):
@@ -625,10 +640,11 @@ def _load_and_validate_params(
     if not final_credentials and not can_use_adc:
       if final_impersonate and final_api_type == "rest":
         missing.append(
-            "--credentials-path (or LOGSTORY_CREDENTIALS_PATH, or use Application Default Credentials)"
+            "--credentials-path (or LOGSTORY_CREDENTIALS/LOGSTORY_CREDENTIALS_PATH, or use Application"
+            " Default Credentials)"
         )
       else:
-        missing.append("--credentials-path (or LOGSTORY_CREDENTIALS_PATH)")
+        missing.append("--credentials-path (or LOGSTORY_CREDENTIALS/LOGSTORY_CREDENTIALS_PATH)")
     if not final_customer_id:
       missing.append("--customer-id (or LOGSTORY_CUSTOMER_ID)")
 
@@ -636,12 +652,13 @@ def _load_and_validate_params(
     typer.echo("You can provide these via:")
     typer.echo("  1. Command line options: --credentials-path and --customer-id")
     typer.echo(
-        "  2. Environment variables: LOGSTORY_CREDENTIALS_PATH and LOGSTORY_CUSTOMER_ID"
+        "  2. Environment variables: LOGSTORY_CREDENTIALS or LOGSTORY_CREDENTIALS_PATH and LOGSTORY_CUSTOMER_ID"
     )
     typer.echo("  3. .env file with --env-file option")
     if final_impersonate and final_api_type == "rest" and not has_adc:
       typer.echo(
-          "  4. Application Default Credentials (run 'gcloud auth application-default login')"
+          "  4. Application Default Credentials (run 'gcloud auth application-default"
+          " login')"
       )
     raise typer.Exit(1)
 
@@ -709,7 +726,12 @@ def replay_all_usecases(
   # Skip credential validation if using local file output
   if not local_file_output:
     final_credentials, final_customer_id, final_region = _load_and_validate_params(
-        env_file, credentials_path, customer_id, region, impersonate_service_account, api_type
+        env_file,
+        credentials_path,
+        customer_id,
+        region,
+        impersonate_service_account,
+        api_type,
     )
     _set_environment_vars(
         final_credentials,
@@ -770,7 +792,12 @@ def replay_usecase(
   # Skip credential validation if using local file output
   if not local_file_output:
     final_credentials, final_customer_id, final_region = _load_and_validate_params(
-        env_file, credentials_path, customer_id, region, impersonate_service_account, api_type
+        env_file,
+        credentials_path,
+        customer_id,
+        region,
+        impersonate_service_account,
+        api_type,
     )
     _set_environment_vars(
         final_credentials,
@@ -818,7 +845,12 @@ def replay_usecase_logtype(
   # Skip credential validation if using local file output
   if not local_file_output:
     final_credentials, final_customer_id, final_region = _load_and_validate_params(
-        env_file, credentials_path, customer_id, region, impersonate_service_account, api_type
+        env_file,
+        credentials_path,
+        customer_id,
+        region,
+        impersonate_service_account,
+        api_type,
     )
     _set_environment_vars(
         final_credentials,

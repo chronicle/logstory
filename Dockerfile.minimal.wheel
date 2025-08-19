@@ -1,0 +1,13 @@
+FROM python:3.11-slim
+
+# Install the local wheel file instead of from PyPI
+RUN pip install --no-cache-dir ./logstory-*.whl
+
+# Set working directory (optional, but good practice)
+WORKDIR /app
+
+# Default command - replay all usecases
+# Environment variables control the behavior:
+#   TIMESTAMP_DELTA: 1d or 3d
+#   ENTITIES: true or false (omit for events)
+CMD ["logstory", "replay", "all"]

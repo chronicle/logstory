@@ -185,7 +185,7 @@ class RestAuthHandler(AuthHandler):
 
 def has_application_default_credentials() -> bool:
   """Check if Application Default Credentials are available.
-  
+
   Returns:
     True if ADC are available, False otherwise.
   """

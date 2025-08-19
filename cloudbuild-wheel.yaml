@@ -1,0 +1,9 @@
+# Expects the wheel file to already exist in dist/ directory
+# Copy it over with: scp dist/logstory-*.whl remote:~/logstory_build/dist/
+steps:
+  # Build the Docker image with the pre-built wheel
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/logstory:latest', '-f', 'Dockerfile.wheel', '.']
+
+images:
+  - 'gcr.io/$PROJECT_ID/logstory:latest'

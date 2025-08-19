@@ -28,12 +28,22 @@ from google.oauth2 import service_account
 
 # Import the new abstraction modules
 try:
-  from .auth import create_auth_handler, detect_auth_type, has_application_default_credentials
+  from .auth import (
+      create_auth_handler,
+      detect_auth_type,
+      has_application_default_credentials,
+  )
   from .ingestion import create_ingestion_backend
 except ImportError:
   # Fallback for when running as main module
-  from auth import create_auth_handler, detect_auth_type, has_application_default_credentials
-  from ingestion import create_ingestion_backend
+  from auth import (  # type: ignore[import-not-found,no-redef]
+      create_auth_handler,
+      detect_auth_type,
+      has_application_default_credentials,
+  )
+  from ingestion import (
+      create_ingestion_backend,  # type: ignore[import-not-found,no-redef]
+  )
 
 
 # Type for match-like objects
@@ -88,6 +98,7 @@ SCOPES = ["https://www.googleapis.com/auth/malachite-ingestion"]
 SECRET_MANAGER_CREDENTIALS = os.environ.get("SECRET_MANAGER_CREDENTIALS")
 CUSTOMER_ID = os.environ.get("CUSTOMER_ID")
 CREDENTIALS_PATH = os.environ.get("CREDENTIALS_PATH")
+CREDENTIALS_JSON = os.environ.get("LOGSTORY_CREDENTIALS")
 
 REGION = os.environ.get("REGION")
 url_prefix = f"{REGION}-" if REGION else ""
@@ -121,7 +132,9 @@ if os.getenv("SECRET_MANAGER_CREDENTIALS"):  # Running in a cloud function
   sec_response = secretmanager_client.access_secret_version(sec_request)
   ret = sec_response.payload.data.decode("UTF-8")
   service_account_info = json.loads(ret)
-elif CREDENTIALS_PATH:  # Running locally with credentials
+elif CREDENTIALS_JSON:  # Credentials provided as JSON string
+  service_account_info = json.loads(CREDENTIALS_JSON)
+elif CREDENTIALS_PATH:  # Running locally with credentials file
   with open(CREDENTIALS_PATH) as f:
     service_account_info = json.load(f)
 else:
@@ -135,7 +148,13 @@ can_use_adc = (
 )
 
 # Create authentication and backend based on API type
-if service_account_info or CREDENTIALS_PATH or SECRET_MANAGER_CREDENTIALS or can_use_adc:
+if (
+    service_account_info
+    or CREDENTIALS_PATH
+    or CREDENTIALS_JSON
+    or SECRET_MANAGER_CREDENTIALS
+    or can_use_adc
+):
   # Detect API type if not explicitly set
   detected_api_type = API_TYPE or detect_auth_type(
       CREDENTIALS_PATH, service_account_info
