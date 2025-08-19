@@ -25,6 +25,8 @@ from google.auth.exceptions import DefaultCredentialsError
 from google.cloud import storage
 from google.oauth2 import service_account
 
+from logstory.auth import has_application_default_credentials
+
 UTC = datetime.UTC
 
 DEFAULT_BUCKET = "gs://logstory-usecases-20241216"
@@ -595,7 +597,9 @@ def _load_and_validate_params(
     credentials_path: str | None,
     customer_id: str | None,
     region: str | None,
-) -> tuple[str, str, str]:
+    impersonate_service_account: str | None = None,
+    api_type: str | None = None,
+) -> tuple[str | None, str, str]:
   """Load environment file and validate/resolve required parameters."""
   # Load environment file first
   load_env_file(env_file)
@@ -604,12 +608,27 @@ def _load_and_validate_params(
   final_credentials = credentials_path or get_credentials_default()
   final_customer_id = customer_id or get_customer_id_default()
   final_region = region or get_region_default()
+  final_api_type = api_type or os.environ.get("LOGSTORY_API_TYPE", "").lower()
+  final_impersonate = impersonate_service_account or os.environ.get("LOGSTORY_IMPERSONATE_SERVICE_ACCOUNT")
+
+  # Check if ADC is available when using impersonation with REST API
+  has_adc = has_application_default_credentials()
+  can_use_adc = (
+      has_adc
+      and final_impersonate
+      and final_api_type == "rest"
+  )
 
   # Validate required parameters
-  if not final_credentials or not final_customer_id:
+  if not final_customer_id or (not final_credentials and not can_use_adc):
     missing = []
-    if not final_credentials:
-      missing.append("--credentials-path (or LOGSTORY_CREDENTIALS_PATH)")
+    if not final_credentials and not can_use_adc:
+      if final_impersonate and final_api_type == "rest":
+        missing.append(
+            "--credentials-path (or LOGSTORY_CREDENTIALS_PATH, or use Application Default Credentials)"
+        )
+      else:
+        missing.append("--credentials-path (or LOGSTORY_CREDENTIALS_PATH)")
     if not final_customer_id:
       missing.append("--customer-id (or LOGSTORY_CUSTOMER_ID)")
 
@@ -620,6 +639,10 @@ def _load_and_validate_params(
         "  2. Environment variables: LOGSTORY_CREDENTIALS_PATH and LOGSTORY_CUSTOMER_ID"
     )
     typer.echo("  3. .env file with --env-file option")
+    if final_impersonate and final_api_type == "rest" and not has_adc:
+      typer.echo(
+          "  4. Application Default Credentials (run 'gcloud auth application-default login')"
+      )
     raise typer.Exit(1)
 
   # Additional validation
@@ -686,7 +709,7 @@ def replay_all_usecases(
   # Skip credential validation if using local file output
   if not local_file_output:
     final_credentials, final_customer_id, final_region = _load_and_validate_params(
-        env_file, credentials_path, customer_id, region
+        env_file, credentials_path, customer_id, region, impersonate_service_account, api_type
     )
     _set_environment_vars(
         final_credentials,
@@ -747,7 +770,7 @@ def replay_usecase(
   # Skip credential validation if using local file output
   if not local_file_output:
     final_credentials, final_customer_id, final_region = _load_and_validate_params(
-        env_file, credentials_path, customer_id, region
+        env_file, credentials_path, customer_id, region, impersonate_service_account, api_type
     )
     _set_environment_vars(
         final_credentials,
@@ -795,7 +818,7 @@ def replay_usecase_logtype(
   # Skip credential validation if using local file output
   if not local_file_output:
     final_credentials, final_customer_id, final_region = _load_and_validate_params(
-        env_file, credentials_path, customer_id, region
+        env_file, credentials_path, customer_id, region, impersonate_service_account, api_type
     )
     _set_environment_vars(
         final_credentials,

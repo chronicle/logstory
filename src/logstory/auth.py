@@ -18,8 +18,10 @@ import os
 from abc import ABC, abstractmethod
 from typing import Any
 
+import google.auth
 from google.auth import impersonated_credentials
 from google.auth.credentials import Credentials
+from google.auth.exceptions import DefaultCredentialsError
 from google.auth.transport import requests
 from google.oauth2 import service_account
 
@@ -179,6 +181,23 @@ class RestAuthHandler(AuthHandler):
       session.headers["User-Agent"] = "logstory-rest-api"
       self._http_client = session
     return self._http_client
+
+
+def has_application_default_credentials() -> bool:
+  """Check if Application Default Credentials are available.
+  
+  Returns:
+    True if ADC are available, False otherwise.
+  """
+  try:
+    # Try to load ADC without actually using them
+    credentials, _ = google.auth.default()
+    return credentials is not None
+  except DefaultCredentialsError:
+    return False
+  except Exception:
+    # Any other error means ADC is not available
+    return False
 
 
 def detect_auth_type(

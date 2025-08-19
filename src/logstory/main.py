@@ -28,11 +28,11 @@ from google.oauth2 import service_account
 
 # Import the new abstraction modules
 try:
-  from .auth import create_auth_handler, detect_auth_type
+  from .auth import create_auth_handler, detect_auth_type, has_application_default_credentials
   from .ingestion import create_ingestion_backend
 except ImportError:
   # Fallback for when running as main module
-  from auth import create_auth_handler, detect_auth_type
+  from auth import create_auth_handler, detect_auth_type, has_application_default_credentials
   from ingestion import create_ingestion_backend
 
 
@@ -127,8 +127,15 @@ elif CREDENTIALS_PATH:  # Running locally with credentials
 else:
   service_account_info = None
 
+# Check if we can use ADC with impersonation for REST API
+can_use_adc = (
+    has_application_default_credentials()
+    and IMPERSONATE_SERVICE_ACCOUNT
+    and API_TYPE == "rest"
+)
+
 # Create authentication and backend based on API type
-if service_account_info or CREDENTIALS_PATH or SECRET_MANAGER_CREDENTIALS:
+if service_account_info or CREDENTIALS_PATH or SECRET_MANAGER_CREDENTIALS or can_use_adc:
   # Detect API type if not explicitly set
   detected_api_type = API_TYPE or detect_auth_type(
       CREDENTIALS_PATH, service_account_info
