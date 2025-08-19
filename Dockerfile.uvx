@@ -1,0 +1,11 @@
+FROM python:3.11-slim
+
+# Install uv for auto-installing packages
+RUN pip install --no-cache-dir uv
+
+# Set working directory
+WORKDIR /app
+
+# Use uvx to auto-install and run logstory
+# This always gets the latest version from PyPI
+CMD ["uvx", "logstory", "replay", "all"]

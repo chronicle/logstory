@@ -1,7 +1,7 @@
 FROM python:3.11-slim
 
-# Install the local wheel file instead of from PyPI
-RUN pip install --no-cache-dir ./logstory-*.whl
+# Install logstory from PyPI
+RUN pip install --no-cache-dir logstory>=1.0.0
 
 # Set working directory (optional, but good practice)
 WORKDIR /app
