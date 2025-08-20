@@ -26,6 +26,67 @@ from google.auth.transport import requests
 from google.oauth2 import service_account
 
 
+def validate_credentials_match_api_type(
+    api_type: str,
+    service_account_info: dict[str, Any] | None = None,
+    credentials_path: str | None = None,
+) -> None:
+  """Validate that credentials match the specified API type.
+
+  Args:
+    api_type: "legacy" or "rest"
+    service_account_info: Service account JSON as dictionary
+    credentials_path: Path to service account JSON file
+
+  Raises:
+    ValueError: If credentials don't match the API type
+  """
+  # Get the service account info from either source
+  info = None
+  if service_account_info:
+    info = service_account_info
+  elif credentials_path:
+    try:
+      with open(credentials_path) as f:
+        info = json.load(f)
+    except (OSError, json.JSONDecodeError) as e:
+      # If we can't read the file, let the auth handler deal with it
+      return
+
+  if not info:
+    return
+
+  # Check if client_email exists
+  client_email = info.get("client_email", "")
+  if not client_email:
+    return
+
+  # Check for malachite pattern in email
+  is_malachite_credential = "@malachite-" in client_email
+
+  # Validate based on API type
+  if api_type == "rest" and is_malachite_credential:
+    raise ValueError(
+        "Invalid credentials for REST API: Found legacy malachite credentials "
+        f"(client_email: {client_email}). "
+        "REST API requires standard service account credentials with "
+        "'cloud-platform' scope. Please use the correct credentials for the REST API."
+    )
+
+  if api_type == "legacy" and not is_malachite_credential:
+    # This is a warning case - might still work but not typical
+    import warnings
+
+    warnings.warn(
+        "Using non-malachite credentials with legacy API "
+        f"(client_email: {client_email}). "
+        "Legacy API typically uses malachite credentials. "
+        "Ensure your credentials have 'malachite-ingestion' scope.",
+        UserWarning,
+        stacklevel=2,
+    )
+
+
 class AuthHandler(ABC):
   """Abstract base class for authentication handlers."""
 
@@ -246,6 +307,13 @@ def create_auth_handler(
   # Auto-detect if not specified
   if not api_type:
     api_type = detect_auth_type()
+
+  # Validate credentials match the API type
+  validate_credentials_match_api_type(
+      api_type,
+      service_account_info=service_account_info,
+      credentials_path=credentials_path,
+  )
 
   if api_type == "rest":
     if secret_manager_credentials:
