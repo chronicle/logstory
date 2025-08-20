@@ -31,6 +31,7 @@ This project uses **Makefile** for Cloud Run deployment instead of Terraform bec
 
 Quick deployment:
 ```bash
+make enable-apis          # Enable required Google Cloud APIs
 make create-secret CREDENTIALS_FILE=/path/to/credentials.json  # One-time setup
 make setup-permissions    # Grant permissions to default compute service account
 make deploy-cloudrun-all  # Build Docker image and deploy the Cloud Run job
@@ -39,7 +40,21 @@ make schedule-cloudrun-all # Set up all 4 schedulers with different parameters
 
 ## Complete Deployment Workflow
 
-### 1. Create Secret in Secret Manager (if not already exists)
+### 1. Enable Required APIs
+
+Enable the necessary Google Cloud APIs:
+
+```bash
+make enable-apis
+```
+
+This enables:
+- Cloud Run API
+- Cloud Build API  
+- Cloud Scheduler API
+- Secret Manager API
+
+### 2. Create Secret in Secret Manager
 
 Store your service account credentials JSON in Secret Manager:
 
@@ -57,7 +72,7 @@ gcloud secrets versions add chronicle-api-key \
   --data-file=/path/to/your/credentials.json
 ```
 
-### 2. Setup Permissions
+### 3. Setup Permissions
 
 Grant necessary permissions to the default compute service account:
 
@@ -69,7 +84,7 @@ make setup-permissions
 # PROJECT_NUMBER-compute@developer.gserviceaccount.com
 ```
 
-### 3. Deploy the Cloud Run Job
+### 4. Deploy the Cloud Run Job
 
 Deploy a single Cloud Run job that will be invoked with different parameters:
 
@@ -81,7 +96,7 @@ make deploy-cloudrun-all
 # The job uses the Docker image built from your local wheel file
 ```
 
-### 4. Create Schedulers with Different Parameters
+### 5. Create Schedulers with Different Parameters
 
 Create schedulers that invoke the same job with different arguments:
 
