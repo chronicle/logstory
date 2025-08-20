@@ -245,6 +245,7 @@ create-secret: ## Create or update the LOGSTORY_CREDENTIALS secret in Secret Man
 		--project=$(PROJECT_ID)
 	@echo "Secret $(SECRET_NAME) is ready!"
 
+## ToDo: need to clean dist/ before b/c cannot handle multiple whl files
 .PHONY: deploy-cloudrun-job
 deploy-cloudrun-job: check-cloudrun-env docker-build ## Deploy single Cloud Run job for logstory
 	@echo "Deploying Cloud Run job: logstory-replay"
@@ -290,7 +291,7 @@ schedule-cloudrun-all: check-cloudrun-env ## Create all schedulers for the singl
 		--headers "Content-Type=application/json" \
 		--message-body '{"overrides":{"containerOverrides":[{"args":["replay","all","--timestamp-delta=1d"]}]}}' \
 		|| echo "Scheduler events-24h already exists"
-	
+
 	@echo "Creating scheduler: events-3day (every 3 days at 3 AM)"
 	@gcloud scheduler jobs create http logstory-events-3day \
 		--location $(REGION) \
@@ -302,7 +303,7 @@ schedule-cloudrun-all: check-cloudrun-env ## Create all schedulers for the singl
 		--headers "Content-Type=application/json" \
 		--message-body '{"overrides":{"containerOverrides":[{"args":["replay","all","--timestamp-delta=3d"]}]}}' \
 		|| echo "Scheduler events-3day already exists"
-	
+
 	@echo "Creating scheduler: entities-24h (daily at 9 AM)"
 	@gcloud scheduler jobs create http logstory-entities-24h \
 		--location $(REGION) \
@@ -314,7 +315,7 @@ schedule-cloudrun-all: check-cloudrun-env ## Create all schedulers for the singl
 		--headers "Content-Type=application/json" \
 		--message-body '{"overrides":{"containerOverrides":[{"args":["replay","all","--entities","--timestamp-delta=1d"]}]}}' \
 		|| echo "Scheduler entities-24h already exists"
-	
+
 	@echo "Creating scheduler: entities-3day (every 3 days at 4 AM)"
 	@gcloud scheduler jobs create http logstory-entities-3day \
 		--location $(REGION) \
@@ -326,7 +327,7 @@ schedule-cloudrun-all: check-cloudrun-env ## Create all schedulers for the singl
 		--headers "Content-Type=application/json" \
 		--message-body '{"overrides":{"containerOverrides":[{"args":["replay","all","--entities","--timestamp-delta=3d"]}]}}' \
 		|| echo "Scheduler entities-3day already exists"
-	
+
 	@echo "All schedulers created successfully!"
 
 .PHONY: test-cloudrun-all

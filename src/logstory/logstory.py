@@ -18,6 +18,7 @@ import glob
 import os
 import shutil
 import uuid
+from importlib.metadata import version
 
 import typer
 from dotenv import load_dotenv
@@ -31,6 +32,18 @@ UTC = datetime.UTC
 
 DEFAULT_BUCKET = "gs://logstory-usecases-20241216"
 
+
+def version_callback(value: bool):
+  """Callback to display version and exit."""
+  if value:
+    try:
+      __version__ = version("logstory")
+    except Exception:
+      __version__ = "unknown"
+    typer.echo(f"logstory {__version__}")
+    raise typer.Exit()
+
+
 # Create Typer app and command groups
 app = typer.Typer(help="Logstory: Replay SecOps logs with updated timestamps")
 usecases_app = typer.Typer(help="Manage and list usecases")
@@ -38,6 +51,19 @@ replay_app = typer.Typer(help="Replay log data")
 
 app.add_typer(usecases_app, name="usecases")
 app.add_typer(replay_app, name="replay")
+
+
+@app.callback()
+def main(
+    version: bool = typer.Option(
+        None,
+        "--version",
+        callback=version_callback,
+        is_eager=True,
+        help="Show version and exit",
+    ),
+):
+  """Logstory: Replay SecOps logs with updated timestamps."""
 
 
 def validate_uuid4(value: str) -> str:
@@ -86,18 +112,19 @@ def get_credentials_default():
   credentials_json = os.getenv("LOGSTORY_CREDENTIALS")
   if credentials_json:
     # Write to temp file and return path
-    import tempfile
     import json
+    import tempfile
+
     try:
       # Validate it's valid JSON
       json.loads(credentials_json)
       # Create temp file
-      with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+      with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         f.write(credentials_json)
         return f.name
     except json.JSONDecodeError:
       typer.echo("Warning: LOGSTORY_CREDENTIALS contains invalid JSON")
-  
+
   # Fall back to credentials path
   return os.getenv("LOGSTORY_CREDENTIALS_PATH")
 
@@ -640,11 +667,13 @@ def _load_and_validate_params(
     if not final_credentials and not can_use_adc:
       if final_impersonate and final_api_type == "rest":
         missing.append(
-            "--credentials-path (or LOGSTORY_CREDENTIALS/LOGSTORY_CREDENTIALS_PATH, or use Application"
-            " Default Credentials)"
+            "--credentials-path (or LOGSTORY_CREDENTIALS/LOGSTORY_CREDENTIALS_PATH, or"
+            " use Application Default Credentials)"
         )
       else:
-        missing.append("--credentials-path (or LOGSTORY_CREDENTIALS/LOGSTORY_CREDENTIALS_PATH)")
+        missing.append(
+            "--credentials-path (or LOGSTORY_CREDENTIALS/LOGSTORY_CREDENTIALS_PATH)"
+        )
     if not final_customer_id:
       missing.append("--customer-id (or LOGSTORY_CUSTOMER_ID)")
 
@@ -652,7 +681,8 @@ def _load_and_validate_params(
     typer.echo("You can provide these via:")
     typer.echo("  1. Command line options: --credentials-path and --customer-id")
     typer.echo(
-        "  2. Environment variables: LOGSTORY_CREDENTIALS or LOGSTORY_CREDENTIALS_PATH and LOGSTORY_CUSTOMER_ID"
+        "  2. Environment variables: LOGSTORY_CREDENTIALS or LOGSTORY_CREDENTIALS_PATH"
+        " and LOGSTORY_CUSTOMER_ID"
     )
     typer.echo("  3. .env file with --env-file option")
     if final_impersonate and final_api_type == "rest" and not has_adc:

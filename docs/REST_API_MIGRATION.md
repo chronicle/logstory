@@ -167,6 +167,18 @@ PYTHONLOGLEVEL=DEBUG logstory replay usecase RULES_SEARCH_WORKSHOP --env-file .e
 4. **Regional Flexibility:** Support for more geographic regions
 5. **Future-Proof:** Aligned with Google Cloud's API standards
 
+## Environment Variable to CLI Parameter Mapping
+
+| Environment Variable | CLI Parameter | Description |
+|---------------------|---------------|-------------|
+| `LOGSTORY_CUSTOMER_ID` | `--customer-id` | Chronicle customer ID |
+| `LOGSTORY_PROJECT_ID` | `--project-id` | Google Cloud project ID (REST API only) |
+| `LOGSTORY_CREDENTIALS_PATH` | `--credentials-path` | Path to service account credentials JSON file |
+| `LOGSTORY_REGION` | `--region` | Geographic region (US, EUROPE, UK, ASIA, SYDNEY) |
+| `LOGSTORY_API_TYPE` | `--api-type` | API type to use (rest or legacy) |
+| `LOGSTORY_FORWARDER_NAME` | `--forwarder-name` | Custom forwarder name (REST API only) |
+| `LOGSTORY_IMPERSONATE_SERVICE_ACCOUNT` | `--impersonate-service-account` | Service account to impersonate (REST API only) |
+
 ## Support
 
 For issues or questions:
