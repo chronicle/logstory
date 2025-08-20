@@ -18,7 +18,7 @@ help: ## Show this help message
 	@echo '    4. Set environment variables (or use .env file):'
 	@echo '       export LOGSTORY_CUSTOMER_ID=your-uuid'
 	@echo '       export LOGSTORY_PROJECT_ID=your-project-id  # For REST API'
-	@echo '       export LOGSTORY_API_TYPE=rest               # Optional: rest or legacy'
+	@echo '       export LOGSTORY_API_TYPE=rest               # Required: rest or legacy'
 	@echo '       export LOGSTORY_REGION=US                   # Chronicle region: US, EUROPE, UK, ASIA, SYDNEY'
 	@echo '       export LOGSTORY_GCP_REGION=us-central1      # Optional: GCP region (auto-mapped from LOGSTORY_REGION)'
 	@echo '  - Then run "make deploy-cloudrun-job" for scheduled execution or "make deploy-cloudrun-service" for HTTP API'
@@ -62,11 +62,10 @@ endif
 
 CUSTOMER_ID ?= $(LOGSTORY_CUSTOMER_ID)
 
-ifdef LOGSTORY_API_TYPE
-API_TYPE ?= $(LOGSTORY_API_TYPE)
-else
-API_TYPE ?= legacy
+ifndef LOGSTORY_API_TYPE
+$(error LOGSTORY_API_TYPE environment variable must be set to 'rest' or 'legacy')
 endif
+API_TYPE := $(LOGSTORY_API_TYPE)
 
 ifdef LOGSTORY_FORWARDER_NAME
 FORWARDER_NAME ?= $(LOGSTORY_FORWARDER_NAME)
@@ -385,6 +384,19 @@ test-cloudrun-all: check-cloudrun-env ## Test the Cloud Run job with different p
 		--args "replay,all,--timestamp-delta=1d" \
 		--wait
 
+.PHONY: debug-api-detection
+debug-api-detection: check-cloudrun-env ## Debug API type detection locally
+	@echo "Testing API detection locally..."
+	@echo "Environment variables:"
+	@echo "  LOGSTORY_API_TYPE: $(API_TYPE)"
+	@echo "  LOGSTORY_PROJECT_ID: $(PROJECT_ID)"
+	@echo "  LOGSTORY_REGION: $(CHRONICLE_REGION)"
+	@cd /tmp && LOGSTORY_PROJECT_ID=$(PROJECT_ID) LOGSTORY_REGION=$(CHRONICLE_REGION) LOGSTORY_API_TYPE=$(API_TYPE) \
+	python -c "import sys; sys.path.insert(0, '/Users/dandye/Projects/logstory__worktrees/rest_api/src'); \
+	from logstory.auth import detect_auth_type; \
+	result = detect_auth_type(); \
+	print(f'Detected API type: {result}')"
+
 .PHONY: test-cloudrun-service
 test-cloudrun-service: check-cloudrun-env ## Test the Cloud Run service with HTTP requests
 	@echo "Testing Cloud Run service..."
@@ -458,7 +470,7 @@ cloudrun-help: ## Show Cloud Run deployment help
 	@echo "     export LOGSTORY_CUSTOMER_ID=your-chronicle-customer-uuid"
 	@echo "     export LOGSTORY_REGION=US            # Chronicle region: US, EUROPE, UK, ASIA, SYDNEY"
 	@echo "     export LOGSTORY_GCP_REGION=us-central1  # Optional: GCP region (auto-mapped)"
-	@echo "     export LOGSTORY_API_TYPE=rest        # or legacy"
+	@echo "     export LOGSTORY_API_TYPE=rest        # Required: rest or legacy"
 	@echo ""
 	@echo "  2. Enable required Google Cloud APIs:"
 	@echo "     make enable-apis"
