@@ -839,6 +839,15 @@ def replay_usecase(
     if not success:
       raise typer.Exit(1)
 
+  # Check if usecase exists after download attempt
+  available_usecases = get_usecases()
+  if usecase not in available_usecases:
+    print(
+        f"Usecase '{usecase}' not found. Available usecases:"
+        f" {', '.join(sorted(available_usecases))}"
+    )
+    raise typer.Exit(1)
+
   # Skip credential validation if using local file output
   if not local_file_output:
     final_credentials, final_customer_id, final_region = _load_and_validate_params(
@@ -872,6 +881,9 @@ def replay_usecase(
 
   usecases = [usecase]
   logtypes = _get_logtypes(usecase, entities=entities)
+  if not logtypes:
+    print(f"No logs found for usecase '{usecase}'")
+    raise typer.Exit(1)
   _replay_usecases(usecases, logtypes, entities, timestamp_delta, local_file_output)
 
 
@@ -945,6 +957,7 @@ def _replay_usecases(
     import main as imported_main  # type: ignore
 
   logstory_exe_time = _get_current_time()
+  logs_loaded = False
 
   for use_case in usecases:
     if logtypes == "*":
@@ -967,8 +980,10 @@ def _replay_usecases(
           entities=entities,
           local_file_output=local_file_output,
       )
+      logs_loaded = True
 
-    typer.echo(f"""UDM Search for the loaded logs:
+    if logs_loaded:
+      typer.echo(f"""UDM Search for the loaded logs:
     metadata.ingested_timestamp.seconds >= {int(logstory_exe_time.timestamp())}
     metadata.ingestion_labels["log_replay"]="true"
     metadata.ingestion_labels["replayed_from"]="logstory"
