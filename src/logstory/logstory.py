@@ -602,6 +602,59 @@ def _download_usecase(usecase: str, bucket: str = None) -> bool:
   return True
 
 
+def _download_all_usecases(bucket: str = None) -> int:
+  """Download all available usecases from configured sources.
+
+  Args:
+    bucket: Optional specific bucket to download from. If None, uses configured sources.
+
+  Returns:
+    Number of usecases successfully downloaded.
+  """
+  sources = [bucket] if bucket else get_usecases_buckets()
+
+  # Get all available usecases from sources
+  available_usecases = set()
+  for source_uri in sources:
+    try:
+      directories = _get_source_directories(source_uri)
+      available_usecases.update(directories)
+      typer.echo(f"Found {len(directories)} usecases in source '{source_uri}'")
+    except Exception as e:
+      typer.echo(f"Warning: Could not access source '{source_uri}': {e}")
+      continue
+
+  if not available_usecases:
+    typer.echo("No usecases found in any configured source")
+    return 0
+
+  # Get already installed usecases
+  installed_usecases = set(get_usecases())
+
+  # Determine which usecases need to be downloaded
+  to_download = available_usecases - installed_usecases
+
+  if not to_download:
+    typer.echo(
+        f"All {len(available_usecases)} available usecases are already installed"
+    )
+    return 0
+
+  typer.echo(f"Downloading {len(to_download)} new usecases...")
+
+  # Download each missing usecase
+  downloaded_count = 0
+  for usecase in sorted(to_download):
+    typer.echo(f"\nDownloading usecase '{usecase}'...")
+    if _download_usecase(usecase, bucket):
+      downloaded_count += 1
+    else:
+      typer.echo(f"Failed to download usecase '{usecase}'")
+
+  typer.echo(f"\nSuccessfully downloaded {downloaded_count} usecases")
+  return downloaded_count
+
+
 @usecases_app.command("get")
 def usecase_get(
     usecase: str = typer.Argument(..., help="Name of the usecase to download"),
@@ -777,8 +830,31 @@ def replay_all_usecases(
     project_id: str | None = ProjectIdOption,
     forwarder_name: str | None = ForwarderNameOption,
     impersonate_service_account: str | None = ImpersonateServiceAccountOption,
+    get_if_missing: bool = typer.Option(
+        None,
+        "--get/--no-get",
+        help=(
+            "Download all available usecases from configured sources (env:"
+            " LOGSTORY_AUTO_GET). Use --no-get to override environment variable."
+        ),
+    ),
+    usecases_bucket: str | None = UsecasesBucketOption,
 ):
   """Replay all usecases."""
+  # Load environment file first (needed for download logic)
+  load_env_file(env_file)
+
+  # Determine if we should auto-get: CLI flag takes precedence over env var
+  if get_if_missing is None:
+    get_if_missing = get_auto_get_default()
+
+  # Download all available usecases if requested
+  if get_if_missing:
+    typer.echo("Checking for available usecases to download...")
+    downloaded = _download_all_usecases(usecases_bucket)
+    if downloaded > 0:
+      typer.echo(f"Downloaded {downloaded} new usecases")
+
   # Skip credential validation if using local file output
   if not local_file_output:
     final_credentials, final_customer_id, final_region = _load_and_validate_params(
@@ -799,8 +875,6 @@ def replay_all_usecases(
         impersonate_service_account,
     )
   else:
-    # Load env file but don't require credentials for local file output
-    load_env_file(env_file)
     # Still set API-related environment variables for local file output
     _set_environment_vars(
         None,

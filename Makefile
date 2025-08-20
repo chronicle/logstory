@@ -26,6 +26,14 @@ help: ## Show this help message
 
 .DEFAULT_GOAL := help
 
+# Environment file support
+ENV_FILE ?= .env
+ifneq ($(wildcard $(ENV_FILE)),)
+  $(info Using environment file: $(ENV_FILE))
+endif
+-include $(ENV_FILE)
+export
+
 # Cloud deployment variables - read from environment or use defaults
 ifdef LOGSTORY_PROJECT_ID
 PROJECT_ID ?= $(LOGSTORY_PROJECT_ID)

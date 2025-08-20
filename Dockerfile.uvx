@@ -8,4 +8,4 @@ WORKDIR /app
 
 # Use uvx to auto-install and run logstory
 # This always gets the latest version from PyPI
-CMD ["uvx", "logstory", "replay", "all"]
+CMD ["uvx", "logstory", "replay", "all", "--get"]
