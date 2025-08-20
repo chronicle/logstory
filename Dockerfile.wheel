@@ -14,4 +14,4 @@ RUN echo "LOGSTORY_API_TYPE: ${LOGSTORY_API_TYPE}"
 WORKDIR /app
 
 # Default command - replay all usecases
-CMD ["logstory", "replay", "all", "--get"]
+CMD ["logstory", "replay", "all"]

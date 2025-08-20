@@ -330,11 +330,16 @@ LOGSTORY_LOCAL_LOG_DIR=/tmp/my-logs logstory replay all --local-file-output
 
 #### Auto-Download Feature
 
-The `replay usecase` command can automatically download missing usecases before replaying them:
+The replay commands can automatically download missing usecases before replaying them:
 
 ```bash
 # Download usecase if not already installed, then replay
 logstory replay usecase OKTA --get \
+  --customer-id=01234567-0123-4321-abcd-01234567890a \
+  --credentials-path=/path/to/credentials.json
+
+# Download ALL available usecases and replay them
+logstory replay all --get \
   --customer-id=01234567-0123-4321-abcd-01234567890a \
   --credentials-path=/path/to/credentials.json
 
@@ -372,7 +377,7 @@ This eliminates the need to run `logstory usecases get` separately before replay
 - `--details`: Show full markdown content for usecases
 - `--open`: Open usecase markdown file in VS Code (requires `code` command)
 - `--local-file-output`: Write logs to local files instead of sending to API
-- `--get/--no-get`: Auto-download missing usecases (replay usecase only, env: LOGSTORY_AUTO_GET)
+- `--get/--no-get`: Auto-download missing usecases (env: LOGSTORY_AUTO_GET)
 
 ### Local File Output
 

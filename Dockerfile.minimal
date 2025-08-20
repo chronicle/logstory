@@ -10,4 +10,4 @@ WORKDIR /app
 # Environment variables control the behavior:
 #   TIMESTAMP_DELTA: 1d or 3d
 #   ENTITIES: true or false (omit for events)
-CMD ["logstory", "replay", "all" "--get"]
+CMD ["logstory", "replay", "all"]

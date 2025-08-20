@@ -117,6 +117,11 @@ Replay all installed usecases.
 logstory replay all \
   --customer-id=01234567-0123-4321-abcd-01234567890a \
   --credentials-path=/path/to/credentials.json
+
+# Download ALL available usecases and replay them
+logstory replay all --get \
+  --customer-id=01234567-0123-4321-abcd-01234567890a \
+  --credentials-path=/path/to/credentials.json
 ```
 
 **Options:**
@@ -127,6 +132,8 @@ logstory replay all \
 - `--entities`: Load Entities instead of Events
 - `--timestamp-delta TEXT`: Determines how datetimes in logfiles are updated. Expressed in any/all: days, hours, minutes (d, h, m) (Default=1d). Examples: [1d, 1d1h, 1h1m, 1d1m, 1d1h1m, 1m1h, ...]. Setting only `Nd` preserves the original HH:MM:SS but updates date. Nh/Nm subtracts an additional offset from that datetime, to facilitate running logstory more than 1x per day.
 - `--local-file-output`: Write logs to local files instead of sending to API
+- `--get/--no-get`: Download all available usecases from configured sources (env: `LOGSTORY_AUTO_GET`). Use `--no-get` to override environment variable.
+- `--usecases-bucket TEXT`: Usecase source URI (gs://bucket, git@repo, etc.) - overrides config list
 
 ### `logstory replay usecase`
 
