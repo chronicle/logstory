@@ -139,6 +139,12 @@ def get_region_default():
   return os.getenv("LOGSTORY_REGION", "US")
 
 
+def get_auto_get_default():
+  """Get auto-get setting from environment variable."""
+  auto_get_value = os.getenv("LOGSTORY_AUTO_GET", "").lower()
+  return auto_get_value in ("true", "1", "yes", "on")
+
+
 def parse_usecase_source(source_uri: str) -> tuple[str, str]:
   """Parse a usecase source URI and return (source_type, identifier).
 
@@ -821,7 +827,12 @@ def replay_usecase(
     timestamp_delta: str | None = TimestampDeltaOption,
     local_file_output: bool = LocalFileOutputOption,
     get_if_missing: bool = typer.Option(
-        False, "--get", help="Download usecase if not already installed"
+        None,
+        "--get/--no-get",
+        help=(
+            "Download usecase if not already installed (env: LOGSTORY_AUTO_GET). "
+            "Use --no-get to override environment variable."
+        ),
     ),
     api_type: str | None = ApiTypeOption,
     project_id: str | None = ProjectIdOption,
@@ -831,6 +842,10 @@ def replay_usecase(
   """Replay a specific usecase."""
   # Load environment file first (needed for download logic)
   load_env_file(env_file)
+
+  # Determine if we should auto-get: CLI flag takes precedence over env var
+  if get_if_missing is None:
+    get_if_missing = get_auto_get_default()
 
   # Check if usecase exists and download if requested
   if get_if_missing and usecase not in get_usecases():

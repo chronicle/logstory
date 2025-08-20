@@ -154,6 +154,9 @@ def can_use_application_default_credentials():
 
 can_use_adc = can_use_application_default_credentials()
 
+# Initialize ingestion_backend as None by default
+ingestion_backend = None
+
 # Create authentication and backend based on API type
 if (
     service_account_info
@@ -181,7 +184,6 @@ if (
   http_client = auth_handler.get_http_client()
 
   # Create ingestion backend if we have customer ID
-  ingestion_backend = None
   if CUSTOMER_ID:
     ingestion_backend = create_ingestion_backend(
         auth_handler=auth_handler,
