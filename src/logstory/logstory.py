@@ -327,7 +327,7 @@ def usecases_list(
           for md_file in md_files:
             typer.echo(f"Opening {md_file} in VS Code...")
             try:
-              subprocess.run(["code", md_file], check=True)
+              subprocess.run(["code", md_file], check=True)  # nosec B603 B607
             except subprocess.CalledProcessError:
               typer.echo(
                   "Error: Could not run 'code' command. Make sure VS Code is installed"

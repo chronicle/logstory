@@ -485,7 +485,7 @@ def _write_entries_to_local_file(
   """
   # Get log directory from environment or use default
   if log_dir is None:
-    log_dir = os.getenv("LOGSTORY_LOCAL_LOG_DIR", "/tmp/var/log/logstory")
+    log_dir = os.getenv("LOGSTORY_LOCAL_LOG_DIR", "/tmp/var/log/logstory")  # nosec B108
 
   # Create directory if it doesn't exist
   log_path = Path(log_dir)
