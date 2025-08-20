@@ -309,7 +309,7 @@ def usecases_list(
 
   # Handle --open flag as a special case
   if open_usecase:
-    import subprocess
+    import subprocess  # nosec B404
 
     usecase_dirs = glob.glob(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "usecases/*")
