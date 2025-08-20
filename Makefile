@@ -19,8 +19,9 @@ help: ## Show this help message
 	@echo '       export LOGSTORY_CUSTOMER_ID=your-uuid'
 	@echo '       export LOGSTORY_PROJECT_ID=your-project-id  # For REST API'
 	@echo '       export LOGSTORY_API_TYPE=rest               # Optional: rest or legacy'
-	@echo '       export LOGSTORY_REGION=US                   # Optional: US, EU, ASIA'
-	@echo '  - Then run "make deploy-cloudrun-all" to deploy the Cloud Run job'
+	@echo '       export LOGSTORY_REGION=US                   # Chronicle region: US, EUROPE, UK, ASIA, SYDNEY'
+	@echo '       export LOGSTORY_GCP_REGION=us-central1      # Optional: GCP region (auto-mapped from LOGSTORY_REGION)'
+	@echo '  - Then run "make deploy-cloudrun-job" for scheduled execution or "make deploy-cloudrun-service" for HTTP API'
 
 
 .DEFAULT_GOAL := help
@@ -32,10 +33,31 @@ else
 PROJECT_ID ?= $(shell gcloud config get-value project)
 endif
 
+# Chronicle region (US, EUROPE, etc) for LOGSTORY_REGION env var
 ifdef LOGSTORY_REGION
-REGION ?= $(LOGSTORY_REGION)
+CHRONICLE_REGION ?= $(LOGSTORY_REGION)
 else
-REGION ?= US
+CHRONICLE_REGION ?= US
+endif
+
+# GCP region for gcloud commands (us-central1, europe-west1, etc)
+ifdef LOGSTORY_GCP_REGION
+GCP_REGION ?= $(LOGSTORY_GCP_REGION)
+else
+# Map Chronicle regions to GCP regions
+ifeq ($(CHRONICLE_REGION),US)
+GCP_REGION ?= us-central1
+else ifeq ($(CHRONICLE_REGION),EUROPE)
+GCP_REGION ?= europe-west1
+else ifeq ($(CHRONICLE_REGION),UK)
+GCP_REGION ?= europe-west2
+else ifeq ($(CHRONICLE_REGION),ASIA)
+GCP_REGION ?= asia-southeast1
+else ifeq ($(CHRONICLE_REGION),SYDNEY)
+GCP_REGION ?= australia-southeast1
+else
+GCP_REGION ?= us-central1
+endif
 endif
 
 CUSTOMER_ID ?= $(LOGSTORY_CUSTOMER_ID)
@@ -179,7 +201,8 @@ check-cloudrun-env: ## Check required environment for Cloud Run deployment
 	@echo "Configuration:"
 	@echo "  CUSTOMER_ID: $(CUSTOMER_ID)"
 	@echo "  PROJECT_ID: $(PROJECT_ID)"
-	@echo "  REGION: $(REGION)"
+	@echo "  CHRONICLE_REGION: $(CHRONICLE_REGION) (for LOGSTORY_REGION)"
+	@echo "  GCP_REGION: $(GCP_REGION) (for gcloud commands)"
 	@echo "  API_TYPE: $(API_TYPE)"
 	@if [ "$(API_TYPE)" = "rest" ]; then \
 		echo "  FORWARDER_NAME: $(FORWARDER_NAME)"; \
@@ -251,10 +274,10 @@ deploy-cloudrun-job: check-cloudrun-env docker-build ## Deploy single Cloud Run 
 	@echo "Deploying Cloud Run job: logstory-replay"
 	@gcloud run jobs create logstory-replay \
 		--image gcr.io/$(PROJECT_ID)/logstory:latest \
-		--region $(REGION) \
+		--region $(GCP_REGION) \
 		--service-account $(SERVICE_ACCOUNT) \
 		--set-env-vars "LOGSTORY_CUSTOMER_ID=$(CUSTOMER_ID)" \
-		--set-env-vars "LOGSTORY_REGION=$(REGION)" \
+		--set-env-vars "LOGSTORY_REGION=$(CHRONICLE_REGION)" \
 		--set-env-vars "LOGSTORY_API_TYPE=$(API_TYPE)" \
 		--set-env-vars "LOGSTORY_PROJECT_ID=$(PROJECT_ID)" \
 		--set-env-vars "LOGSTORY_FORWARDER_NAME=$(FORWARDER_NAME)" \
@@ -266,14 +289,38 @@ deploy-cloudrun-job: check-cloudrun-env docker-build ## Deploy single Cloud Run 
 		|| (echo "Job exists, updating..." && \
 		gcloud run jobs update logstory-replay \
 		--image gcr.io/$(PROJECT_ID)/logstory:latest \
-		--region $(REGION) \
+		--region $(GCP_REGION) \
 		--set-env-vars "LOGSTORY_CUSTOMER_ID=$(CUSTOMER_ID)" \
-		--set-env-vars "LOGSTORY_REGION=$(REGION)" \
+		--set-env-vars "LOGSTORY_REGION=$(CHRONICLE_REGION)" \
 		--set-env-vars "LOGSTORY_API_TYPE=$(API_TYPE)" \
 		--set-env-vars "LOGSTORY_PROJECT_ID=$(PROJECT_ID)" \
 		--set-env-vars "LOGSTORY_FORWARDER_NAME=$(FORWARDER_NAME)" \
 		--set-secrets "LOGSTORY_CREDENTIALS=$(SECRET_NAME):latest")
 	@echo "Cloud Run job deployed successfully!"
+
+.PHONY: deploy-cloudrun-service
+deploy-cloudrun-service: check-cloudrun-env docker-build ## Deploy Cloud Run service for logstory API
+	@echo "Deploying Cloud Run service: logstory-service"
+	@gcloud run deploy logstory-service \
+		--image gcr.io/$(PROJECT_ID)/logstory:latest \
+		--region $(GCP_REGION) \
+		--service-account $(SERVICE_ACCOUNT) \
+		--set-env-vars "LOGSTORY_CUSTOMER_ID=$(CUSTOMER_ID)" \
+		--set-env-vars "LOGSTORY_REGION=$(CHRONICLE_REGION)" \
+		--set-env-vars "LOGSTORY_API_TYPE=$(API_TYPE)" \
+		--set-env-vars "LOGSTORY_PROJECT_ID=$(PROJECT_ID)" \
+		--set-env-vars "LOGSTORY_FORWARDER_NAME=$(FORWARDER_NAME)" \
+		--set-secrets "LOGSTORY_CREDENTIALS=$(SECRET_NAME):latest" \
+		--memory 1Gi \
+		--cpu 1 \
+		--min-instances 0 \
+		--max-instances 10 \
+		--concurrency 80 \
+		--timeout 3600 \
+		--port 8080 \
+		--allow-unauthenticated
+	@echo "Cloud Run service deployed successfully!"
+	@echo "Service URL: $$(gcloud run services describe logstory-service --region $(GCP_REGION) --format 'value(status.url)')"
 
 .PHONY: deploy-cloudrun-all
 deploy-cloudrun-all: deploy-cloudrun-job ## Deploy the Cloud Run job (simplified - just one job now)
@@ -282,10 +329,10 @@ deploy-cloudrun-all: deploy-cloudrun-job ## Deploy the Cloud Run job (simplified
 schedule-cloudrun-all: check-cloudrun-env ## Create all schedulers for the single Cloud Run job
 	@echo "Creating scheduler: events-24h (daily at 8 AM)"
 	@gcloud scheduler jobs create http logstory-events-24h \
-		--location $(REGION) \
+		--location $(GCP_REGION) \
 		--schedule "0 8 * * *" \
 		--time-zone "America/New_York" \
-		--uri "https://$(REGION)-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/$(PROJECT_ID)/jobs/logstory-replay:run" \
+		--uri "https://$(GCP_REGION)-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/$(PROJECT_ID)/jobs/logstory-replay:run" \
 		--http-method POST \
 		--oauth-service-account-email $(SERVICE_ACCOUNT) \
 		--headers "Content-Type=application/json" \
@@ -294,10 +341,10 @@ schedule-cloudrun-all: check-cloudrun-env ## Create all schedulers for the singl
 
 	@echo "Creating scheduler: events-3day (every 3 days at 3 AM)"
 	@gcloud scheduler jobs create http logstory-events-3day \
-		--location $(REGION) \
+		--location $(GCP_REGION) \
 		--schedule "0 3 */3 * *" \
 		--time-zone "America/New_York" \
-		--uri "https://$(REGION)-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/$(PROJECT_ID)/jobs/logstory-replay:run" \
+		--uri "https://$(GCP_REGION)-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/$(PROJECT_ID)/jobs/logstory-replay:run" \
 		--http-method POST \
 		--oauth-service-account-email $(SERVICE_ACCOUNT) \
 		--headers "Content-Type=application/json" \
@@ -306,10 +353,10 @@ schedule-cloudrun-all: check-cloudrun-env ## Create all schedulers for the singl
 
 	@echo "Creating scheduler: entities-24h (daily at 9 AM)"
 	@gcloud scheduler jobs create http logstory-entities-24h \
-		--location $(REGION) \
+		--location $(GCP_REGION) \
 		--schedule "0 9 * * *" \
 		--time-zone "America/New_York" \
-		--uri "https://$(REGION)-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/$(PROJECT_ID)/jobs/logstory-replay:run" \
+		--uri "https://$(GCP_REGION)-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/$(PROJECT_ID)/jobs/logstory-replay:run" \
 		--http-method POST \
 		--oauth-service-account-email $(SERVICE_ACCOUNT) \
 		--headers "Content-Type=application/json" \
@@ -318,10 +365,10 @@ schedule-cloudrun-all: check-cloudrun-env ## Create all schedulers for the singl
 
 	@echo "Creating scheduler: entities-3day (every 3 days at 4 AM)"
 	@gcloud scheduler jobs create http logstory-entities-3day \
-		--location $(REGION) \
+		--location $(GCP_REGION) \
 		--schedule "0 4 */3 * *" \
 		--time-zone "America/New_York" \
-		--uri "https://$(REGION)-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/$(PROJECT_ID)/jobs/logstory-replay:run" \
+		--uri "https://$(GCP_REGION)-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/$(PROJECT_ID)/jobs/logstory-replay:run" \
 		--http-method POST \
 		--oauth-service-account-email $(SERVICE_ACCOUNT) \
 		--headers "Content-Type=application/json" \
@@ -334,40 +381,70 @@ schedule-cloudrun-all: check-cloudrun-env ## Create all schedulers for the singl
 test-cloudrun-all: check-cloudrun-env ## Test the Cloud Run job with different parameters
 	@echo "Testing events 24h..."
 	@gcloud run jobs execute logstory-replay \
-		--region $(REGION) \
+		--region $(GCP_REGION) \
 		--args "replay,all,--timestamp-delta=1d" \
 		--wait
 
+.PHONY: test-cloudrun-service
+test-cloudrun-service: check-cloudrun-env ## Test the Cloud Run service with HTTP requests
+	@echo "Testing Cloud Run service..."
+	@SERVICE_URL=$$(gcloud run services describe logstory-service --region $(GCP_REGION) --format 'value(status.url)' 2>/dev/null); \
+	if [ -n "$$SERVICE_URL" ]; then \
+		echo "Service URL: $$SERVICE_URL"; \
+		echo "Testing health endpoint..."; \
+		curl -f "$$SERVICE_URL/health" || echo "Health endpoint not available"; \
+		echo "Testing version endpoint..."; \
+		curl -f "$$SERVICE_URL/version" || echo "Version endpoint not available"; \
+	else \
+		echo "Service not deployed. Run 'make deploy-cloudrun-service' first."; \
+	fi
+
 .PHONY: cloudrun-status
-cloudrun-status: check-cloudrun-env ## Show status of Cloud Run job and schedulers
+cloudrun-status: check-cloudrun-env ## Show status of Cloud Run job, service, and schedulers
 	@echo "=== Cloud Run Job Status ==="
-	@gcloud run jobs describe logstory-replay --region $(REGION) --format "table(metadata.name,status.conditions[0].type,status.conditions[0].status)" 2>/dev/null || echo "Job not deployed"
+	@gcloud run jobs describe logstory-replay --region $(GCP_REGION) --format "table(metadata.name,status.conditions[0].type,status.conditions[0].status)" 2>/dev/null || echo "Job not deployed"
 	@echo ""
-	@echo "=== Recent Executions ==="
-	@gcloud run jobs executions list --job logstory-replay --region $(REGION) --limit 5 --format "table(metadata.name,status.completionTime,status.conditions[0].status)" 2>/dev/null || echo "No executions found"
+	@echo "=== Recent Job Executions ==="
+	@gcloud run jobs executions list --job logstory-replay --region $(GCP_REGION) --limit 5 --format "table(metadata.name,status.completionTime,status.conditions[0].status)" 2>/dev/null || echo "No executions found"
+	@echo ""
+	@echo "=== Cloud Run Service Status ==="
+	@gcloud run services describe logstory-service --region $(GCP_REGION) --format "table(metadata.name,status.conditions[0].type,status.conditions[0].status,status.url)" 2>/dev/null || echo "Service not deployed"
+	@echo ""
+	@echo "=== Service Traffic ==="
+	@gcloud run services describe logstory-service --region $(GCP_REGION) --format "table(status.traffic[*].revisionName:label=REVISION,status.traffic[*].percent:label=TRAFFIC%)" 2>/dev/null || echo "No service traffic info"
 	@echo ""
 	@echo "=== Scheduler Status ==="
-	@gcloud scheduler jobs list --location $(REGION) --format "table(name.basename(),schedule,state,lastAttemptTime.date())" 2>/dev/null || echo "No schedulers found"
+	@gcloud scheduler jobs list --location $(GCP_REGION) --format "table(name.basename(),schedule,state,lastAttemptTime.date())" 2>/dev/null || echo "No schedulers found"
 
 .PHONY: cloudrun-logs
 cloudrun-logs: check-cloudrun-env ## View logs from the most recent Cloud Run job execution
 	@gcloud run jobs executions list \
 		--job logstory-replay \
-		--region $(REGION) \
+		--region $(GCP_REGION) \
 		--limit 1 \
 		--format "value(name)" | xargs -I {} \
 		gcloud run jobs executions logs {} \
-		--region $(REGION)
+		--region $(GCP_REGION)
+
+.PHONY: cloudrun-service-logs
+cloudrun-service-logs: check-cloudrun-env ## View logs from the Cloud Run service
+	@gcloud logs read "resource.type=cloud_run_revision AND resource.labels.service_name=logstory-service" \
+		--project=$(PROJECT_ID) \
+		--limit=50 \
+		--order=desc \
+		--format="table(timestamp,severity,textPayload)"
 
 .PHONY: delete-cloudrun-all
-delete-cloudrun-all: check-cloudrun-env ## Delete Cloud Run job and all schedulers
+delete-cloudrun-all: check-cloudrun-env ## Delete Cloud Run job, service, and all schedulers
 	@echo "Deleting schedulers..."
-	@gcloud scheduler jobs delete logstory-events-24h --location $(REGION) --quiet 2>/dev/null || true
-	@gcloud scheduler jobs delete logstory-events-3day --location $(REGION) --quiet 2>/dev/null || true
-	@gcloud scheduler jobs delete logstory-entities-24h --location $(REGION) --quiet 2>/dev/null || true
-	@gcloud scheduler jobs delete logstory-entities-3day --location $(REGION) --quiet 2>/dev/null || true
+	@gcloud scheduler jobs delete logstory-events-24h --location $(GCP_REGION) --quiet 2>/dev/null || true
+	@gcloud scheduler jobs delete logstory-events-3day --location $(GCP_REGION) --quiet 2>/dev/null || true
+	@gcloud scheduler jobs delete logstory-entities-24h --location $(GCP_REGION) --quiet 2>/dev/null || true
+	@gcloud scheduler jobs delete logstory-entities-3day --location $(GCP_REGION) --quiet 2>/dev/null || true
 	@echo "Deleting Cloud Run job..."
-	@gcloud run jobs delete logstory-replay --region $(REGION) --quiet 2>/dev/null || true
+	@gcloud run jobs delete logstory-replay --region $(GCP_REGION) --quiet 2>/dev/null || true
+	@echo "Deleting Cloud Run service..."
+	@gcloud run services delete logstory-service --region $(GCP_REGION) --quiet 2>/dev/null || true
 	@echo "All Cloud Run resources deleted"
 
 .PHONY: cloudrun-help
@@ -379,8 +456,9 @@ cloudrun-help: ## Show Cloud Run deployment help
 	@echo "  1. Set environment variables:"
 	@echo "     export LOGSTORY_PROJECT_ID=your-gcp-project-id"
 	@echo "     export LOGSTORY_CUSTOMER_ID=your-chronicle-customer-uuid"
-	@echo "     export LOGSTORY_REGION=us-central1  # optional, defaults to us-central1"
-	@echo "     export LOGSTORY_API_TYPE=rest  # or legacy"
+	@echo "     export LOGSTORY_REGION=US            # Chronicle region: US, EUROPE, UK, ASIA, SYDNEY"
+	@echo "     export LOGSTORY_GCP_REGION=us-central1  # Optional: GCP region (auto-mapped)"
+	@echo "     export LOGSTORY_API_TYPE=rest        # or legacy"
 	@echo ""
 	@echo "  2. Enable required Google Cloud APIs:"
 	@echo "     make enable-apis"
@@ -391,17 +469,25 @@ cloudrun-help: ## Show Cloud Run deployment help
 	@echo "  4. Setup permissions for default compute service account:"
 	@echo "     make setup-permissions"
 	@echo ""
-	@echo "Quick Start:"
-	@echo "  make enable-apis             # Enable required APIs"
+	@echo "Quick Start - Job Deployment (scheduled execution):"
+	@echo "  make enable-apis               # Enable required APIs"
 	@echo "  make create-secret CREDENTIALS_FILE=/path/to/creds.json"
-	@echo "  make setup-permissions       # Grant permissions"
-	@echo "  make deploy-cloudrun-all     # Deploy the Cloud Run job"
-	@echo "  make schedule-cloudrun-all   # Set up all schedulers"
-	@echo "  make test-cloudrun-all       # Test the job"
+	@echo "  make setup-permissions         # Grant permissions"
+	@echo "  make deploy-cloudrun-job       # Deploy the Cloud Run job"
+	@echo "  make schedule-cloudrun-all     # Set up all schedulers"
+	@echo "  make test-cloudrun-all         # Test the job"
+	@echo ""
+	@echo "Quick Start - Service Deployment (HTTP API):"
+	@echo "  make enable-apis               # Enable required APIs"
+	@echo "  make create-secret CREDENTIALS_FILE=/path/to/creds.json"
+	@echo "  make setup-permissions         # Grant permissions"
+	@echo "  make deploy-cloudrun-service   # Deploy the Cloud Run service"
+	@echo "  make test-cloudrun-service     # Test the service"
 	@echo ""
 	@echo "Monitoring:"
-	@echo "  make cloudrun-status  # Check job execution status"
-	@echo "  make cloudrun-logs    # View recent logs"
+	@echo "  make cloudrun-status           # Check job/service status"
+	@echo "  make cloudrun-logs             # View recent job logs"
+	@echo "  make cloudrun-service-logs     # View recent service logs"
 	@echo ""
 	@echo "Cleanup:"
 	@echo "  make delete-cloudrun-all  # Remove job and schedulers"
