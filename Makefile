@@ -12,14 +12,15 @@ help: ## Show this help message
 	@echo ''
 	@echo 'Cloud Deployment:'
 	@echo '  - Prerequisites:'
-	@echo '    1. Create secret: make create-secret CREDENTIALS_FILE=/path/to/credentials.json'
-	@echo '    2. Setup permissions: make setup-permissions'
-	@echo '    3. Set environment variables (or use .env file):'
+	@echo '    1. Enable APIs: make enable-apis'
+	@echo '    2. Create secret: make create-secret CREDENTIALS_FILE=/path/to/credentials.json'
+	@echo '    3. Setup permissions: make setup-permissions'
+	@echo '    4. Set environment variables (or use .env file):'
 	@echo '       export LOGSTORY_CUSTOMER_ID=your-uuid'
 	@echo '       export LOGSTORY_PROJECT_ID=your-project-id  # For REST API'
 	@echo '       export LOGSTORY_API_TYPE=rest               # Optional: rest or legacy'
 	@echo '       export LOGSTORY_REGION=US                   # Optional: US, EU, ASIA'
-	@echo '  - Then run "make deploy-cloudrun-all" to deploy all Cloud Run jobs'
+	@echo '  - Then run "make deploy-cloudrun-all" to deploy the Cloud Run job'
 
 
 .DEFAULT_GOAL := help
@@ -190,6 +191,15 @@ docker-build: build ## Build and push Docker image to GCR using Cloud Build
 	@echo "Building and pushing Docker image to GCR..."
 	gcloud builds submit --config cloudbuild-wheel.yaml --project=$(PROJECT_ID)
 	@echo "Docker image pushed to: gcr.io/$(PROJECT_ID)/logstory:latest"
+
+.PHONY: enable-apis
+enable-apis: ## Enable required Google Cloud APIs for Cloud Run deployment
+	@echo "Enabling required APIs for project $(PROJECT_ID)..."
+	@gcloud services enable run.googleapis.com --project=$(PROJECT_ID)
+	@gcloud services enable cloudbuild.googleapis.com --project=$(PROJECT_ID)
+	@gcloud services enable cloudscheduler.googleapis.com --project=$(PROJECT_ID)
+	@gcloud services enable secretmanager.googleapis.com --project=$(PROJECT_ID)
+	@echo "APIs enabled successfully!"
 
 .PHONY: setup-permissions
 setup-permissions: ## Grant necessary permissions to the default compute service account
@@ -371,16 +381,22 @@ cloudrun-help: ## Show Cloud Run deployment help
 	@echo "     export LOGSTORY_REGION=us-central1  # optional, defaults to us-central1"
 	@echo "     export LOGSTORY_API_TYPE=rest  # or legacy"
 	@echo ""
-	@echo "  2. Create secret in Secret Manager:"
+	@echo "  2. Enable required Google Cloud APIs:"
+	@echo "     make enable-apis"
+	@echo ""
+	@echo "  3. Create secret in Secret Manager:"
 	@echo "     make create-secret CREDENTIALS_FILE=/path/to/credentials.json"
 	@echo ""
-	@echo "  3. Setup permissions for default compute service account:"
+	@echo "  4. Setup permissions for default compute service account:"
 	@echo "     make setup-permissions"
 	@echo ""
 	@echo "Quick Start:"
-	@echo "  make deploy-cloudrun-all    # Deploy the Cloud Run job"
-	@echo "  make schedule-cloudrun-all  # Set up all schedulers"
-	@echo "  make test-cloudrun-all      # Test the job"
+	@echo "  make enable-apis             # Enable required APIs"
+	@echo "  make create-secret CREDENTIALS_FILE=/path/to/creds.json"
+	@echo "  make setup-permissions       # Grant permissions"
+	@echo "  make deploy-cloudrun-all     # Deploy the Cloud Run job"
+	@echo "  make schedule-cloudrun-all   # Set up all schedulers"
+	@echo "  make test-cloudrun-all       # Test the job"
 	@echo ""
 	@echo "Monitoring:"
 	@echo "  make cloudrun-status  # Check job execution status"
