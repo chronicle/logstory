@@ -25,9 +25,10 @@ export LOGSTORY_CUSTOMER_ID=01234567-0123-4321-abcd-01234567890a
 export LOGSTORY_CREDENTIALS_PATH=/path/to/credentials.json
 export LOGSTORY_REGION=US
 export LOGSTORY_USECASES_BUCKETS=gs://my-bucket,file:///local/usecases
+export LOGSTORY_AUTO_GET=true  # Auto-download missing usecases
 
 # Now run commands without additional options
-logstory replay usecase RULES_SEARCH_WORKSHOP
+logstory replay usecase RULES_SEARCH_WORKSHOP  # Will auto-download if missing
 logstory usecases list-available
 ```
 
@@ -50,6 +51,7 @@ LOGSTORY_CREDENTIALS_PATH=/dev/dev-credentials.json
 LOGSTORY_REGION=US
 LOGSTORY_USECASES_BUCKETS=file:///local/dev-usecases,gs://dev-usecases
 LOGSTORY_LOCAL_LOG_DIR=/tmp/logstory-dev
+LOGSTORY_AUTO_GET=true  # Auto-download missing usecases in dev
 ```
 
 **Usage:**
@@ -97,6 +99,7 @@ logstory replay usecase TEST --env-file .env --region=ASIA
 | `LOGSTORY_REGION` | `US` | SecOps tenant region |
 | `LOGSTORY_USECASES_BUCKETS` | `gs://logstory-usecases-20241216` | Comma-separated source URIs |
 | `LOGSTORY_LOCAL_LOG_DIR` | `/tmp/var/log/logstory` | Base directory for local file output |
+| `LOGSTORY_AUTO_GET` | `false` | Auto-download missing usecases (true/1/yes/on) |
 
 ## Source Configuration
 

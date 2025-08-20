@@ -140,12 +140,22 @@ logstory replay usecase USECASE_NAME \
 ```
 
 **Options:** Same as `replay all`, plus:
-- `--get`: Download usecase if not already installed
+- `--get/--no-get`: Download usecase if not already installed (env: `LOGSTORY_AUTO_GET`). Use `--no-get` to override environment variable.
 
 **Examples:**
 ```bash
 # Replay with custom environment
 logstory replay usecase RULES_SEARCH_WORKSHOP --env-file .env.prod
+
+# Auto-download and replay if not installed
+logstory replay usecase OKTA --get \
+  --customer-id=01234567-0123-4321-abcd-01234567890a \
+  --credentials-path=/path/to/credentials.json
+
+# Disable auto-download even if LOGSTORY_AUTO_GET is set
+logstory replay usecase OKTA --no-get \
+  --customer-id=01234567-0123-4321-abcd-01234567890a \
+  --credentials-path=/path/to/credentials.json
 
 # Replay entities only
 logstory replay usecase NETWORK_ANALYSIS --entities
@@ -213,6 +223,7 @@ All CLI options can be set via environment variables:
 | `--credentials-path` | `LOGSTORY_CREDENTIALS_PATH` | Path to credentials JSON |
 | `--region` | `LOGSTORY_REGION` | SecOps tenant region |
 | `--usecases-bucket` | `LOGSTORY_USECASES_BUCKETS` | Comma-separated source URIs |
+| `--get` | `LOGSTORY_AUTO_GET` | Auto-download missing usecases (true/1/yes/on) |
 | N/A | `LOGSTORY_LOCAL_LOG_DIR` | Base directory for local file output |
 
 ## Configuration Priority

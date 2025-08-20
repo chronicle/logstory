@@ -34,6 +34,7 @@ LOGSTORY_REGION=US
 | `LOGSTORY_REGION` | `US` | SecOps tenant region (`US`, `EU`, `ASIA`) |
 | `LOGSTORY_USECASES_BUCKETS` | `gs://logstory-usecases-20241216` | Comma-separated source URIs |
 | `LOGSTORY_LOCAL_LOG_DIR` | `/tmp/var/log/logstory` | Base directory for local file output |
+| `LOGSTORY_AUTO_GET` | `false` | Auto-download missing usecases (true/1/yes/on) |
 
 ## Complete .env Examples
 
@@ -71,6 +72,9 @@ LOGSTORY_USECASES_BUCKETS=file:///Users/developer/custom-usecases,gs://dev-useca
 
 # Development log directory
 LOGSTORY_LOCAL_LOG_DIR=/tmp/logstory-dev
+
+# Auto-download missing usecases in development
+LOGSTORY_AUTO_GET=true
 ```
 
 ### Chronicle Replay Use Cases
