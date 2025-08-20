@@ -424,10 +424,17 @@ def create_ingestion_backend(
 
   Returns:
     IngestionBackend instance for the selected API type
+
+  Raises:
+    ValueError: If required parameters are missing for the specified API type
   """
   if api_type == "rest":
     if not project_id:
-      raise ValueError("project_id is required for REST API")
+      raise ValueError(
+          "REST API requires a Google Cloud project ID! Please set LOGSTORY_PROJECT_ID"
+          " environment variable or pass --project-id parameter. Current API type:"
+          f" {api_type}, Project ID: {project_id or 'NOT SET'}"
+      )
     return RestIngestionBackend(
         auth_handler=auth_handler,
         customer_id=customer_id,

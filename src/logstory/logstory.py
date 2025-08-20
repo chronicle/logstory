@@ -661,6 +661,26 @@ def _load_and_validate_params(
   has_adc = has_application_default_credentials()
   can_use_adc = has_adc and final_impersonate and final_api_type == "rest"
 
+  # STRICT VALIDATION for REST API
+  if final_api_type == "rest":
+    # Check for project ID if REST API is explicitly requested
+    project_id = os.environ.get("LOGSTORY_PROJECT_ID")
+    if not project_id:
+      typer.echo("Error: REST API is specified but missing required parameters!")
+      typer.echo("")
+      typer.echo("LOGSTORY_API_TYPE=rest requires:")
+      typer.echo("  • LOGSTORY_PROJECT_ID (Google Cloud project ID)")
+      typer.echo("")
+      typer.echo("Current configuration:")
+      typer.echo(f"  • API Type: {final_api_type}")
+      typer.echo(f"  • Project ID: {project_id or 'NOT SET'}")
+      typer.echo("")
+      typer.echo("Fix by adding to your .env file or environment:")
+      typer.echo("  LOGSTORY_PROJECT_ID=your-project-id")
+      typer.echo("")
+      typer.echo("Or use auto-detection by removing LOGSTORY_API_TYPE")
+      raise typer.Exit(1)
+
   # Validate required parameters
   if not final_customer_id or (not final_credentials and not can_use_adc):
     missing = []

@@ -35,7 +35,7 @@ endif
 ifdef LOGSTORY_REGION
 REGION ?= $(LOGSTORY_REGION)
 else
-REGION ?= us-central1
+REGION ?= US
 endif
 
 CUSTOMER_ID ?= $(LOGSTORY_CUSTOMER_ID)

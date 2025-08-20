@@ -212,13 +212,46 @@ def detect_auth_type(
 
   Returns:
     "legacy" or "rest" based on detected scopes
+
+  Raises:
+    ValueError: If REST API is explicitly requested but required parameters are missing
   """
-  # If explicitly set via environment, use that
+  # If explicitly set via environment, validate it strictly
   api_type = os.environ.get("LOGSTORY_API_TYPE")
   if api_type:
-    return api_type.lower()
+    api_type = api_type.lower()
+    if api_type == "rest":
+      # STRICT VALIDATION: Fail loudly if REST API is requested but missing required parameters
+      project_id = os.environ.get("LOGSTORY_PROJECT_ID")
+      if not project_id:
+        raise ValueError(
+            "LOGSTORY_API_TYPE=rest is specified but LOGSTORY_PROJECT_ID is missing!"
+            " REST API requires a Google Cloud project ID. Please set"
+            " LOGSTORY_PROJECT_ID or remove LOGSTORY_API_TYPE to use auto-detection."
+        )
 
-  # Try to detect from credentials
+      # Also validate that we have some form of credentials
+      has_credentials = bool(
+          credentials_path
+          or service_account_info
+          or os.environ.get("LOGSTORY_CREDENTIALS")
+          or os.environ.get("LOGSTORY_CREDENTIALS_PATH")
+          or has_application_default_credentials()
+      )
+      if not has_credentials:
+        raise ValueError(
+            "LOGSTORY_API_TYPE=rest is specified but no credentials are available!"
+            " Please provide credentials via LOGSTORY_CREDENTIALS_PATH,"
+            " LOGSTORY_CREDENTIALS, or Application Default Credentials (gcloud auth"
+            " application-default login)."
+        )
+    elif api_type not in ["legacy", "rest"]:
+      raise ValueError(
+          f"Invalid LOGSTORY_API_TYPE='{api_type}'. Must be 'rest' or 'legacy'."
+      )
+    return api_type
+
+  # Try to detect from credentials (auto-detection mode)
   try:
     if service_account_info:
       info = service_account_info
