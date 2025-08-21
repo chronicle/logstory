@@ -18,6 +18,7 @@ import glob
 import os
 import shutil
 import uuid
+from importlib.metadata import version
 
 import typer
 from dotenv import load_dotenv
@@ -25,9 +26,23 @@ from google.auth.exceptions import DefaultCredentialsError
 from google.cloud import storage
 from google.oauth2 import service_account
 
+from logstory.auth import has_application_default_credentials
+
 UTC = datetime.UTC
 
 DEFAULT_BUCKET = "gs://logstory-usecases-20241216"
+
+
+def version_callback(value: bool):
+  """Callback to display version and exit."""
+  if value:
+    try:
+      __version__ = version("logstory")
+    except Exception:
+      __version__ = "unknown"
+    typer.echo(f"logstory {__version__}")
+    raise typer.Exit()
+
 
 # Create Typer app and command groups
 app = typer.Typer(help="Logstory: Replay SecOps logs with updated timestamps")
@@ -36,6 +51,19 @@ replay_app = typer.Typer(help="Replay log data")
 
 app.add_typer(usecases_app, name="usecases")
 app.add_typer(replay_app, name="replay")
+
+
+@app.callback()
+def main(
+    version: bool = typer.Option(
+        None,
+        "--version",
+        callback=version_callback,
+        is_eager=True,
+        help="Show version and exit",
+    ),
+):
+  """Logstory: Replay SecOps logs with updated timestamps."""
 
 
 def validate_uuid4(value: str) -> str:
@@ -79,7 +107,25 @@ def load_env_file(env_file: str | None = None) -> None:
 
 # Global options for replay commands
 def get_credentials_default():
-  """Get credentials path from environment variable."""
+  """Get credentials path or JSON from environment variables."""
+  # Check for direct credentials JSON first
+  credentials_json = os.getenv("LOGSTORY_CREDENTIALS")
+  if credentials_json:
+    # Write to temp file and return path
+    import json
+    import tempfile
+
+    try:
+      # Validate it's valid JSON
+      json.loads(credentials_json)
+      # Create temp file
+      with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        f.write(credentials_json)
+        return f.name
+    except json.JSONDecodeError:
+      typer.echo("Warning: LOGSTORY_CREDENTIALS contains invalid JSON")
+
+  # Fall back to credentials path
   return os.getenv("LOGSTORY_CREDENTIALS_PATH")
 
 
@@ -91,6 +137,12 @@ def get_customer_id_default():
 def get_region_default():
   """Get region from environment variable."""
   return os.getenv("LOGSTORY_REGION", "US")
+
+
+def get_auto_get_default():
+  """Get auto-get setting from environment variable."""
+  auto_get_value = os.getenv("LOGSTORY_AUTO_GET", "").lower()
+  return auto_get_value in ("true", "1", "yes", "on")
 
 
 def parse_usecase_source(source_uri: str) -> tuple[str, str]:
@@ -198,6 +250,39 @@ LocalFileOutputOption = typer.Option(
     help="Write logs to local files instead of sending to API",
 )
 
+ApiTypeOption = typer.Option(
+    None,
+    "--api-type",
+    help=(
+        "Ingestion API type: 'legacy' or 'rest' (auto-detect if not specified). "
+        "(env: LOGSTORY_API_TYPE)"
+    ),
+)
+
+ProjectIdOption = typer.Option(
+    None,
+    "--project-id",
+    help="Google Cloud project ID (required for REST API). (env: LOGSTORY_PROJECT_ID)",
+)
+
+ForwarderNameOption = typer.Option(
+    None,
+    "--forwarder-name",
+    help=(
+        "Custom forwarder name for REST API (default: Logstory-REST-Forwarder). "
+        "(env: LOGSTORY_FORWARDER_NAME)"
+    ),
+)
+
+ImpersonateServiceAccountOption = typer.Option(
+    None,
+    "--impersonate-service-account",
+    help=(
+        "Service account email to impersonate (REST API only). "
+        "(env: LOGSTORY_IMPERSONATE_SERVICE_ACCOUNT)"
+    ),
+)
+
 
 def _get_current_time():
   """Returns the current time in UTC."""
@@ -224,7 +309,7 @@ def usecases_list(
 
   # Handle --open flag as a special case
   if open_usecase:
-    import subprocess
+    import subprocess  # nosec B404
 
     usecase_dirs = glob.glob(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "usecases/*")
@@ -242,7 +327,7 @@ def usecases_list(
           for md_file in md_files:
             typer.echo(f"Opening {md_file} in VS Code...")
             try:
-              subprocess.run(["code", md_file], check=True)
+              subprocess.run(["code", md_file], check=True)  # nosec B603 B607
             except subprocess.CalledProcessError:
               typer.echo(
                   "Error: Could not run 'code' command. Make sure VS Code is installed"
@@ -517,6 +602,59 @@ def _download_usecase(usecase: str, bucket: str = None) -> bool:
   return True
 
 
+def _download_all_usecases(bucket: str = None) -> int:
+  """Download all available usecases from configured sources.
+
+  Args:
+    bucket: Optional specific bucket to download from. If None, uses configured sources.
+
+  Returns:
+    Number of usecases successfully downloaded.
+  """
+  sources = [bucket] if bucket else get_usecases_buckets()
+
+  # Get all available usecases from sources
+  available_usecases = set()
+  for source_uri in sources:
+    try:
+      directories = _get_source_directories(source_uri)
+      available_usecases.update(directories)
+      typer.echo(f"Found {len(directories)} usecases in source '{source_uri}'")
+    except Exception as e:
+      typer.echo(f"Warning: Could not access source '{source_uri}': {e}")
+      continue
+
+  if not available_usecases:
+    typer.echo("No usecases found in any configured source")
+    return 0
+
+  # Get already installed usecases
+  installed_usecases = set(get_usecases())
+
+  # Determine which usecases need to be downloaded
+  to_download = available_usecases - installed_usecases
+
+  if not to_download:
+    typer.echo(
+        f"All {len(available_usecases)} available usecases are already installed"
+    )
+    return 0
+
+  typer.echo(f"Downloading {len(to_download)} new usecases...")
+
+  # Download each missing usecase
+  downloaded_count = 0
+  for usecase in sorted(to_download):
+    typer.echo(f"\nDownloading usecase '{usecase}'...")
+    if _download_usecase(usecase, bucket):
+      downloaded_count += 1
+    else:
+      typer.echo(f"Failed to download usecase '{usecase}'")
+
+  typer.echo(f"\nSuccessfully downloaded {downloaded_count} usecases")
+  return downloaded_count
+
+
 @usecases_app.command("get")
 def usecase_get(
     usecase: str = typer.Argument(..., help="Name of the usecase to download"),
@@ -562,7 +700,9 @@ def _load_and_validate_params(
     credentials_path: str | None,
     customer_id: str | None,
     region: str | None,
-) -> tuple[str, str, str]:
+    impersonate_service_account: str | None = None,
+    api_type: str | None = None,
+) -> tuple[str | None, str, str]:
   """Load environment file and validate/resolve required parameters."""
   # Load environment file first
   load_env_file(env_file)
@@ -571,12 +711,48 @@ def _load_and_validate_params(
   final_credentials = credentials_path or get_credentials_default()
   final_customer_id = customer_id or get_customer_id_default()
   final_region = region or get_region_default()
+  final_api_type = api_type or os.environ.get("LOGSTORY_API_TYPE", "").lower()
+  final_impersonate = impersonate_service_account or os.environ.get(
+      "LOGSTORY_IMPERSONATE_SERVICE_ACCOUNT"
+  )
+
+  # Check if ADC is available when using impersonation with REST API
+  has_adc = has_application_default_credentials()
+  can_use_adc = has_adc and final_impersonate and final_api_type == "rest"
+
+  # STRICT VALIDATION for REST API
+  if final_api_type == "rest":
+    # Check for project ID if REST API is explicitly requested
+    project_id = os.environ.get("LOGSTORY_PROJECT_ID")
+    if not project_id:
+      typer.echo("Error: REST API is specified but missing required parameters!")
+      typer.echo("")
+      typer.echo("LOGSTORY_API_TYPE=rest requires:")
+      typer.echo("  • LOGSTORY_PROJECT_ID (Google Cloud project ID)")
+      typer.echo("")
+      typer.echo("Current configuration:")
+      typer.echo(f"  • API Type: {final_api_type}")
+      typer.echo(f"  • Project ID: {project_id or 'NOT SET'}")
+      typer.echo("")
+      typer.echo("Fix by adding to your .env file or environment:")
+      typer.echo("  LOGSTORY_PROJECT_ID=your-project-id")
+      typer.echo("")
+      typer.echo("Or use auto-detection by removing LOGSTORY_API_TYPE")
+      raise typer.Exit(1)
 
   # Validate required parameters
-  if not final_credentials or not final_customer_id:
+  if not final_customer_id or (not final_credentials and not can_use_adc):
     missing = []
-    if not final_credentials:
-      missing.append("--credentials-path (or LOGSTORY_CREDENTIALS_PATH)")
+    if not final_credentials and not can_use_adc:
+      if final_impersonate and final_api_type == "rest":
+        missing.append(
+            "--credentials-path (or LOGSTORY_CREDENTIALS/LOGSTORY_CREDENTIALS_PATH, or"
+            " use Application Default Credentials)"
+        )
+      else:
+        missing.append(
+            "--credentials-path (or LOGSTORY_CREDENTIALS/LOGSTORY_CREDENTIALS_PATH)"
+        )
     if not final_customer_id:
       missing.append("--customer-id (or LOGSTORY_CUSTOMER_ID)")
 
@@ -584,9 +760,15 @@ def _load_and_validate_params(
     typer.echo("You can provide these via:")
     typer.echo("  1. Command line options: --credentials-path and --customer-id")
     typer.echo(
-        "  2. Environment variables: LOGSTORY_CREDENTIALS_PATH and LOGSTORY_CUSTOMER_ID"
+        "  2. Environment variables: LOGSTORY_CREDENTIALS or LOGSTORY_CREDENTIALS_PATH"
+        " and LOGSTORY_CUSTOMER_ID"
     )
     typer.echo("  3. .env file with --env-file option")
+    if final_impersonate and final_api_type == "rest" and not has_adc:
+      typer.echo(
+          "  4. Application Default Credentials (run 'gcloud auth application-default"
+          " login')"
+      )
     raise typer.Exit(1)
 
   # Additional validation
@@ -602,6 +784,10 @@ def _set_environment_vars(
     credentials_path: str | None,
     customer_id: str | None,
     region: str | None,
+    api_type: str | None = None,
+    project_id: str | None = None,
+    forwarder_name: str | None = None,
+    impersonate_service_account: str | None = None,
 ):
   """Set environment variables from CLI parameters."""
   if customer_id:
@@ -615,6 +801,21 @@ def _set_environment_vars(
   if region:
     os.environ["REGION"] = region
 
+  # Set new REST API related environment variables
+  if api_type:
+    os.environ["LOGSTORY_API_TYPE"] = api_type
+    typer.echo(f"API Type: {api_type}")
+
+  if project_id:
+    os.environ["LOGSTORY_PROJECT_ID"] = project_id
+    typer.echo(f"Project ID: {project_id}")
+
+  if forwarder_name:
+    os.environ["LOGSTORY_FORWARDER_NAME"] = forwarder_name
+
+  if impersonate_service_account:
+    os.environ["LOGSTORY_IMPERSONATE_SERVICE_ACCOUNT"] = impersonate_service_account
+
 
 @replay_app.command("all")
 def replay_all_usecases(
@@ -625,17 +826,65 @@ def replay_all_usecases(
     entities: bool = EntitiesOption,
     timestamp_delta: str | None = TimestampDeltaOption,
     local_file_output: bool = LocalFileOutputOption,
+    api_type: str | None = ApiTypeOption,
+    project_id: str | None = ProjectIdOption,
+    forwarder_name: str | None = ForwarderNameOption,
+    impersonate_service_account: str | None = ImpersonateServiceAccountOption,
+    get_if_missing: bool = typer.Option(
+        None,
+        "--get/--no-get",
+        help=(
+            "Download all available usecases from configured sources (env:"
+            " LOGSTORY_AUTO_GET). Use --no-get to override environment variable."
+        ),
+    ),
+    usecases_bucket: str | None = UsecasesBucketOption,
 ):
   """Replay all usecases."""
+  # Load environment file first (needed for download logic)
+  load_env_file(env_file)
+
+  # Determine if we should auto-get: CLI flag takes precedence over env var
+  if get_if_missing is None:
+    get_if_missing = get_auto_get_default()
+
+  # Download all available usecases if requested
+  if get_if_missing:
+    typer.echo("Checking for available usecases to download...")
+    downloaded = _download_all_usecases(usecases_bucket)
+    if downloaded > 0:
+      typer.echo(f"Downloaded {downloaded} new usecases")
+
   # Skip credential validation if using local file output
   if not local_file_output:
     final_credentials, final_customer_id, final_region = _load_and_validate_params(
-        env_file, credentials_path, customer_id, region
+        env_file,
+        credentials_path,
+        customer_id,
+        region,
+        impersonate_service_account,
+        api_type,
     )
-    _set_environment_vars(final_credentials, final_customer_id, final_region)
+    _set_environment_vars(
+        final_credentials,
+        final_customer_id,
+        final_region,
+        api_type,
+        project_id,
+        forwarder_name,
+        impersonate_service_account,
+    )
   else:
-    # Load env file but don't require credentials for local file output
-    load_env_file(env_file)
+    # Still set API-related environment variables for local file output
+    _set_environment_vars(
+        None,
+        None,
+        region,
+        api_type,
+        project_id,
+        forwarder_name,
+        impersonate_service_account,
+    )
 
   usecases = get_usecases()
   _replay_usecases(usecases, "*", entities, timestamp_delta, local_file_output)
@@ -652,12 +901,25 @@ def replay_usecase(
     timestamp_delta: str | None = TimestampDeltaOption,
     local_file_output: bool = LocalFileOutputOption,
     get_if_missing: bool = typer.Option(
-        False, "--get", help="Download usecase if not already installed"
+        None,
+        "--get/--no-get",
+        help=(
+            "Download usecase if not already installed (env: LOGSTORY_AUTO_GET). "
+            "Use --no-get to override environment variable."
+        ),
     ),
+    api_type: str | None = ApiTypeOption,
+    project_id: str | None = ProjectIdOption,
+    forwarder_name: str | None = ForwarderNameOption,
+    impersonate_service_account: str | None = ImpersonateServiceAccountOption,
 ):
   """Replay a specific usecase."""
   # Load environment file first (needed for download logic)
   load_env_file(env_file)
+
+  # Determine if we should auto-get: CLI flag takes precedence over env var
+  if get_if_missing is None:
+    get_if_missing = get_auto_get_default()
 
   # Check if usecase exists and download if requested
   if get_if_missing and usecase not in get_usecases():
@@ -666,15 +928,51 @@ def replay_usecase(
     if not success:
       raise typer.Exit(1)
 
+  # Check if usecase exists after download attempt
+  available_usecases = get_usecases()
+  if usecase not in available_usecases:
+    print(
+        f"Usecase '{usecase}' not found. Available usecases:"
+        f" {', '.join(sorted(available_usecases))}"
+    )
+    raise typer.Exit(1)
+
   # Skip credential validation if using local file output
   if not local_file_output:
     final_credentials, final_customer_id, final_region = _load_and_validate_params(
-        env_file, credentials_path, customer_id, region
+        env_file,
+        credentials_path,
+        customer_id,
+        region,
+        impersonate_service_account,
+        api_type,
     )
-    _set_environment_vars(final_credentials, final_customer_id, final_region)
+    _set_environment_vars(
+        final_credentials,
+        final_customer_id,
+        final_region,
+        api_type,
+        project_id,
+        forwarder_name,
+        impersonate_service_account,
+    )
+  else:
+    # Still set API-related environment variables for local file output
+    _set_environment_vars(
+        None,
+        None,
+        region,
+        api_type,
+        project_id,
+        forwarder_name,
+        impersonate_service_account,
+    )
 
   usecases = [usecase]
   logtypes = _get_logtypes(usecase, entities=entities)
+  if not logtypes:
+    print(f"No logs found for usecase '{usecase}'")
+    raise typer.Exit(1)
   _replay_usecases(usecases, logtypes, entities, timestamp_delta, local_file_output)
 
 
@@ -689,17 +987,44 @@ def replay_usecase_logtype(
     entities: bool = EntitiesOption,
     timestamp_delta: str | None = TimestampDeltaOption,
     local_file_output: bool = LocalFileOutputOption,
+    api_type: str | None = ApiTypeOption,
+    project_id: str | None = ProjectIdOption,
+    forwarder_name: str | None = ForwarderNameOption,
+    impersonate_service_account: str | None = ImpersonateServiceAccountOption,
 ):
   """Replay specific logtypes from a usecase."""
   # Skip credential validation if using local file output
   if not local_file_output:
     final_credentials, final_customer_id, final_region = _load_and_validate_params(
-        env_file, credentials_path, customer_id, region
+        env_file,
+        credentials_path,
+        customer_id,
+        region,
+        impersonate_service_account,
+        api_type,
     )
-    _set_environment_vars(final_credentials, final_customer_id, final_region)
+    _set_environment_vars(
+        final_credentials,
+        final_customer_id,
+        final_region,
+        api_type,
+        project_id,
+        forwarder_name,
+        impersonate_service_account,
+    )
   else:
     # Load env file but don't require credentials for local file output
     load_env_file(env_file)
+    # Still set API-related environment variables for local file output
+    _set_environment_vars(
+        None,
+        None,
+        region,
+        api_type,
+        project_id,
+        forwarder_name,
+        impersonate_service_account,
+    )
 
   usecases = [usecase]
   logtype_list = [lt.strip() for lt in logtypes.split(",")]
@@ -721,6 +1046,7 @@ def _replay_usecases(
     import main as imported_main  # type: ignore
 
   logstory_exe_time = _get_current_time()
+  logs_loaded = False
 
   for use_case in usecases:
     if logtypes == "*":
@@ -743,12 +1069,14 @@ def _replay_usecases(
           entities=entities,
           local_file_output=local_file_output,
       )
+      logs_loaded = True
 
-    typer.echo(f"""UDM Search for the loaded logs:
+    if logs_loaded:
+      typer.echo(f"""UDM Search for the loaded logs:
     metadata.ingested_timestamp.seconds >= {int(logstory_exe_time.timestamp())}
     metadata.ingestion_labels["log_replay"]="true"
     metadata.ingestion_labels["replayed_from"]="logstory"
-    metadata.ingestion_labels["usecase_name"]="{use_case}"
+    metadata.ingestion_labels["source_usecase"]="{use_case}"
     """)
 
 

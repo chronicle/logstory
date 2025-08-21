@@ -1,0 +1,11 @@
+# Option 1: Build from PyPI (uses published package)
+# To use: gcloud builds submit --config cloudbuild.yaml
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/logstory:latest', '-f', 'Dockerfile.minimal', '.']
+images:
+  - 'gcr.io/$PROJECT_ID/logstory:latest'
+
+# Option 2: Build from local wheel (uses local changes)
+# To use: gcloud builds submit --config cloudbuild-wheel.yaml
+# See cloudbuild-wheel.yaml for building with local wheel file

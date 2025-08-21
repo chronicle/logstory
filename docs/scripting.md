@@ -98,6 +98,29 @@ for usecase in "${USECASES[@]}"; do
 done
 ```
 
+### Example: Using LOGSTORY_AUTO_GET
+
+Instead of adding `--get` to every command, set the environment variable:
+
+```bash
+#!/bin/bash
+
+# Enable auto-download globally
+export LOGSTORY_AUTO_GET=true
+export LOGSTORY_USECASES_BUCKETS="gs://usecases-bucket"
+
+# Load other configuration from .env file
+source .env.production
+
+# Now all replay commands will auto-download if needed
+USECASES=("OKTA" "AWS" "AZURE_AD")
+
+for usecase in "${USECASES[@]}"; do
+  echo "Processing $usecase (will auto-download if missing)"
+  logstory replay usecase "$usecase" --timestamp-delta=1d
+done
+```
+
 ## Best Practices
 
 ### 1. Use Environment Files

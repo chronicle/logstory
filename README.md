@@ -60,6 +60,7 @@ logstory replay usecase RULES_SEARCH_WORKSHOP \
 export LOGSTORY_CUSTOMER_ID=01234567-0123-4321-abcd-01234567890a
 export LOGSTORY_CREDENTIALS_PATH=/path/to/credentials.json
 export LOGSTORY_REGION=US
+export LOGSTORY_AUTO_GET=true  # Auto-download missing usecases
 
 logstory replay usecase RULES_SEARCH_WORKSHOP
 ```
@@ -72,6 +73,7 @@ LOGSTORY_CUSTOMER_ID=01234567-0123-4321-abcd-01234567890a
 LOGSTORY_CREDENTIALS_PATH=/path/to/credentials.json
 LOGSTORY_REGION=US
 LOGSTORY_USECASES_BUCKETS=gs://logstory-usecases-20241216,gs://my-custom-bucket
+LOGSTORY_AUTO_GET=true  # Auto-download missing usecases (optional)
 ```
 
 Then run commands without additional options:
@@ -185,16 +187,25 @@ https://${code}.backstory.chronicle.security/settings/profile
 
 ### Credentials Path
 
-(Required)  The credentials provided use the [Google Security Operations Ingestion API](https://cloud.google.com/chronicle/docs/reference/ingestion-api). This is *NOT* the newer RESTful v1alpha Ingestion API (yet, but that is future work).
+(Required) Logstory supports two ingestion APIs:
+
+1. **Legacy Malachite API** (default for backward compatibility)
+   - Uses the [Google Security Operations Ingestion API](https://cloud.google.com/chronicle/docs/reference/ingestion-api)
+   - Download credentials from: https://${code}.backstory.chronicle.security/settings/collection-agent
+
+2. **New Chronicle REST API** (recommended for new deployments)
+   - Uses the modern Chronicle v1alpha REST API
+   - Requires Google Cloud project ID
+   - Supports additional features like forwarder management and service account impersonation
+
+**Auto-Detection:** Logstory automatically detects which API to use based on your credentials, or you can explicitly specify with `--api-type=rest` or `--api-type=legacy`.
+
+**Migration Guide:** See [REST_API_MIGRATION.md](docs/REST_API_MIGRATION.md) for detailed migration instructions.
 
 **Getting API authentication credentials**
 
-"Your Google Security Operations representative will provide you with a Google Developer Service Account Credential to enable the API client to communicate with the API."[[reference](https://cloud.google.com/chronicle/docs/reference/ingestion-api#getting_api_authentication_credentials)]
-
-
-**Update:** you can now download the ingestion authentication file from your SecOps tenant's settings page:
-
-https://${code}.backstory.chronicle.security/settings/collection-agent
+- **Legacy API:** "Your Google Security Operations representative will provide you with a Google Developer Service Account Credential to enable the API client to communicate with the API."[[reference](https://cloud.google.com/chronicle/docs/reference/ingestion-api#getting_api_authentication_credentials)]
+- **REST API:** Create a service account in Google Cloud Console with Chronicle API permissions
 
 ### Timestamp BTS
 
@@ -317,6 +328,44 @@ logstory replay usecase NETWORK_ANALYSIS --local-file-output
 LOGSTORY_LOCAL_LOG_DIR=/tmp/my-logs logstory replay all --local-file-output
 ```
 
+#### Auto-Download Feature
+
+The replay commands can automatically download missing usecases before replaying them:
+
+```bash
+# Download usecase if not already installed, then replay
+logstory replay usecase OKTA --get \
+  --customer-id=01234567-0123-4321-abcd-01234567890a \
+  --credentials-path=/path/to/credentials.json
+
+# Download ALL available usecases and replay them
+logstory replay all --get \
+  --customer-id=01234567-0123-4321-abcd-01234567890a \
+  --credentials-path=/path/to/credentials.json
+
+# Disable auto-download even if environment variable is set
+logstory replay usecase OKTA --no-get \
+  --customer-id=01234567-0123-4321-abcd-01234567890a \
+  --credentials-path=/path/to/credentials.json
+```
+
+You can also enable auto-download globally using the `LOGSTORY_AUTO_GET` environment variable:
+
+```bash
+# Enable auto-download for all replay commands
+export LOGSTORY_AUTO_GET=true  # or 1, yes, on
+
+# Now replay will automatically download missing usecases
+logstory replay usecase OKTA \
+  --customer-id=01234567-0123-4321-abcd-01234567890a \
+  --credentials-path=/path/to/credentials.json
+
+# Or in .env file
+echo "LOGSTORY_AUTO_GET=true" >> .env
+```
+
+This eliminates the need to run `logstory usecases get` separately before replaying a usecase.
+
 ### Common Options
 
 - `--env-file`: Path to .env file to load environment variables from (available on all commands)
@@ -328,6 +377,7 @@ LOGSTORY_LOCAL_LOG_DIR=/tmp/my-logs logstory replay all --local-file-output
 - `--details`: Show full markdown content for usecases
 - `--open`: Open usecase markdown file in VS Code (requires `code` command)
 - `--local-file-output`: Write logs to local files instead of sending to API
+- `--get/--no-get`: Auto-download missing usecases (env: LOGSTORY_AUTO_GET)
 
 ### Local File Output
 

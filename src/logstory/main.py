@@ -20,19 +20,44 @@ import re
 from pathlib import Path
 from typing import Any, Protocol
 
-import requests as real_requests
 import yaml
 from google.auth.transport import requests
 from google.cloud import secretmanager, storage
 from google.oauth2 import service_account
 
+# Import the new abstraction modules
+try:
+  from .auth import (
+      create_auth_handler,
+      detect_auth_type,
+      has_application_default_credentials,
+  )
+  from .ingestion import IngestionBackend, create_ingestion_backend
+except ImportError:
+  # Fallback for when running as main module
+  from auth import (  # type: ignore[import-not-found,no-redef]
+      create_auth_handler,
+      detect_auth_type,
+      has_application_default_credentials,
+  )
+  from ingestion import (  # type: ignore[import-not-found,no-redef]
+      IngestionBackend,
+      create_ingestion_backend,
+  )
+
 
 # Type for match-like objects
 class MatchLike(Protocol):
   """Protocol for objects that behave like regex matches."""
-  def start(self) -> int: ...
-  def end(self) -> int: ...
-  def group(self, n: int = 0) -> str: ...
+
+  def start(self) -> int:
+    ...
+
+  def end(self) -> int:
+    ...
+
+  def group(self, n: int = 0) -> str:
+    ...
 
 
 # Constants
@@ -73,6 +98,7 @@ SCOPES = ["https://www.googleapis.com/auth/malachite-ingestion"]
 SECRET_MANAGER_CREDENTIALS = os.environ.get("SECRET_MANAGER_CREDENTIALS")
 CUSTOMER_ID = os.environ.get("CUSTOMER_ID")
 CREDENTIALS_PATH = os.environ.get("CREDENTIALS_PATH")
+CREDENTIALS_JSON = os.environ.get("LOGSTORY_CREDENTIALS")
 
 REGION = os.environ.get("REGION")
 url_prefix = f"{REGION}-" if REGION else ""
@@ -87,7 +113,16 @@ INGESTION_API_BASE_URL = (
 BUCKET_NAME = os.environ.get("BUCKET_NAME")
 UTC = datetime.UTC
 
+# New configuration for REST API
+PROJECT_ID = os.environ.get("LOGSTORY_PROJECT_ID")
+FORWARDER_NAME = os.environ.get("LOGSTORY_FORWARDER_NAME")
+IMPERSONATE_SERVICE_ACCOUNT = os.environ.get("LOGSTORY_IMPERSONATE_SERVICE_ACCOUNT")
+
+# Global variables for backend and client
 storage_client = None
+http_client = None  # Will be set based on API type
+
+# Initialize storage client if running in cloud function
 if os.getenv("SECRET_MANAGER_CREDENTIALS"):  # Running in a cloud function
   secretmanager_client = secretmanager.SecretManagerServiceClient()
   storage_client = storage.Client()
@@ -95,19 +130,74 @@ if os.getenv("SECRET_MANAGER_CREDENTIALS"):  # Running in a cloud function
   sec_response = secretmanager_client.access_secret_version(sec_request)
   ret = sec_response.payload.data.decode("UTF-8")
   service_account_info = json.loads(ret)
-elif CREDENTIALS_PATH:  # Running locally with credentials
+elif CREDENTIALS_JSON:  # Credentials provided as JSON string
+  service_account_info = json.loads(CREDENTIALS_JSON)
+elif CREDENTIALS_PATH:  # Running locally with credentials file
   with open(CREDENTIALS_PATH) as f:
     service_account_info = json.load(f)
 else:
   service_account_info = None
 
-# Create a credential using SA Credential and Ingestion API Scope.
-if service_account_info:  # optional to facilitate unit testing
+
+# Check if we can use ADC with impersonation for REST API
+def can_use_application_default_credentials():
+  try:
+    api_type = detect_auth_type()
+    return (
+        has_application_default_credentials()
+        and IMPERSONATE_SERVICE_ACCOUNT
+        and api_type == "rest"
+    )
+  except ValueError:
+    return False
+
+
+can_use_adc = can_use_application_default_credentials()
+
+# Initialize ingestion_backend as None by default
+ingestion_backend = None
+
+# Create authentication and backend based on API type
+if (
+    service_account_info
+    or CREDENTIALS_PATH
+    or CREDENTIALS_JSON
+    or SECRET_MANAGER_CREDENTIALS
+    or can_use_adc
+):
+  # Get API type from environment variable
+  api_type = detect_auth_type()
+
+  LOGGER.info("Using API type: %s", api_type)
+  LOGGER.info("PROJECT_ID env var: %s", PROJECT_ID)
+
+  # Create appropriate auth handler
+  auth_handler = create_auth_handler(
+      api_type=api_type,
+      credentials_path=CREDENTIALS_PATH,
+      service_account_info=service_account_info,
+      secret_manager_credentials=SECRET_MANAGER_CREDENTIALS,
+      impersonate_service_account=IMPERSONATE_SERVICE_ACCOUNT,
+  )
+
+  # Get HTTP client from auth handler
+  http_client = auth_handler.get_http_client()
+
+  # Create ingestion backend if we have customer ID
+  if CUSTOMER_ID:
+    ingestion_backend = create_ingestion_backend(
+        auth_handler=auth_handler,
+        customer_id=CUSTOMER_ID,
+        api_type=api_type,
+        project_id=PROJECT_ID,
+        region=REGION,
+        forwarder_name=FORWARDER_NAME,
+    )
+# Legacy fallback for backward compatibility when no auth is configured
+elif service_account_info:
   credentials = service_account.Credentials.from_service_account_info(
       service_account_info, scopes=SCOPES
   )
-
-  # Build an HTTP client which can make authorized OAuth requests.
   http_client = requests.AuthorizedSession(credentials)
 
 
@@ -395,7 +485,7 @@ def _write_entries_to_local_file(
   """
   # Get log directory from environment or use default
   if log_dir is None:
-    log_dir = os.getenv("LOGSTORY_LOCAL_LOG_DIR", "/tmp/var/log/logstory")
+    log_dir = os.getenv("LOGSTORY_LOCAL_LOG_DIR", "/tmp/var/log/logstory")  # nosec B108
 
   # Create directory if it doesn't exist
   log_path = Path(log_dir)
@@ -443,6 +533,7 @@ def _post_entries_in_batches(
     log_type: str,
     all_entries: list[dict[str, str]],
     ingestion_labels: list[dict[str, str]],
+    backend: IngestionBackend | None = None,
     local_file_output: bool = False,
     log_dir: str | None = None,
 ):
@@ -451,6 +542,10 @@ def _post_entries_in_batches(
   if local_file_output:
     _write_entries_to_local_file(log_type, all_entries, log_dir)
     return
+
+  # Check that backend is provided for API posting
+  if not backend:
+    raise RuntimeError("Backend must be provided when not using local file output")
 
   # Original API posting logic
   entries_bytes = 0
@@ -466,19 +561,23 @@ def _post_entries_in_batches(
         or entries_bytes > BATCH_BYTES_THRESHOLD
     ):
       LOGGER.info("posting entry N: %s, entries_bytes: %s", i, entries_bytes)
-      post_entries(api, log_type, entries, ingestion_labels)
+      post_entries(api, log_type, entries, ingestion_labels, backend)
       entries = []
       entries_bytes = 0
 
   # after the loop, also submit if there are leftover entries
   if entries:
     LOGGER.info("posting remaining entries")
-    post_entries(api, log_type, entries, ingestion_labels)
+    post_entries(api, log_type, entries, ingestion_labels, backend)
 
 
 # pylint: disable-next=g-bare-generic
 def post_entries(
-    api: str, log_type: str, entries: list, ingestion_labels: list[dict[str, Any]]
+    api: str,
+    log_type: str,
+    entries: list,
+    ingestion_labels: list[dict[str, Any]],
+    backend: IngestionBackend,
 ):
   """Send the provided entries to the appropriate ingestion API method.
 
@@ -487,50 +586,26 @@ def post_entries(
     log_type: value from yaml; unused if UDM
     entries: list of entries to send to ingestion API
     ingestion_labels: labels to attach to the ingestion
+    backend: ingestion backend to use for posting
   Returns:
     None
   """
+  if not backend:
+    raise RuntimeError("No ingestion backend provided")
+
   if api == "unstructuredlogentries":
-    uri = f"{INGESTION_API_BASE_URL}/v2/unstructuredlogentries:batchCreate"
-    body = json.dumps({
-        "customer_id": CUSTOMER_ID,
-        "log_type": log_type,
-        "entries": entries,
-        "labels": ingestion_labels,
-    })
-    response = http_client.post(uri, data=body)
+    backend.post_unstructured_logs(log_type, entries, ingestion_labels)
   elif api == "udmevents":
-    for entry in entries:
-      if "metadata" not in entry:
-        entry["metadata"] = {}
-      entry["metadata"]["ingestion_labels"] = ingestion_labels
-
-    uri = f"{INGESTION_API_BASE_URL}/v2/udmevents:batchCreate"
-    data = {
-        "customer_id": CUSTOMER_ID,
-        "events": entries,
-    }
-    response = http_client.post(uri, json=data)
+    backend.post_udm_events(entries, ingestion_labels)
   elif api == "entities":
-    uri = f"{INGESTION_API_BASE_URL}/v2/entities:batchCreate"
-    body = json.dumps({
-        "customer_id": CUSTOMER_ID,
-        "log_type": log_type,
-        "entities": entries,
-    })
-    response = http_client.post(uri, data=body)
+    backend.post_entities(log_type, entries, ingestion_labels)
+  else:
+    raise ValueError(f"Unknown API type: {api}")
 
-  try:
-    response.raise_for_status()
-  except real_requests.exceptions.HTTPError as err:
-    try:
-      response_data = response.json()  # Try to parse JSON response
-    except ValueError:
-      response_data = response.text  # Fallback to raw text
-    LOGGER.error("Response content: %s", response_data)
-    # Re-raise the exception to propagate it
-    raise err
-  LOGGER.info("Response Status Code: %s", response.status_code)
+  LOGGER.info(
+      "Successfully posted entries using %s backend",
+      backend.__class__.__name__,
+  )
 
 
 # pylint: disable-next=missing-function-docstring
@@ -688,6 +763,7 @@ def usecase_replay_logtype(
         log_type,
         entries,
         ingestion_labels,
+        ingestion_backend,
         local_file_output,
         log_type_log_dir,
     )
@@ -751,7 +827,7 @@ def main(request=None, enabled=False):  # pylint: disable=unused-argument
         "    metadata.log_type = %s\n"
         '    metadata.ingestion_labels["replayed_from"] = "logstory"\n'
         '    metadata.ingestion_labels["log_replay"] = "true"\n'
-        '    metadata.ingestion_labels["usecase_name"] = "%s"',
+        '    metadata.ingestion_labels["source_usecase"] = "%s"',
         int(logstory_exe_time.timestamp()),
         log_type,
         use_case,

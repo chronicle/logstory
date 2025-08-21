@@ -56,6 +56,13 @@ logstory usecases get MY_USECASE --env-file .env.dev
 
 # For replay commands
 logstory replay usecase RULES_SEARCH_WORKSHOP --env-file .env
+
+# Auto-download and replay if usecase is missing
+logstory replay usecase OKTA --get --env-file .env
+
+# Or enable auto-download globally via environment
+export LOGSTORY_AUTO_GET=true
+logstory replay usecase OKTA --env-file .env
 ```
 
 ```{tip}

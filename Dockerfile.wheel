@@ -1,0 +1,17 @@
+FROM python:3.11-slim
+
+# Copy the wheel file into the container
+# Expects wheel file in dist/ directory relative to build context
+COPY dist/logstory-*.whl /tmp/
+
+# Install logstory from the local wheel
+RUN pip install --no-cache-dir /tmp/logstory-*.whl && rm /tmp/logstory-*.whl
+
+# Print the env var for debugging
+RUN echo "LOGSTORY_API_TYPE: ${LOGSTORY_API_TYPE}"
+
+# Set working directory
+WORKDIR /app
+
+# Default command - replay all usecases
+CMD ["logstory", "replay", "all"]

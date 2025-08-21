@@ -117,6 +117,11 @@ Replay all installed usecases.
 logstory replay all \
   --customer-id=01234567-0123-4321-abcd-01234567890a \
   --credentials-path=/path/to/credentials.json
+
+# Download ALL available usecases and replay them
+logstory replay all --get \
+  --customer-id=01234567-0123-4321-abcd-01234567890a \
+  --credentials-path=/path/to/credentials.json
 ```
 
 **Options:**
@@ -127,6 +132,8 @@ logstory replay all \
 - `--entities`: Load Entities instead of Events
 - `--timestamp-delta TEXT`: Determines how datetimes in logfiles are updated. Expressed in any/all: days, hours, minutes (d, h, m) (Default=1d). Examples: [1d, 1d1h, 1h1m, 1d1m, 1d1h1m, 1m1h, ...]. Setting only `Nd` preserves the original HH:MM:SS but updates date. Nh/Nm subtracts an additional offset from that datetime, to facilitate running logstory more than 1x per day.
 - `--local-file-output`: Write logs to local files instead of sending to API
+- `--get/--no-get`: Download all available usecases from configured sources (env: `LOGSTORY_AUTO_GET`). Use `--no-get` to override environment variable.
+- `--usecases-bucket TEXT`: Usecase source URI (gs://bucket, git@repo, etc.) - overrides config list
 
 ### `logstory replay usecase`
 
@@ -140,12 +147,22 @@ logstory replay usecase USECASE_NAME \
 ```
 
 **Options:** Same as `replay all`, plus:
-- `--get`: Download usecase if not already installed
+- `--get/--no-get`: Download usecase if not already installed (env: `LOGSTORY_AUTO_GET`). Use `--no-get` to override environment variable.
 
 **Examples:**
 ```bash
 # Replay with custom environment
 logstory replay usecase RULES_SEARCH_WORKSHOP --env-file .env.prod
+
+# Auto-download and replay if not installed
+logstory replay usecase OKTA --get \
+  --customer-id=01234567-0123-4321-abcd-01234567890a \
+  --credentials-path=/path/to/credentials.json
+
+# Disable auto-download even if LOGSTORY_AUTO_GET is set
+logstory replay usecase OKTA --no-get \
+  --customer-id=01234567-0123-4321-abcd-01234567890a \
+  --credentials-path=/path/to/credentials.json
 
 # Replay entities only
 logstory replay usecase NETWORK_ANALYSIS --entities
@@ -213,6 +230,7 @@ All CLI options can be set via environment variables:
 | `--credentials-path` | `LOGSTORY_CREDENTIALS_PATH` | Path to credentials JSON |
 | `--region` | `LOGSTORY_REGION` | SecOps tenant region |
 | `--usecases-bucket` | `LOGSTORY_USECASES_BUCKETS` | Comma-separated source URIs |
+| `--get` | `LOGSTORY_AUTO_GET` | Auto-download missing usecases (true/1/yes/on) |
 | N/A | `LOGSTORY_LOCAL_LOG_DIR` | Base directory for local file output |
 
 ## Configuration Priority

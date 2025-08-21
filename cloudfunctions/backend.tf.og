@@ -1,8 +1,0 @@
-#Terraform service account key from Argolis enviroment
-terraform {
- backend "gcs" {
-   credentials = "~/.gcp/gcp-project-XXX-1234567890.json"
-   bucket  = "XXX-chronicle-logstory-replay-tfstate"
-   prefix  = "terraform/state"
- }
-}
