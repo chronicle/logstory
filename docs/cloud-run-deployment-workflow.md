@@ -107,19 +107,19 @@ make schedule-cloudrun-all
 
 This creates 4 schedulers that all invoke the same `logstory-replay` job:
 
-1. **events-24h**: Daily at 8 AM
-   - Args: `replay all --timestamp-delta=1d`
+1. **events-24h**: Daily at 3:00 AM UTC
+   - Args: `logstory replay all`
 
-2. **events-3day**: Every 3 days at 3 AM
-   - Args: `replay all --timestamp-delta=3d`
+2. **events-3day**: Every 3 days at 3:00 AM UTC
+   - Args: `logstory replay all`
 
-3. **entities-24h**: Daily at 9 AM
-   - Args: `replay all --entities --timestamp-delta=1d`
+3. **entities-24h**: Daily at 12:01 AM UTC
+   - Args: `logstory replay all --entities`
 
-4. **entities-3day**: Every 3 days at 4 AM
-   - Args: `replay all --entities --timestamp-delta=3d`
+4. **entities-3day**: Every 3 days at 12:01 AM UTC
+   - Args: `logstory replay all --entities`
 
-Each scheduler uses container argument overrides to pass different parameters to the same Cloud Run job.
+Each scheduler uses container argument overrides to pass different parameters to the same Cloud Run job. The timestamp delta is controlled by the `LOGSTORY_TIMESTAMP_DELTA` environment variable (default: 1d) set on the job itself.
 
 ## Simplified Architecture
 
@@ -168,7 +168,7 @@ make test-cloudrun-all
 # Or test manually with specific args
 gcloud run jobs execute logstory-replay \
   --region us-central1 \
-  --args "replay,all,--timestamp-delta=1d"
+  --args "logstory,replay,all"
 ```
 
 ### Clean Up
@@ -186,7 +186,7 @@ The schedulers use container overrides to pass different arguments to the same j
 {
   "overrides": {
     "containerOverrides": [{
-      "args": ["replay", "all", "--entities", "--timestamp-delta=1d"]
+      "args": ["logstory", "replay", "all", "--entities"]
     }]
   }
 }
@@ -209,7 +209,7 @@ gcloud scheduler jobs create http logstory-aws-daily \
   --http-method POST \
   --oauth-service-account-email "$SERVICE_ACCOUNT" \
   --headers "Content-Type=application/json" \
-  --message-body '{"overrides":{"containerOverrides":[{"args":["replay","usecase","AWS","--timestamp-delta=1d"]}]}}'
+  --message-body '{"overrides":{"containerOverrides":[{"args":["logstory","replay","usecase","AWS"]}]}}'
 ```
 
 ## Testing Locally with Docker
@@ -230,8 +230,9 @@ docker run \
 docker run \
   -e LOGSTORY_CUSTOMER_ID="your-uuid" \
   -e LOGSTORY_CREDENTIALS="$(cat credentials.json)" \
+  -e LOGSTORY_TIMESTAMP_DELTA="3d" \
   logstory-test \
-  logstory replay all --entities --timestamp-delta=3d
+  logstory replay all --entities
 ```
 
 ## Dockerfile Options
@@ -276,11 +277,12 @@ CMD ["uvx", "logstory", "replay", "all"]
   - `LOGSTORY_PROJECT_ID`: GCP project for REST API
   - `LOGSTORY_API_TYPE`: API type (rest or legacy)
   - `LOGSTORY_CREDENTIALS`: Service account JSON from Secret Manager
+  - `LOGSTORY_TIMESTAMP_DELTA`: How far back to set timestamps (default: 1d)
 
 - **Command Arguments** (passed by each scheduler):
-  - `--timestamp-delta`: How far back to set timestamps
   - `--entities`: Whether to enrich with entities
   - Specific usecase names if needed
+  - Optional overrides like `--timestamp-delta` if different from environment variable
 
 ## Troubleshooting
 
@@ -300,8 +302,8 @@ If you get errors accessing the secret:
 ### Container Override Errors
 If schedulers fail to pass arguments:
 1. Check the message body JSON is valid
-2. Verify the args array format: `["replay", "all", "--timestamp-delta=1d"]`
-3. Test manually: `gcloud run jobs execute logstory-replay --args "replay,all,--timestamp-delta=1d"`
+2. Verify the args array format: `["logstory", "replay", "all", "--entities"]`
+3. Test manually: `gcloud run jobs execute logstory-replay --args "logstory,replay,all"`
 
 ## Notes
 
