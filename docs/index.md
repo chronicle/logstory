@@ -396,19 +396,18 @@ The test suite validates all timestamp configurations in both entities and event
 All 55 log types across both configuration files are automatically tested for compliance with LogStory's timestamp standards.
 
 
-# GCP Cloud Run functions
+# GCP Cloud Run Services
 
-The `cloudfunctions/` subdirectory contains Terraform configuration for deploying
-the project to GCP Cloud Run functions. This includes:
- * Functions for loading Entities and Events on 3 day and 24 hour schedules
- * Scheduler for the above
+The project deploys to GCP Cloud Run as containerized services using Docker. This includes:
+ * Containerized services for loading Entities and Events on 3 day and 24 hour schedules
+ * Cloud Scheduler for triggering the services
  * GCP Cloud Storage bucket for the usecases
  * ...
 
 ## Prerequisites
 
-```{warning}
-Do not use GCP CloudShell to run Terraform, use your local machine, a Cloudtop instance (for Googlers), or a Linux VM in GCP.*
+```{note}
+For detailed Cloud Run deployment instructions, see the [Cloud Run Deployment Workflow](cloud-run-deployment-workflow.md) guide.
 ```
 
 ### Chronicle (Malachite) Google Cloud project configuration
@@ -437,19 +436,7 @@ PROJECT_ID=your_project_id_here
 gcloud config set project $PROJECT_ID
 ~~~
 
-Create a Service Account for use with Terraform and grant it the appropriate permissions.
-
-~~~bash
-gcloud iam service-accounts create terraform --display-name="terraform" --description="terraform"
-gcloud projects add-iam-policy-binding $PROJECT_ID --member serviceAccount:terraform@$PROJECT_ID.iam.gserviceaccount.com --role  roles/cloudfunctions.admin
-gcloud projects add-iam-policy-binding $PROJECT_ID --member serviceAccount:terraform@$PROJECT_ID.iam.gserviceaccount.com --role  roles/cloudscheduler.admin
-gcloud projects add-iam-policy-binding $PROJECT_ID --member serviceAccount:terraform@$PROJECT_ID.iam.gserviceaccount.com --role  roles/iam.securityAdmin
-gcloud projects add-iam-policy-binding $PROJECT_ID --member serviceAccount:terraform@$PROJECT_ID.iam.gserviceaccount.com --role  roles/iam.serviceAccountCreator
-gcloud projects add-iam-policy-binding $PROJECT_ID --member serviceAccount:terraform@$PROJECT_ID.iam.gserviceaccount.com --role  roles/iam.serviceAccountDeleter
-gcloud projects add-iam-policy-binding $PROJECT_ID --member serviceAccount:terraform@$PROJECT_ID.iam.gserviceaccount.com --role  roles/iam.serviceAccountUser
-gcloud projects add-iam-policy-binding $PROJECT_ID --member serviceAccount:terraform@$PROJECT_ID.iam.gserviceaccount.com --role  roles/secretmanager.admin
-gcloud projects add-iam-policy-binding $PROJECT_ID --member serviceAccount:terraform@$PROJECT_ID.iam.gserviceaccount.com --role  roles/storage.admin
-~~~
+The Cloud Run deployment uses the default compute service account and Makefile targets for simplified deployment.
 
 Enable the Google APIs in your project that are required to run Logstory.
 
@@ -457,61 +444,55 @@ Enable the Google APIs in your project that are required to run Logstory.
 gcloud services enable cloudresourcemanager.googleapis.com
 gcloud services enable secretmanager.googleapis.com
 gcloud services enable iam.googleapis.com
-gcloud services enable cloudfunctions.googleapis.com
 gcloud services enable run.googleapis.com
 gcloud services enable cloudscheduler.googleapis.com
 gcloud services enable artifactregistry.googleapis.com
 gcloud services enable cloudbuild.googleapis.com
 ~~~
 
-In the Google Cloud console, create a key for the newly created `terraform` Service Account. You will update the Terraform configuration files to use this key in an upcoming step.
-
-A working [Terraform installation](https://developer.hashicorp.com/terraform/tutorials/gcp-get-started/install-cli) is required.
-
 ## Configuration
 
-- [Clone this repository](https://docs.gitlab.com/ee/gitlab-basics/start-using-git.html#clone-a-repository).
-- If you have your own use cases to replay, add them to the [usecases](./usecases/) folder. By default, Logstory will replay all of the use cases in [usecases](./usecases/).
-    - Open the [cloudfunction-code](./cloudfunction-code/) folder and review the `usecases_events_logtype_map.yaml` and `usecases_entities_logtype_map.yaml` files under each folder. If you want to disable a use case, just flip the `enabled` flag to **0**.
-    - If you have new use cases, add them to corresponding *.yaml* files under each folder depending on the replay frequency.
-- [Create a GCS Bucket](https://console.cloud.google.com/storage/) to save the Terraform state such as `TLA-chronicle-logstory-replay-tfstate`.
-- Open [`backend.tf`](./backend.tf) with your favorite text editor and change both `credentials` and `bucket` values to yours.
-    - `credentials` should be set to the path to your Terraform Service Account key file.
-    - The bucket must have been created previously as it is where you will be storing your Terraform's state files.
-- Open `variables.tf` with your favorite text editor and change the default values to yours including the Chronicle Ingestion API key.
-    - Note, the **numeric** Google Cloud project number is required for the `gcp_project_number` variable. You can execute the following `gcloud` command to find it.
+For complete Cloud Run deployment instructions including environment setup, service account configuration, and deployment commands, see the [Cloud Run Deployment Workflow](cloud-run-deployment-workflow.md) guide.
 
-    ```bash
-    gcloud projects list
-    me:~/chronicle-logstory$ gcloud projects list
-    PROJECT_ID        NAME       PROJECT_NUMBER
-    chronicle-123456  chronicle  101010101010
-    ```
+Quick start using Makefile targets:
+```bash
+# Set required environment variables
+export LOGSTORY_PROJECT_ID=your-gcp-project-id
+export LOGSTORY_CUSTOMER_ID=your-chronicle-customer-uuid
+export LOGSTORY_API_TYPE=rest  # or 'legacy'
+
+# Deploy to Cloud Run
+make enable-apis
+make create-secret CREDENTIALS_FILE=/path/to/credentials.json
+make setup-permissions
+make deploy-cloudrun-job
+make schedule-cloudrun-all
+```
 
 ## Deployment
 
-- Run `sh bash.sh` to generate the latest version of Cloud Function codes
-- Run the following Terraform commands to initialize, plan, and apply the configuration.
+The project now deploys using Makefile targets instead of Terraform:
 
-~~~bash
-# Verify that the Terraform state file has been uploaded to the GCS bucket after running 'terraform init'.
-terraform init
-terraform plan
-terraform apply
-~~~
+```bash
+# Deploy the Cloud Run job and set up schedulers
+make deploy-cloudrun-job
+make schedule-cloudrun-all
 
-Navigate to the Cloud Functions and Cloud Scheduler pages in the Google Cloud console and verify that the Logstory artifacts were created.
+# Check deployment status
+make cloudrun-status
+```
+
+Navigate to the Cloud Run and Cloud Scheduler pages in the Google Cloud console and verify that the Logstory artifacts were created.
 
 ## Cloud Schedulers
 
 Logstory deploys a number of different Cloud Schedulers. Some data is ingested every 24hours and others every 3 days. If you want to ingest data immediately, you can force a run of the Cloud Scheduler job manually. However, we suggest you to run the logs in a specific order, first run the entities and after couple of hours, run the events.
 
-There are some sample rules in this repo that can be deployed into your Chronicle as well. See [rules](./rules/) folder. If you want to deploy the sample rules, just force run the job named `TLA-chronicle-rule-creator-XXX` from Cloud Schedulers.
+Sample detection rules are included within individual usecases under their respective RULES subdirectories.
 
-## Destruction
+## Cleanup
 
-- Run `terraform destroy`
-- Delete the GCS Bucket created to store the Terraform state.
+- Run `make delete-cloudrun-all` to remove all Cloud Run services, jobs, and schedulers
 - Delete the rules created in your Chronicle SIEM using [Delete Rule API](https://cloud.google.com/chronicle/docs/reference/detection-engine-api#deleterule)
 
 ## Authors and acknowledgment

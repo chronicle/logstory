@@ -16,8 +16,8 @@ Set these variables before starting:
 ```bash
 export LOGSTORY_PROJECT_ID=your-gcp-project-id
 export LOGSTORY_CUSTOMER_ID=your-chronicle-customer-uuid
-export LOGSTORY_REGION=us-central1  # optional, defaults to us-central1
-export LOGSTORY_API_TYPE=rest      # or 'legacy' for malachite API
+export LOGSTORY_REGION=US  # optional, defaults to US
+export LOGSTORY_API_TYPE=rest  # or 'legacy' for malachite API
 ```
 
 ## Deployment Method: Makefile vs Terraform
@@ -50,7 +50,7 @@ make enable-apis
 
 This enables:
 - Cloud Run API
-- Cloud Build API  
+- Cloud Build API
 - Cloud Scheduler API
 - Secret Manager API
 
@@ -109,13 +109,13 @@ This creates 4 schedulers that all invoke the same `logstory-replay` job:
 
 1. **events-24h**: Daily at 8 AM
    - Args: `replay all --timestamp-delta=1d`
-   
+
 2. **events-3day**: Every 3 days at 3 AM
    - Args: `replay all --timestamp-delta=3d`
-   
+
 3. **entities-24h**: Daily at 9 AM
    - Args: `replay all --entities --timestamp-delta=1d`
-   
+
 4. **entities-3day**: Every 3 days at 4 AM
    - Args: `replay all --entities --timestamp-delta=3d`
 

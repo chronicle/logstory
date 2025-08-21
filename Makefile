@@ -288,6 +288,7 @@ deploy-cloudrun-job: check-cloudrun-env docker-build ## Deploy single Cloud Run 
 		--set-env-vars "LOGSTORY_API_TYPE=$(API_TYPE)" \
 		--set-env-vars "LOGSTORY_PROJECT_ID=$(PROJECT_ID)" \
 		--set-env-vars "LOGSTORY_FORWARDER_NAME=$(FORWARDER_NAME)" \
+		--set-env-vars "LOGSTORY_TIMESTAMP_DELTA=1d" \
 		--set-secrets "LOGSTORY_CREDENTIALS=$(SECRET_NAME):latest" \
 		--memory 1Gi \
 		--task-timeout 3600 \
@@ -302,6 +303,7 @@ deploy-cloudrun-job: check-cloudrun-env docker-build ## Deploy single Cloud Run 
 		--set-env-vars "LOGSTORY_API_TYPE=$(API_TYPE)" \
 		--set-env-vars "LOGSTORY_PROJECT_ID=$(PROJECT_ID)" \
 		--set-env-vars "LOGSTORY_FORWARDER_NAME=$(FORWARDER_NAME)" \
+		--set-env-vars "LOGSTORY_TIMESTAMP_DELTA=1d" \
 		--set-secrets "LOGSTORY_CREDENTIALS=$(SECRET_NAME):latest")
 	@echo "Cloud Run job deployed successfully!"
 
@@ -317,6 +319,7 @@ deploy-cloudrun-service: check-cloudrun-env docker-build ## Deploy Cloud Run ser
 		--set-env-vars "LOGSTORY_API_TYPE=$(API_TYPE)" \
 		--set-env-vars "LOGSTORY_PROJECT_ID=$(PROJECT_ID)" \
 		--set-env-vars "LOGSTORY_FORWARDER_NAME=$(FORWARDER_NAME)" \
+		--set-env-vars "LOGSTORY_TIMESTAMP_DELTA=1d" \
 		--set-secrets "LOGSTORY_CREDENTIALS=$(SECRET_NAME):latest" \
 		--memory 1Gi \
 		--cpu 1 \
@@ -334,52 +337,52 @@ deploy-cloudrun-all: deploy-cloudrun-job ## Deploy the Cloud Run job (simplified
 
 .PHONY: schedule-cloudrun-all
 schedule-cloudrun-all: check-cloudrun-env ## Create all schedulers for the single Cloud Run job
-	@echo "Creating scheduler: events-24h (daily at 8 AM)"
+	@echo "Creating scheduler: events-24h (daily at 3:00 AM UTC)"
 	@gcloud scheduler jobs create http logstory-events-24h \
 		--location $(GCP_REGION) \
-		--schedule "0 8 * * *" \
-		--time-zone "America/New_York" \
+		--schedule "0 3 * * *" \
+		--time-zone "UTC" \
 		--uri "https://$(GCP_REGION)-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/$(PROJECT_ID)/jobs/logstory-replay:run" \
 		--http-method POST \
 		--oauth-service-account-email $(SERVICE_ACCOUNT) \
 		--headers "Content-Type=application/json" \
-		--message-body '{"overrides":{"containerOverrides":[{"args":["replay","all","--timestamp-delta=1d"]}]}}' \
+		--message-body '{"overrides":{"containerOverrides":[{"args":["logstory","replay","all"]}]}}' \
 		|| echo "Scheduler events-24h already exists"
 
-	@echo "Creating scheduler: events-3day (every 3 days at 3 AM)"
+	@echo "Creating scheduler: events-3day (every 3 days at 3:00 AM UTC)"
 	@gcloud scheduler jobs create http logstory-events-3day \
 		--location $(GCP_REGION) \
 		--schedule "0 3 */3 * *" \
-		--time-zone "America/New_York" \
+		--time-zone "UTC" \
 		--uri "https://$(GCP_REGION)-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/$(PROJECT_ID)/jobs/logstory-replay:run" \
 		--http-method POST \
 		--oauth-service-account-email $(SERVICE_ACCOUNT) \
 		--headers "Content-Type=application/json" \
-		--message-body '{"overrides":{"containerOverrides":[{"args":["replay","all","--timestamp-delta=3d"]}]}}' \
+		--message-body '{"overrides":{"containerOverrides":[{"args":["logstory","replay","all"]}]}}' \
 		|| echo "Scheduler events-3day already exists"
 
-	@echo "Creating scheduler: entities-24h (daily at 9 AM)"
+	@echo "Creating scheduler: entities-24h (daily at 12:01 AM UTC)"
 	@gcloud scheduler jobs create http logstory-entities-24h \
 		--location $(GCP_REGION) \
-		--schedule "0 9 * * *" \
-		--time-zone "America/New_York" \
+		--schedule "1 0 * * *" \
+		--time-zone "UTC" \
 		--uri "https://$(GCP_REGION)-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/$(PROJECT_ID)/jobs/logstory-replay:run" \
 		--http-method POST \
 		--oauth-service-account-email $(SERVICE_ACCOUNT) \
 		--headers "Content-Type=application/json" \
-		--message-body '{"overrides":{"containerOverrides":[{"args":["replay","all","--entities","--timestamp-delta=1d"]}]}}' \
+		--message-body '{"overrides":{"containerOverrides":[{"args":["logstory","replay","all","--entities"]}]}}' \
 		|| echo "Scheduler entities-24h already exists"
 
-	@echo "Creating scheduler: entities-3day (every 3 days at 4 AM)"
+	@echo "Creating scheduler: entities-3day (every 3 days at 12:01 AM UTC)"
 	@gcloud scheduler jobs create http logstory-entities-3day \
 		--location $(GCP_REGION) \
-		--schedule "0 4 */3 * *" \
-		--time-zone "America/New_York" \
+		--schedule "1 0 */3 * *" \
+		--time-zone "UTC" \
 		--uri "https://$(GCP_REGION)-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/$(PROJECT_ID)/jobs/logstory-replay:run" \
 		--http-method POST \
 		--oauth-service-account-email $(SERVICE_ACCOUNT) \
 		--headers "Content-Type=application/json" \
-		--message-body '{"overrides":{"containerOverrides":[{"args":["replay","all","--entities","--timestamp-delta=3d"]}]}}' \
+		--message-body '{"overrides":{"containerOverrides":[{"args":["logstory","replay","all","--entities"]}]}}' \
 		|| echo "Scheduler entities-3day already exists"
 
 	@echo "All schedulers created successfully!"
@@ -389,7 +392,7 @@ test-cloudrun-all: check-cloudrun-env ## Test the Cloud Run job with different p
 	@echo "Testing events 24h..."
 	@gcloud run jobs execute logstory-replay \
 		--region $(GCP_REGION) \
-		--args "replay,all,--timestamp-delta=1d" \
+		--args "logstory,replay,all" \
 		--wait
 
 .PHONY: debug-api-detection

@@ -139,6 +139,11 @@ def get_region_default():
   return os.getenv("LOGSTORY_REGION", "US")
 
 
+def get_timestamp_delta_default():
+  """Get timestamp delta from environment variable."""
+  return os.getenv("LOGSTORY_TIMESTAMP_DELTA", "1d")
+
+
 def get_auto_get_default():
   """Get auto-get setting from environment variable."""
   auto_get_value = os.getenv("LOGSTORY_AUTO_GET", "").lower()
@@ -226,7 +231,7 @@ ThreeDayOption = typer.Option(
 )
 
 TimestampDeltaOption = typer.Option(
-    None,
+    get_timestamp_delta_default,
     "--timestamp-delta",
     help=(
         "Determines how datetimes in logfiles are updated. "
@@ -234,7 +239,8 @@ TimestampDeltaOption = typer.Option(
         "Examples: [1d, 1d1h, 1h1m, 1d1m, 1d1h1m, 1m1h, ...]. "
         "Setting only `Nd` preserves the original HH:MM:SS but updates date. "
         "Nh/Nm subtracts an additional offset from that datetime, to facilitate "
-        "running logstory more than 1x per day."
+        "running logstory more than 1x per day. "
+        "(env: LOGSTORY_TIMESTAMP_DELTA)"
     ),
 )
 
