@@ -61,6 +61,7 @@ export LOGSTORY_CUSTOMER_ID=01234567-0123-4321-abcd-01234567890a
 export LOGSTORY_CREDENTIALS_PATH=/path/to/credentials.json
 export LOGSTORY_REGION=US
 export LOGSTORY_AUTO_GET=true  # Auto-download missing usecases
+export LOGSTORY_USECASES=NETWORK_ANALYSIS|GITHUB  # Filter usecases (pipe-separated)
 
 logstory replay usecase RULES_SEARCH_WORKSHOP
 ```
@@ -74,6 +75,7 @@ LOGSTORY_CREDENTIALS_PATH=/path/to/credentials.json
 LOGSTORY_REGION=US
 LOGSTORY_USECASES_BUCKETS=gs://logstory-usecases-20241216,gs://my-custom-bucket
 LOGSTORY_AUTO_GET=true  # Auto-download missing usecases (optional)
+LOGSTORY_USECASES=NETWORK_ANALYSIS|GITHUB  # Filter usecases (pipe-separated, optional)
 ```
 
 Then run commands without additional options:
@@ -311,6 +313,11 @@ logstory replay all \
   --customer-id=01234567-0123-4321-abcd-01234567890a \
   --credentials-path=/path/to/credentials.json
 
+# Replay specific usecases using environment variable filtering
+LOGSTORY_USECASES=NETWORK_ANALYSIS|GITHUB logstory replay all \
+  --customer-id=01234567-0123-4321-abcd-01234567890a \
+  --credentials-path=/path/to/credentials.json
+
 # Replay a specific usecase
 logstory replay usecase RULES_SEARCH_WORKSHOP \
   --customer-id=01234567-0123-4321-abcd-01234567890a \
@@ -466,6 +473,7 @@ tree /tmp/var/log/logstory/
 - `LOGSTORY_CREDENTIALS_PATH`: Path to JSON credentials file
 - `LOGSTORY_REGION`: SecOps tenant region (default: US)
 - `LOGSTORY_LOCAL_LOG_DIR`: Base directory for local file output (default: /tmp/var/log/logstory)
+- `LOGSTORY_USECASES`: Filter usecases for `replay all` command (pipe-separated, e.g., `NETWORK_ANALYSIS|GITHUB`)
 
 ### Command Migration Guide
 
