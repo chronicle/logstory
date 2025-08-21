@@ -143,6 +143,5 @@ dmypy.json
 cloudfunctions/variables.tf
 cloudfunctions/backend.tf
 .pypirc
-dist/*
 jpn_config.cfg
 *.cfg
