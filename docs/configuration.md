@@ -26,6 +26,7 @@ export LOGSTORY_CREDENTIALS_PATH=/path/to/credentials.json
 export LOGSTORY_REGION=US
 export LOGSTORY_USECASES_BUCKETS=gs://my-bucket,file:///local/usecases
 export LOGSTORY_AUTO_GET=true  # Auto-download missing usecases
+export LOGSTORY_USECASES=NETWORK_ANALYSIS|GITHUB  # Filter usecases for 'replay all' command
 
 # Now run commands without additional options
 logstory replay usecase RULES_SEARCH_WORKSHOP  # Will auto-download if missing

@@ -41,7 +41,7 @@ def version_callback(value: bool):
     except Exception:
       __version__ = "unknown"
     typer.echo(f"logstory {__version__}")
-    raise typer.Exit()
+    raise typer.Exit
 
 
 # Create Typer app and command groups
@@ -846,7 +846,7 @@ def replay_all_usecases(
     ),
     usecases_bucket: str | None = UsecasesBucketOption,
 ):
-  """Replay all usecases."""
+  """Replay all usecases (or filtered usecases if LOGSTORY_USECASES is set)."""
   # Load environment file first (needed for download logic)
   load_env_file(env_file)
 
@@ -892,7 +892,26 @@ def replay_all_usecases(
         impersonate_service_account,
     )
 
-  usecases = get_usecases()
+  # Get all available usecases
+  all_usecases = get_usecases()
+
+  # Filter usecases if LOGSTORY_USECASES environment variable is set
+  filter_usecases = os.getenv("LOGSTORY_USECASES")
+  if filter_usecases:
+    # Parse pipe-separated list and filter
+    requested_usecases = [uc.strip() for uc in filter_usecases.split("|") if uc.strip()]
+    # Validate that requested usecases exist
+    invalid_usecases = [uc for uc in requested_usecases if uc not in all_usecases]
+    if invalid_usecases:
+      typer.echo(f"Error: Invalid usecases: {', '.join(invalid_usecases)}")
+      typer.echo(f"Available usecases: {', '.join(sorted(all_usecases))}")
+      raise typer.Exit(1)
+    usecases = requested_usecases
+    typer.echo(f"Processing filtered usecases: {', '.join(usecases)}")
+  else:
+    usecases = all_usecases
+    typer.echo(f"Processing all usecases: {', '.join(usecases)}")
+
   _replay_usecases(usecases, "*", entities, timestamp_delta, local_file_output)
 
 

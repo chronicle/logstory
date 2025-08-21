@@ -460,6 +460,7 @@ Quick start using Makefile targets:
 export LOGSTORY_PROJECT_ID=your-gcp-project-id
 export LOGSTORY_CUSTOMER_ID=your-chronicle-customer-uuid
 export LOGSTORY_API_TYPE=rest  # or 'legacy'
+export LOGSTORY_USECASES=NETWORK_ANALYSIS|GITHUB  # Optional: filter usecases (pipe-separated)
 
 # Deploy to Cloud Run
 make enable-apis
