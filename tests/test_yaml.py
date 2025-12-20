@@ -101,9 +101,9 @@ def validate_base_time_format(filepath):
           )
 
         dateformat = timestamp["dateformat"]
-        if dateformat == 'epoch':
+        if dateformat == "epoch":
           format_type = "epoch"
-        elif dateformat == 'windowsfiletime':
+        elif dateformat == "windowsfiletime":
           format_type = "windowsfiletime"
         else:
           format_type = "dateformat"
@@ -191,7 +191,7 @@ def validate_epoch_dateformat_consistency(filepath):
         )
 
       # Validate dateformat values
-      valid_magic_formats = ['epoch', 'windowsfiletime']
+      valid_magic_formats = ["epoch", "windowsfiletime"]
       if dateformat not in valid_magic_formats and not isinstance(dateformat, str):
         raise ValueError(
             f"Entry '{entry_name}' timestamp {i}: dateformat must be a string"
