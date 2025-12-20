@@ -25,9 +25,22 @@ jobs:
       issues: 'write'
       pull-requests: 'write'
     steps:
+      - name: 'Checkout repository'
+        uses: 'actions/checkout@v4'
+        with:
+          fetch-depth: 0
+
+      - name: 'Setup Node.js'
+        uses: 'actions/setup-node@v4'
+        with:
+          node-version: '20'
+
+      - name: 'Install Gemini CLI'
+        run: |
+          npm install -g @google/gemini-cli@latest
+
       - name: 'Run Gemini CLI'
         id: 'run_gemini'
-        uses: 'google-github-actions/run-gemini-cli@v0.1.18'
         env:
           TITLE: '${{ github.event.pull_request.title || github.event.issue.title }}'
           DESCRIPTION: '${{ github.event.pull_request.body || github.event.issue.body }}'
@@ -37,8 +50,11 @@ jobs:
           ISSUE_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
           REPOSITORY: '${{ github.repository }}'
           ADDITIONAL_CONTEXT: '${{ inputs.additional_context }}'
-        with:
-          gemini_api_key: '${{ secrets.GEMINI_API_KEY }}'
-          gemini_model: 'gemini-1.5-pro'
-          workflow_name: 'gemini-invoke'
-          prompt: '/gemini-invoke'
+          GEMINI_API_KEY: '${{ secrets.GEMINI_API_KEY }}'
+          GEMINI_MODEL: 'gemini-1.5-pro'
+        run: |
+          PROMPT="/gemini-invoke"
+          if [ -n "${ADDITIONAL_CONTEXT}" ]; then
+            PROMPT="${ADDITIONAL_CONTEXT}"
+          fi
+          gemini --yolo "$PROMPT" --output-format json

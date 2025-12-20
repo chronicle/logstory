@@ -28,19 +28,27 @@ jobs:
     steps:
       - name: 'Checkout repository'
         uses: 'actions/checkout@v4'
+        with:
+          fetch-depth: 0
+
+      - name: 'Setup Node.js'
+        uses: 'actions/setup-node@v4'
+        with:
+          node-version: '20'
+
+      - name: 'Install Gemini CLI'
+        run: |
+          npm install -g @google/gemini-cli@latest
 
       - name: 'Run Gemini pull request review'
-        uses: 'google-github-actions/run-gemini-cli@v0.1.18'
         id: 'gemini_pr_review'
         env:
-          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+          GEMINI_API_KEY: '${{ secrets.GEMINI_API_KEY }}'
           ISSUE_TITLE: '${{ github.event.pull_request.title || github.event.issue.title }}'
           ISSUE_BODY: '${{ github.event.pull_request.body || github.event.issue.body }}'
           PULL_REQUEST_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
           REPOSITORY: '${{ github.repository }}'
           ADDITIONAL_CONTEXT: '${{ inputs.additional_context }}'
-        with:
-          gemini_api_key: '${{ secrets.GEMINI_API_KEY }}'
-          gemini_model: 'gemini-1.5-pro'
-          workflow_name: 'gemini-review'
-          prompt: '/gemini-review'
+          GEMINI_MODEL: 'gemini-1.5-pro'
+        run: |
+          gemini --yolo "/gemini-review" --output-format json
