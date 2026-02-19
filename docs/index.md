@@ -309,7 +309,7 @@ https://storage.googleapis.com/logstory-usecases-20241216/EDR_WORKSHOP/EDR_WORKS
 Then download the usecase into that dir. For example:
 
 ```
-gsutil rsync -r \
+gcloud storage rsync --recursive \
 gs://logstory-usecases-20241216/EDR_WORKSHOP \
 ~/miniconda3/envs/pkg101_20241212_0453/lib/python3.13/site-packages/logstory/usecases/
 ```

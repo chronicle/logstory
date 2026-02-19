@@ -37,7 +37,7 @@ twine upload dist/*
 
 To add a new usecase to the public Storage Bucket:
 ```
-gsutil rsync -r \
+gcloud storage rsync --recursive \
 /usr/local/google/home/dandye/Projects/pkg101/logstory/usecases/RULES_SEARCH_WORKSHOP \
 gs://logstory-usecases-20241216/RULES_SEARCH_WORKSHOP
 ```
