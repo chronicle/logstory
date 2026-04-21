@@ -48,7 +48,6 @@
   - `.yamllint.yaml` for YAML linting rules
   - `.tflint.hcl` for Terraform linting
   - `.license-header.txt` for Apache 2.0 license headers
-- Updated `CLAUDE.md` with development standards and pre-commit information
 
 ### Changed
 - Switched from ruff formatting to pyink for 2-space indentation support
