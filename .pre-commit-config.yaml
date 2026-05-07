@@ -151,7 +151,7 @@ repos:
     rev: v2.4.1
     hooks:
       - id: codespell
-        args: ['--skip', '*.zip,*.log,*.json', '--ignore-words-list', 'crate,ans,ect,hist,nd']
+        args: ['--skip', '*.zip,*.log,*.json', '--ignore-words-list', 'crate,ans,ect,hist,nd,thw']
         exclude: '^(\.git/|__pycache__|\.egg-info|dist/|build/|docs/_build/)'
 
   # YAML validation specific to our timestamp configs
