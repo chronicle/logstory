@@ -133,7 +133,7 @@ class LegacyIngestionBackend(IngestionBackend):
       self,
       log_type: str,
       entries: list[dict[str, Any]],
-      labels: list[dict[str, str]],
+      labels: list[dict[str, str]],  # noqa: ARG002
   ) -> None:
     """Post entities using legacy API."""
     uri = f"{self.get_base_url()}/v2/entities:batchCreate"

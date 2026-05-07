@@ -136,7 +136,7 @@ class LegacyAuthHandler(AuthHandler):
     if self._credentials:
       return self._credentials
 
-    # Priority: service_account_info > credentials_path > secret_manager
+    # Priority: service_account_info then credentials_path then secret_manager
     if self.service_account_info:
       self._credentials = service_account.Credentials.from_service_account_info(
           self.service_account_info, scopes=self.SCOPES
