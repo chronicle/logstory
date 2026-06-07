@@ -60,6 +60,38 @@ class MatchLike(Protocol):
     ...
 
 
+def _unflatten_dict(flat_dict: dict) -> dict:
+  """Converts a flat dictionary with dot-notation keys into a nested dictionary."""
+  nested: dict[str, Any] = {}
+  for key, value in flat_dict.items():
+    parts = key.split(".")
+    current = nested
+    for i, part in enumerate(parts):
+      if "[" in part and part.endswith("]"):
+        array_name, index_str = part.split("[", 1)
+        index = int(index_str[:-1])
+
+        if array_name not in current:
+          current[array_name] = []
+
+        while len(current[array_name]) <= index:
+          current[array_name].append({})
+
+        if i == len(parts) - 1:
+          current[array_name][index] = value
+        else:
+          if not isinstance(current[array_name][index], dict):
+            current[array_name][index] = {}
+          current = current[array_name][index]
+      elif i == len(parts) - 1:
+        current[part] = value
+      else:
+        if part not in current or not isinstance(current[part], dict):
+          current[part] = {}
+        current = current[part]
+  return nested
+
+
 # Constants
 DEFAULT_YEAR_FOR_INCOMPLETE_TIMESTAMPS = 1900
 BATCH_SIZE_THRESHOLD = 1000
@@ -139,15 +171,11 @@ else:
   service_account_info = None
 
 
-# Check if we can use ADC with impersonation for REST API
+# Check if we can use ADC for REST API
 def can_use_application_default_credentials():
   try:
     api_type = detect_auth_type()
-    return (
-        has_application_default_credentials()
-        and IMPERSONATE_SERVICE_ACCOUNT
-        and api_type == "rest"
-    )
+    return has_application_default_credentials() and api_type == "rest"
   except ValueError:
     return False
 
@@ -720,8 +748,8 @@ def usecase_replay_logtype(
             ts_delta_dict,
         )
         if replacement_info:
-          match, replacement = replacement_info
-          change_key = (match.start(), match.end(), match.group(0))
+          ts_match, replacement = replacement_info
+          change_key = (ts_match.start(), ts_match.end(), ts_match.group(0))
 
           if change_key in change_map:
             # Check if it's the same change or a conflict
@@ -729,9 +757,9 @@ def usecase_replay_logtype(
               LOGGER.warning(
                   "Timestamp replacement conflict at position %d-%d: '%s' -> '%s' vs"
                   " '%s'",
-                  match.start(),
-                  match.end(),
-                  match.group(0),
+                  ts_match.start(),
+                  ts_match.end(),
+                  ts_match.group(0),
                   change_map[change_key],
                   replacement,
               )
@@ -754,7 +782,10 @@ def usecase_replay_logtype(
       if api_for_log_type == "unstructuredlogentries":
         entries.append({"logText": log_text})
       elif api_for_log_type in {"udmevents", "entities"}:
-        entries.append(json.loads(log_text))
+        entry_dict = json.loads(log_text)
+        if any("." in k or "[" in k for k in entry_dict.keys()):
+          entry_dict = _unflatten_dict(entry_dict)
+        entries.append(entry_dict)
       else:
         raise ValueError("Only unstructuredlogentries and udmevents are supported")
 

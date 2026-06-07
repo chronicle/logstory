@@ -181,8 +181,8 @@ class RestIngestionBackend(IngestionBackend):
     super().__init__(auth_handler, customer_id, region)
     self.project_id = project_id
     self.forwarder_name = forwarder_name or "Logstory-REST-Forwarder"
-    self._forwarder_id = None
-    self._forwarder_cache = {}
+    self._forwarder_id: str | None = None
+    self._forwarder_cache: dict[str, str] = {}
 
   def get_base_url(self) -> str:
     """Get the base URL for REST API."""
@@ -296,7 +296,7 @@ class RestIngestionBackend(IngestionBackend):
       # Base64 encode the log text
       encoded_log = base64.b64encode(log_text.encode("utf-8")).decode("utf-8")
 
-      log_entry = {
+      log_entry: dict[str, Any] = {
           "data": encoded_log,
           "log_entry_time": datetime.now().isoformat() + "Z",
           "collection_time": datetime.now().isoformat() + "Z",

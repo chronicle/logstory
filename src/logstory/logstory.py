@@ -833,9 +833,9 @@ def _load_and_validate_params(
       "LOGSTORY_IMPERSONATE_SERVICE_ACCOUNT"
   )
 
-  # Check if ADC is available when using impersonation with REST API
+  # Check if ADC is available when using REST API
   has_adc = has_application_default_credentials()
-  can_use_adc = has_adc and final_impersonate and final_api_type == "rest"
+  can_use_adc = has_adc and final_api_type == "rest"
 
   # STRICT VALIDATION for REST API
   if final_api_type == "rest":
