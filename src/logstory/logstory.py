@@ -27,6 +27,7 @@ from google.cloud import storage
 from google.oauth2 import service_account
 
 from logstory.auth import has_application_default_credentials
+from logstory.scraper import scrape_to_usecase_logic
 
 UTC = datetime.UTC
 
@@ -674,6 +675,116 @@ def usecase_get(
   success = _download_usecase(usecase, bucket)
   if not success:
     raise typer.Exit(1)
+
+
+@usecases_app.command("scrape")
+def usecase_scrape(
+    query: str = typer.Option(
+        None, "--query", "-q", help="Query to search for raw logs"
+    ),
+    ingestion_label: str = typer.Option(
+        None,
+        "--ingestion-label",
+        "-l",
+        help="The ingestion label value to search for (e.g. TI_ISAC_4)",
+    ),
+    name: str = typer.Option(
+        None,
+        "--name",
+        "-n",
+        help="Custom name for the usecase (default: YYYYMMDD_HHMM timestamp)",
+    ),
+    time_window: int = typer.Option(
+        24,
+        "--time-window",
+        "-w",
+        help="Time window in hours in the past",
+    ),
+    start_time: str = typer.Option(
+        None,
+        "--start-time",
+        help="Start time in ISO format (YYYY-MM-DDTHH:MM:SSZ)",
+    ),
+    end_time: str = typer.Option(
+        None,
+        "--end-time",
+        help="End time in ISO format (YYYY-MM-DDTHH:MM:SSZ)",
+    ),
+    page_size: int = typer.Option(
+        100,
+        "--page-size",
+        "-p",
+        help="Safety page size limit per request to prevent API crash",
+    ),
+    log_types: str = typer.Option(
+        None,
+        "--log-types",
+        "-t",
+        help="Comma-separated list of log types to filter by",
+    ),
+    max_events: int = typer.Option(
+        10000,
+        "--max-events",
+        "-m",
+        help="Maximum overall events to retrieve across all pages",
+    ),
+    chunk_size: int = typer.Option(
+        2,
+        "--chunk-size",
+        "-c",
+        help="Stateful time-chunking slice interval in minutes",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Process setup and parameters without actual API/disk actions",
+    ),
+    customer_id: str = typer.Option(
+        None,
+        "--customer-id",
+        help="Chronicle customer instance ID",
+    ),
+    project_id: str = typer.Option(
+        None,
+        "--project-id",
+        help="GCP project ID",
+    ),
+    region: str = typer.Option(
+        None,
+        "--region",
+        help="Chronicle region",
+    ),
+    api_version: str = typer.Option(
+        None,
+        "--api-version",
+        help="Chronicle API version (choices: v1, v1beta, v1alpha)",
+    ),
+):
+  """Scrape raw logs from a Google SecOps tenant and build a Logstory usecase."""
+  try:
+    scrape_to_usecase_logic(
+        query=query,
+        name=name,
+        time_window=time_window,
+        start_time=start_time,
+        end_time=end_time,
+        page_size=page_size,
+        log_types=log_types,
+        max_events=max_events,
+        chunk_size=chunk_size,
+        dry_run=dry_run,
+        customer_id=customer_id,
+        project_id=project_id,
+        region=region,
+        api_version=api_version,
+        ingestion_label=ingestion_label,
+    )
+  except ImportError as e:
+    typer.echo(f"Error: {e}", err=True)
+    raise typer.Exit(code=1)
+  except Exception as e:
+    typer.echo(f"Unexpected error: {e}", err=True)
+    raise typer.Exit(code=1)
 
 
 def _get_logtypes(usecase: str, entities: bool = False) -> list[str]:

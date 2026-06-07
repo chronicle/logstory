@@ -28,6 +28,7 @@ dependencies = [
     "oyaml >= 1.0",
     "requests ~= 2.32.3",
     "python-dotenv >= 1.0.0",
+    "jinja2",
 ]
 
 [project.urls]
