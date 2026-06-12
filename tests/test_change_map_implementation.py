@@ -37,6 +37,16 @@ from logstory.main import _calculate_timestamp_replacement
 class TestChangeMapImplementation(unittest.TestCase):
   """Test cases for the change map implementation."""
 
+  def setUp(self):
+    self.patcher = patch("logstory.main._get_current_time")
+    self.mock_get_current_time = self.patcher.start()
+    self.mock_get_current_time.return_value = datetime.datetime(
+        2025, 8, 1, 12, 0, 0, tzinfo=datetime.UTC
+    )
+
+  def tearDown(self):
+    self.patcher.stop()
+
   def test_identical_changes_are_deduplicated(self):
     """Test that identical changes to the same position are deduplicated."""
 
@@ -81,11 +91,10 @@ class TestChangeMapImplementation(unittest.TestCase):
         if change_key not in change_map:
           change_map[change_key] = replacement
 
-    # The patterns match different spans:
-    # - "UtcTime specific" matches the whole "UtcTime: 2024-01-25 19:53:05"
-    # - "Any timestamp" matches just "2024-01-25 19:53:05"
-    # So we expect 2 changes, not 1
-    self.assertEqual(len(change_map), 2, "Should have two changes (different spans)")
+    # The patterns target the same span (9-28) for replacement, so they deduplicate to 1 change
+    self.assertEqual(
+        len(change_map), 1, "Should have one deduplicated change (same span)"
+    )
 
     # Apply the change
     for (start, end, original), replacement in change_map.items():

@@ -79,14 +79,32 @@ BRO_JSON:
       dateformat: 'epoch'
       group: 2
 
-CB_EDR:
+CATCH_ALL:
   api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: filemodifydate
+      base_time: true
+      dateformat: "%Y:%m:%d %H:%M:%S"
+      pattern: '("scan.exiftool.filemodifydate":\s*")(\d{4}:\d{2}:\d{2} \d{2}:\d{2}:\d{2})'
+      group: 2
+    - name: generic_coloned_date
+      dateformat: "%Y:%m:%d %H:%M:%S"
+      pattern: '("[^"]+date":\s*")(\d{4}:\d{2}:\d{2} \d{2}:\d{2}:\d{2})'
+      group: 2
+
+CB_EDR:
+  api: udmevents
   log_dir: /tmp/var/log/logstory/usr/local/bin/cbagentd/logs/
   timestamps:
-    - name: cb_edr_timestamp
+    - name: eventTimestamp
       base_time: true
-      pattern: '("timestamp":\s*)(\d{10})'
-      dateformat: 'epoch'
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("(?:metadata\.)?eventTimestamp":\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+      group: 2
+    - name: generic_timestamp
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("[^"]*(?:Timestamp|Time)":\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
       group: 2
 
 CHROME_MANAGEMENT:
@@ -151,6 +169,20 @@ CS_EDR:
     - name: AgentLocalTime
       pattern: '("AgentLocalTime":\s*"?)(\d{10})'
       dateformat: 'epoch'
+      group: 2
+
+CS_ALERTS:
+  api: udmevents
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: eventTimestamp
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("eventTimestamp":\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+      group: 2
+    - name: generic_timestamp
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("[^"]+":\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
       group: 2
 
 DUO_ACTIVITY:
@@ -411,13 +443,17 @@ INFOBLOX_DHCP:
       group: 2
 
 EXTRAHOP_DNS:
-  api: unstructuredlogentries
+  api: udmevents
   log_dir: /tmp/var/log/logstory
   timestamps:
-    - name: syslog_timestamp
+    - name: eventTimestamp
       base_time: true
       dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '(<\d+>.*)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z)'
+      pattern: '("(?:metadata\.)?eventTimestamp":\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+      group: 2
+    - name: generic_timestamp
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("[^"]*(?:Timestamp|Time)":\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
       group: 2
 
 LIMACHARLIE_EDR:
@@ -465,6 +501,16 @@ SURICATA_EVE:
       pattern: '("start"\s*:\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
       group: 2
 
+SURICATA_IDS:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: timestamp
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("timestamp"\s*:\s*")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+      group: 2
+
 TANIUM_TH:
   api: unstructuredlogentries
   log_dir: /tmp/var/log/logstory
@@ -482,7 +528,11 @@ UDM:
     - name: udm_event_timestamp
       base_time: true
       dateformat: "%Y-%m-%dT%H:%M:%S"
-      pattern: '("event_timestamp":|"eventTimestamp":\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+      pattern: '("(?:metadata\.)?event_timestamp":|"(?:metadata\.)?eventTimestamp":\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+      group: 2
+    - name: udm_generic_timestamp
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("[^"]*(?:Timestamp|Time)":\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
       group: 2
 
 WINDOWS_DHCP:
@@ -534,6 +584,20 @@ WINDOWS_SYSMON:
       group: 2
       # Replaces: UtcTime, EventTimeUTC, EventReceivedTimeUTC, CreationUtcTime, CreationUtcTimeQuotes
 
+PAN_FIREWALL:
+  api: udmevents
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: eventTimestamp
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("(?:metadata\.)?eventTimestamp":\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+      group: 2
+    - name: generic_timestamp
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("[^"]*(?:Timestamp|Time)":\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+      group: 2
+
 POWERSHELL:
   api: unstructuredlogentries
   log_dir: /tmp/var/log/logstory/Library/Logs/Microsoft/PowerShell/
@@ -550,6 +614,20 @@ POWERSHELL:
     - name: EventReceivedTime
       pattern: ("EventReceivedTime":)(\d+)(,)
       dateformat: 'epoch'
+      group: 2
+
+SENTINELONE_ALERT:
+  api: udmevents
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: eventTimestamp
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("(?:metadata\.)?eventTimestamp":\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+      group: 2
+    - name: generic_timestamp
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      pattern: '("[^"]*(?:Timestamp|Time)":\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
       group: 2
 
 SENTINEL_EDR:

@@ -381,8 +381,11 @@ def usecases_list(
       markdown_map[usecases[-1]].append(md)
     log_types = []
     if logtypes:
-      for adir in glob.glob(os.path.join("./", usecase_dir, entity_or_event, "*.log")):
-        log_types.append(os.path.splitext(os.path.split(adir)[-1])[0])
+      for ext in ["*.log", "*.json"]:
+        for adir in glob.glob(os.path.join("./", usecase_dir, entity_or_event, ext)):
+          log_type = os.path.splitext(os.path.split(adir)[-1])[0]
+          if log_type not in log_types:
+            log_types.append(log_type)
       logypes_map[usecases[-1]] = log_types
   for usecase in sorted(usecases):
     if details:
@@ -791,12 +794,15 @@ def _get_logtypes(usecase: str, entities: bool = False) -> list[str]:
   """Get logtype names for a usecase without printing."""
   entity_or_event = "ENTITIES" if entities else "EVENTS"
   usecase_dir = f"{os.path.split(__file__)[0]}/usecases/{usecase}/{entity_or_event}/"
-  log_files = glob.glob(usecase_dir + "*.log")
+  log_files = []
+  for ext in ["*.log", "*.json"]:
+    log_files.extend(glob.glob(usecase_dir + ext))
   log_types = []
   for log_file in log_files:
     parts = os.path.split(log_file)
     log_type = os.path.splitext(parts[-1])[0]
-    log_types.append(log_type)
+    if log_type not in log_types:
+      log_types.append(log_type)
   return log_types
 
 

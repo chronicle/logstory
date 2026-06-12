@@ -337,21 +337,32 @@ def _get_log_content(
     use_case: str, log_type: str, entities: bool | None = False
 ) -> str:
   """Retrieves log content from either GCS or local filesystem."""
-  if entities:
-    object_name = f"{use_case}/ENTITIES/{log_type}.log"
-  else:
-    object_name = f"{use_case}/EVENTS/{log_type}.log"
+  entity_or_event = "ENTITIES" if entities else "EVENTS"
 
-  LOGGER.info("Processing file: %s", object_name)
   if storage_client:  # running in cloud function
     bucket = storage_client.bucket(BUCKET_NAME)
-    file_object = bucket.get_blob(object_name)
-    return file_object.download_as_text()
+    for ext in [".log", ".json"]:
+      object_name = f"{use_case}/{entity_or_event}/{log_type}{ext}"
+      file_object = bucket.get_blob(object_name)
+      if file_object:
+        LOGGER.info("Processing file from GCS: %s", object_name)
+        return file_object.download_as_text()
+    raise FileNotFoundError(
+        f"No log/json file found for use_case={use_case}, log_type={log_type}"
+    )
+
   # Local filesystem case
   script_dir = os.path.dirname(os.path.abspath(__file__))
-  local_file_path = os.path.join(script_dir, "usecases/", object_name)
-  with open(local_file_path) as f:
-    return f.read()
+  for ext in [".log", ".json"]:
+    object_name = f"{use_case}/{entity_or_event}/{log_type}{ext}"
+    local_file_path = os.path.join(script_dir, "usecases/", object_name)
+    if os.path.exists(local_file_path):
+      LOGGER.info("Processing local file: %s", local_file_path)
+      with open(local_file_path, encoding="utf-8") as f:
+        return f.read()
+  raise FileNotFoundError(
+      f"No log/json file found for use_case={use_case}, log_type={log_type}"
+  )
 
 
 def _get_ingestion_labels(
@@ -398,7 +409,7 @@ def _get_current_time():
 def _calculate_timestamp_replacement(
     log_text: str,
     timestamp: dict[str, str],
-    old_base_time: datetime.datetime,
+    old_base_time: datetime.datetime | None,
     ts_delta_dict: dict[str, int],
 ) -> tuple[MatchLike, str] | None:
   """Calculates the replacement for a timestamp without modifying the text.
@@ -416,6 +427,9 @@ def _calculate_timestamp_replacement(
   Returns:
     Tuple of (match object, replacement string) or None if no match
   """
+  if old_base_time is None:
+    return None
+
   ts_match = re.search(timestamp["pattern"], log_text)
   if ts_match:
     # Get the specific group we're updating
@@ -684,6 +698,19 @@ def usecase_replay_logtype(
     # Get optional log_dir from YAML config, defaults to None for backwards compatibility
     log_type_log_dir = timestamp_map[log_type].get("log_dir")
     log_content = _get_log_content(use_case, log_type, entities)
+    # Normalize JSON array or single JSON object to JSON Lines if necessary
+    stripped_content = log_content.strip()
+    if stripped_content.startswith(("[", "{")):
+      try:
+        parsed_json = json.loads(stripped_content)
+        if isinstance(parsed_json, list):
+          log_content = "\n".join(json.dumps(item) for item in parsed_json)
+        else:
+          log_content = json.dumps(parsed_json)
+      except json.JSONDecodeError:
+        # Assume it's already JSON Lines or standard log, leave as is
+        pass
+
     ingestion_labels = _get_ingestion_labels(
         use_case, logstory_exe_time, api_for_log_type
     )

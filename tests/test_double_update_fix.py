@@ -35,6 +35,18 @@ from logstory.main import _calculate_timestamp_replacement
 class TestDoubleUpdateFix(unittest.TestCase):
   """Test cases for the double update fix."""
 
+  def setUp(self):
+    from unittest.mock import patch
+
+    self.patcher = patch("logstory.main._get_current_time")
+    self.mock_get_current_time = self.patcher.start()
+    self.mock_get_current_time.return_value = datetime.datetime(
+        2025, 8, 1, 12, 0, 0, tzinfo=datetime.UTC
+    )
+
+  def tearDown(self):
+    self.patcher.stop()
+
   def test_demonstrates_the_problem(self):
     """Demonstrates how sequential updates could cause double-processing."""
 

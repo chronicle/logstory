@@ -145,3 +145,8 @@ cloudfunctions/backend.tf
 .pypirc
 jpn_config.cfg
 *.cfg
+usecases/AJAX_SECURITY_TEAM usecases/ALLANITE usecases/APT18 usecases/APT32 usecases/APT38 usecases/APT41 usecases/crowdstrike_alerts usecases/FLAX_TYPHOON usecases/generate_usecase_docs.py usecases/ingestion_ti_isac_4 usecases/ingestion_ti_isac_4_integrated usecases/MENUPASS usecases/MUSTANG_PANDA usecases/MUSTANG_PANDA_SIMSPACE_SECOPS_BYOP usecases/NETWORK_ANALYSIS usecases/OPERATION_WOCAO usecases/README_template.md usecases/RULES_SEARCH_WORKSHOP usecases/TI_ISAC_4 usecases/usecase_template.j2
+src/logstory/usecases/__init__.py src/logstory/usecases/AJAX_SECURITY_TEAM src/logstory/usecases/ALLANITE src/logstory/usecases/APT18 src/logstory/usecases/APT32 src/logstory/usecases/APT38 src/logstory/usecases/APT41 src/logstory/usecases/crowdstrike_alerts src/logstory/usecases/FLAX_TYPHOON src/logstory/usecases/ingestion_ti_isac_4 src/logstory/usecases/ingestion_ti_isac_4_integrated src/logstory/usecases/MENUPASS src/logstory/usecases/MUSTANG_PANDA src/logstory/usecases/MUSTANG_PANDA_SIMSPACE_SECOPS_BYOP src/logstory/usecases/NETWORK_ANALYSIS src/logstory/usecases/OPERATION_WOCAO src/logstory/usecases/RULES_SEARCH_WORKSHOP src/logstory/usecases/THW2 src/logstory/usecases/TI_ISAC_4
+src/logstory/usecases/*
+usecases/*
+.env*

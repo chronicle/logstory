@@ -46,8 +46,15 @@ class TestWindowsSysmonPatternsCorrected(unittest.TestCase):
         Path(__file__).parent.parent
         / "src/logstory/usecases/THW/EVENTS/WINDOWS_SYSMON.log"
     )
-    with open(log_path) as f:
-      cls.sample_log_line = f.readline().strip()
+    if log_path.exists():
+      with open(log_path) as f:
+        cls.sample_log_line = f.readline().strip()
+    else:
+      cls.sample_log_line = (
+          '{"UtcTime":"2024-01-25'
+          ' 19:53:05.701","Image":"C:\\\\Windows\\\\system32\\\\wbem\\\\wmiprvse.exe","CreationUtcTime":"2022-09-20'
+          ' 19:51:50.859","EventTime":1706212385,"EventReceivedTime":1706212387}'
+      )
 
   def test_utc_time_pattern_captures_correctly(self):
     """Test that UtcTime pattern captures date/time, leaving milliseconds untouched."""

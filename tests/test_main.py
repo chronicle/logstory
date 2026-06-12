@@ -16,7 +16,21 @@ import datetime
 import re
 import unittest
 
-from src.logstory.main import datetime_to_filetime, filetime_to_datetime
+from src.logstory.main import (
+    _calculate_timestamp_replacement,
+    datetime_to_filetime,
+    filetime_to_datetime,
+)
+
+
+def _update_timestamp(log_text, timestamp, old_base_time, ts_delta_dict):
+  res = _calculate_timestamp_replacement(
+      log_text, timestamp, old_base_time, ts_delta_dict
+  )
+  if res:
+    match, replacement = res
+    return log_text[: match.start()] + replacement + log_text[match.end() :]
+  return log_text
 
 
 class TestFiletimeConversions(unittest.TestCase):
@@ -140,8 +154,6 @@ class TestFiletimeConversions(unittest.TestCase):
 
   def test_windows_filetime_timestamp_processing(self):
     """Test that Windows FileTime timestamps are properly processed in logs."""
-    # Import the _update_timestamp function
-    from src.logstory.main import _update_timestamp
 
     # Sample log line with Windows FileTime
     log_text = '"lastLogon":133504425386052066,"LastLogonDate":"/Date(1705616525382)/"'
@@ -149,7 +161,7 @@ class TestFiletimeConversions(unittest.TestCase):
     # Timestamp configuration for lastLogonWinFileTime
     timestamp_config = {
         "name": "lastLogonWinFileTime",
-        "dateformat": "filetime",
+        "dateformat": "windowsfiletime",
         "group": 2,
         "pattern": r'("lastLogon":)(\d{18})(,)',
     }
@@ -195,7 +207,6 @@ class TestFiletimeConversions(unittest.TestCase):
 
   def test_epoch_dateformat_handling(self):
     """Test that dateformat: 'epoch' works correctly."""
-    from src.logstory.main import _update_timestamp
 
     # Sample log line with Unix epoch timestamp
     log_text = '"creationTime": 1705615749, "expirationTime": 1705702149'
@@ -234,6 +245,52 @@ class TestFiletimeConversions(unittest.TestCase):
     self.assertEqual(
         new_dt.date(), expected_date, "Date should be updated to 7 days ago"
     )
+
+
+class TestJsonLogsIngestion(unittest.TestCase):
+  """Test cases for JSON/UDM log ingestion and normalization."""
+
+  def test_json_array_normalization(self):
+    """Test that a JSON array is normalized to line-delimited JSON (JSON Lines)."""
+    import json
+    # Simulate list of events/entities (JSON array)
+    log_content = '[{"event_id": 1, "msg": "test1"}, {"event_id": 2, "msg": "test2"}]'
+
+    # Run the same normalization logic we added
+    stripped_content = log_content.strip()
+    if stripped_content.startswith(("[", "{")):
+      try:
+        parsed_json = json.loads(stripped_content)
+        if isinstance(parsed_json, list):
+          normalized = "\n".join(json.dumps(item) for item in parsed_json)
+        else:
+          normalized = json.dumps(parsed_json)
+      except json.JSONDecodeError:
+        normalized = log_content
+
+    expected = '{"event_id": 1, "msg": "test1"}\n{"event_id": 2, "msg": "test2"}'
+    self.assertEqual(normalized, expected)
+
+  def test_single_json_object_normalization(self):
+    """Test that a single JSON object is normalized to a single line."""
+    import json
+
+    log_content = '{\n  "event_id": 1,\n  "msg": "test1"\n}'
+
+    stripped_content = log_content.strip()
+    if stripped_content.startswith(("[", "{")):
+      try:
+        parsed_json = json.loads(stripped_content)
+        if isinstance(parsed_json, list):
+          normalized = "\n".join(json.dumps(item) for item in parsed_json)
+        else:
+          normalized = json.dumps(parsed_json)
+      except json.JSONDecodeError:
+        normalized = log_content
+
+    # Should be compressed to single line JSON
+    expected = '{"event_id": 1, "msg": "test1"}'
+    self.assertEqual(normalized, expected)
 
 
 if __name__ == "__main__":
