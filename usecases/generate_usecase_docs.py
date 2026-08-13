@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,6 +25,8 @@ from pathlib import Path
 import yaml
 from jinja2 import Environment, FileSystemLoader
 
+MIN_PARTS_FOR_FRONTMATTER = 3
+
 
 def parse_frontmatter(file_path: Path) -> tuple[dict, str]:
   """Parse YAML frontmatter and content from a markdown file.
@@ -49,7 +50,7 @@ def parse_frontmatter(file_path: Path) -> tuple[dict, str]:
   try:
     # Split on the closing ---
     parts = content.split("---\n", 2)
-    if len(parts) < 3:
+    if len(parts) < MIN_PARTS_FOR_FRONTMATTER:
       return {}, content
 
     frontmatter_yaml = parts[1]
@@ -60,12 +61,12 @@ def parse_frontmatter(file_path: Path) -> tuple[dict, str]:
     return frontmatter or {}, remaining_content
 
   except yaml.YAMLError as e:
-    print(f"Error parsing YAML frontmatter in {file_path}: {e}")
+    print(f"Error parsing YAML frontmatter in {file_path}: {e}")  # noqa: T201
     return {}, content
 
 
 def generate_usecase_doc(
-    frontmatter: dict, template_path: Path, output_path: Path = None
+    frontmatter: dict, template_path: Path, output_path: Path | None = None
 ) -> str:
   """Generate usecase documentation from frontmatter using Jinja2 template.
 
@@ -77,12 +78,15 @@ def generate_usecase_doc(
   Returns:
     Generated markdown content as string
   """
-  # Set up Jinja2 environment
+  # Set up Jinja2 environment with autoescape enabled
   template_dir = template_path.parent
   template_name = template_path.name
 
   env = Environment(
-      loader=FileSystemLoader(template_dir), trim_blocks=True, lstrip_blocks=True
+      loader=FileSystemLoader(template_dir),
+      autoescape=True,
+      trim_blocks=True,
+      lstrip_blocks=True,
   )
 
   # Load and render template
@@ -93,13 +97,13 @@ def generate_usecase_doc(
   if output_path:
     with open(output_path, "w", encoding="utf-8") as f:
       f.write(rendered)
-    print(f"Generated documentation written to: {output_path}")
+    print(f"Generated documentation written to: {output_path}")  # noqa: T201
 
   return rendered
 
 
 def process_usecase_directory(
-    usecase_dir: Path, template_path: Path, output_dir: Path = None
+    usecase_dir: Path, template_path: Path, output_dir: Path | None = None
 ):
   """Process a usecase directory, finding markdown files and generating docs.
 
@@ -107,6 +111,9 @@ def process_usecase_directory(
     usecase_dir: Path to usecase directory
     template_path: Path to Jinja2 template
     output_dir: Optional output directory (defaults to usecase_dir)
+
+  Returns:
+    Generated content string or None if markdown file not found
   """
   if output_dir is None:
     output_dir = usecase_dir
@@ -116,23 +123,21 @@ def process_usecase_directory(
   markdown_file = usecase_dir / f"{usecase_name}.md"
 
   if not markdown_file.exists():
-    print(f"Warning: No markdown file found at {markdown_file}")
+    print(f"Warning: No markdown file found at {markdown_file}")  # noqa: T201
     return None
 
-  print(f"Processing usecase: {usecase_name}")
+  print(f"Processing usecase: {usecase_name}")  # noqa: T201
 
   # Parse frontmatter
-  frontmatter, content = parse_frontmatter(markdown_file)
+  frontmatter, _content = parse_frontmatter(markdown_file)
 
   if not frontmatter:
-    print(f"Warning: No frontmatter found in {markdown_file}")
+    print(f"Warning: No frontmatter found in {markdown_file}")  # noqa: T201
     return None
 
   # Generate documentation
   output_file = output_dir / f"{usecase_name}_generated.md"
-  generated_content = generate_usecase_doc(frontmatter, template_path, output_file)
-
-  return generated_content
+  return generate_usecase_doc(frontmatter, template_path, output_file)
 
 
 def main():
@@ -168,20 +173,20 @@ def main():
     template_path = script_dir / args.template
 
   if not template_path.exists():
-    print(f"Error: Template file not found: {args.template}")
+    print(f"Error: Template file not found: {args.template}")  # noqa: T201
     sys.exit(1)
 
   # Process input
   if usecase_path.is_file():
     # Single markdown file
-    frontmatter, content = parse_frontmatter(usecase_path)
+    frontmatter, _content = parse_frontmatter(usecase_path)
     if not frontmatter:
-      print(f"Error: No frontmatter found in {usecase_path}")
+      print(f"Error: No frontmatter found in {usecase_path}")  # noqa: T201
       sys.exit(1)
 
     if args.dry_run:
       generated = generate_usecase_doc(frontmatter, template_path)
-      print(generated)
+      print(generated)  # noqa: T201
     else:
       output_path = (
           Path(args.output)
@@ -197,12 +202,12 @@ def main():
     if args.dry_run:
       generated = process_usecase_directory(usecase_path, template_path)
       if generated:
-        print(generated)
+        print(generated)  # noqa: T201
     else:
       process_usecase_directory(usecase_path, template_path, output_dir)
 
   else:
-    print(f"Error: Path not found: {usecase_path}")
+    print(f"Error: Path not found: {usecase_path}")  # noqa: T201
     sys.exit(1)
 
 

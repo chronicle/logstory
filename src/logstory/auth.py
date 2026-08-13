@@ -15,6 +15,7 @@
 
 import json
 import os
+import warnings
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -23,6 +24,7 @@ from google.auth import impersonated_credentials
 from google.auth.credentials import Credentials
 from google.auth.exceptions import DefaultCredentialsError
 from google.auth.transport import requests
+from google.cloud import secretmanager
 from google.oauth2 import service_account
 
 
@@ -39,7 +41,7 @@ def validate_credentials_match_api_type(
     credentials_path: Path to service account JSON file
 
   Raises:
-    ValueError: If credentials don't match the API type
+    ValueError: If credentials do not match the API type
   """
   # Get the service account info from either source
   info = None
@@ -49,8 +51,8 @@ def validate_credentials_match_api_type(
     try:
       with open(credentials_path) as f:
         info = json.load(f)
-    except (OSError, json.JSONDecodeError) as e:
-      # If we can't read the file, let the auth handler deal with it
+    except (OSError, json.JSONDecodeError):
+      # If we cannot read the file, let the auth handler deal with it
       return
 
   if not info:
@@ -74,9 +76,6 @@ def validate_credentials_match_api_type(
     )
 
   if api_type == "legacy" and not is_malachite_credential:
-    # This is a warning case - might still work but not typical
-    import warnings
-
     warnings.warn(
         "Using non-malachite credentials with legacy API "
         f"(client_email: {client_email}). "
@@ -98,13 +97,9 @@ class AuthHandler(ABC):
   def get_http_client(self) -> requests.AuthorizedSession:
     """Get an HTTP client with authentication headers."""
 
-  @abstractmethod
-  def get_scopes(self) -> list[str]:
-    """Get the OAuth scopes required for this authentication method."""
-
 
 class LegacyAuthHandler(AuthHandler):
-  """Authentication handler for the legacy malachite ingestion API."""
+  """Authentication handler for legacy Chronicle Ingestion API."""
 
   SCOPES = ["https://www.googleapis.com/auth/malachite-ingestion"]
 
@@ -128,11 +123,22 @@ class LegacyAuthHandler(AuthHandler):
     self._http_client = None
 
   def get_scopes(self) -> list[str]:
-    """Get the OAuth scopes for legacy API."""
+    """Get the OAuth scopes for legacy API.
+
+    Returns:
+      List of OAuth scope URLs.
+    """
     return self.SCOPES
 
   def get_credentials(self) -> Credentials:
-    """Get credentials for the legacy API."""
+    """Get credentials for the legacy API.
+
+    Returns:
+      Google credentials object.
+
+    Raises:
+      ValueError: If no valid credentials source is provided.
+    """
     if self._credentials:
       return self._credentials
 
@@ -148,9 +154,6 @@ class LegacyAuthHandler(AuthHandler):
           info, scopes=self.SCOPES
       )
     elif self.secret_manager_credentials:
-      # Import here to avoid dependency if not using Secret Manager
-      from google.cloud import secretmanager
-
       client = secretmanager.SecretManagerServiceClient()
       request = {"name": f"{self.secret_manager_credentials}/versions/latest"}
       response = client.access_secret_version(request)
@@ -167,7 +170,11 @@ class LegacyAuthHandler(AuthHandler):
     return self._credentials
 
   def get_http_client(self) -> requests.AuthorizedSession:
-    """Get an authorized HTTP session for the legacy API."""
+    """Get an authorized HTTP session for the legacy API.
+
+    Returns:
+      AuthorizedSession configured with credentials.
+    """
     if not self._http_client:
       self._http_client = requests.AuthorizedSession(self.get_credentials())
     return self._http_client
@@ -198,11 +205,19 @@ class RestAuthHandler(AuthHandler):
     self._http_client = None
 
   def get_scopes(self) -> list[str]:
-    """Get the OAuth scopes for REST API."""
+    """Get the OAuth scopes for REST API.
+
+    Returns:
+      List of OAuth scope URLs.
+    """
     return self.SCOPES
 
   def get_credentials(self) -> Credentials:
-    """Get credentials for the REST API."""
+    """Get credentials for the REST API.
+
+    Returns:
+      Google credentials object.
+    """
     if self._credentials:
       return self._credentials
 
@@ -217,8 +232,6 @@ class RestAuthHandler(AuthHandler):
       )
     else:
       # Try Application Default Credentials
-      import google.auth
-
       base_credentials, _ = google.auth.default(scopes=self.SCOPES)
 
     # Handle impersonation if requested
@@ -235,7 +248,11 @@ class RestAuthHandler(AuthHandler):
     return self._credentials
 
   def get_http_client(self) -> requests.AuthorizedSession:
-    """Get an authorized HTTP session for the REST API."""
+    """Get an authorized HTTP session for the REST API.
+
+    Returns:
+      AuthorizedSession configured with credentials.
+    """
     if not self._http_client:
       session = requests.AuthorizedSession(self.get_credentials())
       # Add custom user agent for tracking
@@ -256,7 +273,7 @@ def has_application_default_credentials() -> bool:
     return credentials is not None
   except DefaultCredentialsError:
     return False
-  except Exception:
+  except Exception:  # noqa: BLE001
     # Any other error means ADC is not available
     return False
 
@@ -303,6 +320,9 @@ def create_auth_handler(
 
   Returns:
     AuthHandler instance for the selected API type
+
+  Raises:
+    ValueError: If an unknown API type or unsupported options are provided
   """
   # Auto-detect if not specified
   if not api_type:

@@ -16,7 +16,12 @@ import datetime
 import re
 import unittest
 
-from src.logstory.main import datetime_to_filetime, filetime_to_datetime
+from src.logstory.main import (
+    EPOCH_AS_FILETIME,
+    _update_timestamp,
+    datetime_to_filetime,
+    filetime_to_datetime,
+)
 
 
 class TestFiletimeConversions(unittest.TestCase):
@@ -40,17 +45,17 @@ class TestFiletimeConversions(unittest.TestCase):
 
     # Test that the pattern matches and extracts the correct filetime value
     match = re.search(pattern, input_str)
-    self.assertIsNotNone(match, "Pattern should match the lastLogon field")
+    assert match is not None, "Pattern should match the lastLogon field"
 
     # Group 2 should contain the 18-digit filetime value
     filetime_str = match.group(2)
-    self.assertEqual(filetime_str, "133504425386052066")
-    self.assertEqual(len(filetime_str), 18, "Windows filetime should be 18 digits")
+    assert filetime_str == "133504425386052066"
+    assert len(filetime_str) == 18, "Windows filetime should be 18 digits"
 
     # Verify it's a valid integer
     filetime_int = int(filetime_str)
-    self.assertIsInstance(filetime_int, int)
-    self.assertGreater(filetime_int, 0)
+    assert isinstance(filetime_int, int)
+    assert filetime_int > 0
 
   def test_filetime_to_datetime_known_values(self):
     """Test filetime_to_datetime with known values."""
@@ -59,21 +64,21 @@ class TestFiletimeConversions(unittest.TestCase):
     filetime = 133504425386052066
     result = filetime_to_datetime(filetime)
 
-    self.assertIsInstance(result, datetime.datetime)
-    self.assertEqual(result.tzinfo, datetime.UTC)
+    assert isinstance(result, datetime.datetime)
+    assert result.tzinfo == datetime.UTC
 
     # Verify the conversion is approximately correct (within a few seconds)
     expected_year = 2024
     expected_month = 1
-    self.assertEqual(result.year, expected_year)
-    self.assertEqual(result.month, expected_month)
+    assert result.year == expected_year
+    assert result.month == expected_month
 
     # Test case 2: Windows epoch (Jan 1, 1601)
     windows_epoch = 0
     result_epoch = filetime_to_datetime(windows_epoch)
-    self.assertEqual(result_epoch.year, 1601)
-    self.assertEqual(result_epoch.month, 1)
-    self.assertEqual(result_epoch.day, 1)
+    assert result_epoch.year == 1601
+    assert result_epoch.month == 1
+    assert result_epoch.day == 1
 
   def test_datetime_to_filetime_known_values(self):
     """Test datetime_to_filetime with known values."""
@@ -85,20 +90,18 @@ class TestFiletimeConversions(unittest.TestCase):
     # Now convert back to filetime - should match exactly
     result = datetime_to_filetime(actual_dt)
 
-    self.assertIsInstance(result, int)
-    self.assertGreater(result, 0)
+    assert isinstance(result, int)
+    assert result > 0
 
     # The result should match our known filetime value within a small tolerance
     # (allowing for precision differences in microsecond conversion)
-    self.assertAlmostEqual(result, known_filetime, delta=10)
+    assert abs(result - known_filetime) <= 10
 
     # Test case 2: Unix epoch (Jan 1, 1970)
     unix_epoch = datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)
     result_unix = datetime_to_filetime(unix_epoch)
     # Unix epoch in Windows filetime should equal EPOCH_AS_FILETIME
-    from src.logstory.main import EPOCH_AS_FILETIME
-
-    self.assertEqual(result_unix, EPOCH_AS_FILETIME)
+    assert result_unix == EPOCH_AS_FILETIME
 
   def test_filetime_conversion_round_trip(self):
     """Test that converting datetime -> filetime -> datetime preserves the value."""
@@ -111,9 +114,9 @@ class TestFiletimeConversions(unittest.TestCase):
 
     # Should be very close (within microseconds due to precision)
     time_diff = abs((converted_dt - original_dt).total_seconds())
-    self.assertLess(
-        time_diff, 0.001, "Round trip conversion should preserve datetime within 1ms"
-    )
+    assert (
+        time_diff < 0.001
+    ), "Round trip conversion should preserve datetime within 1ms"
 
     # Test with specific historical date
     historical_dt = datetime.datetime(
@@ -123,26 +126,23 @@ class TestFiletimeConversions(unittest.TestCase):
     converted_dt2 = filetime_to_datetime(filetime2)
 
     time_diff2 = abs((converted_dt2 - historical_dt).total_seconds())
-    self.assertLess(time_diff2, 0.001, "Round trip should work for historical dates")
+    assert time_diff2 < 0.001, "Round trip should work for historical dates"
 
   def test_filetime_conversion_edge_cases(self):
     """Test edge cases for filetime conversions."""
     # Test Windows epoch
     windows_epoch_dt = datetime.datetime(1601, 1, 1, tzinfo=datetime.UTC)
     filetime_epoch = datetime_to_filetime(windows_epoch_dt)
-    self.assertEqual(filetime_epoch, 0)
+    assert filetime_epoch == 0
 
     # Test that filetime 0 converts back to Windows epoch
     converted_back = filetime_to_datetime(0)
-    self.assertEqual(converted_back.year, 1601)
-    self.assertEqual(converted_back.month, 1)
-    self.assertEqual(converted_back.day, 1)
+    assert converted_back.year == 1601
+    assert converted_back.month == 1
+    assert converted_back.day == 1
 
   def test_windows_filetime_timestamp_processing(self):
     """Test that Windows FileTime timestamps are properly processed in logs."""
-    # Import the _update_timestamp function
-    from src.logstory.main import _update_timestamp
-
     # Sample log line with Windows FileTime
     log_text = '"lastLogon":133504425386052066,"LastLogonDate":"/Date(1705616525382)/"'
 
@@ -166,10 +166,8 @@ class TestFiletimeConversions(unittest.TestCase):
     )
 
     # Extract the new filetime from the updated log
-    import re
-
     match = re.search(r'"lastLogon":(\d{18}),', updated_log)
-    self.assertIsNotNone(match, "Updated log should contain a filetime")
+    assert match is not None, "Updated log should contain a filetime"
 
     new_filetime = int(match.group(1))
 
@@ -184,19 +182,13 @@ class TestFiletimeConversions(unittest.TestCase):
     expected_date = current_date - datetime.timedelta(days=1)
 
     # Check that the date was updated correctly
-    self.assertEqual(
-        new_dt.date(), expected_date, "Date should be updated to 1 day ago"
-    )
+    assert new_dt.date() == expected_date, "Date should be updated to 1 day ago"
 
     # Check that the time portion is preserved
-    self.assertEqual(
-        new_dt.time(), original_dt.time(), "Time portion should be preserved"
-    )
+    assert new_dt.time() == original_dt.time(), "Time portion should be preserved"
 
   def test_epoch_dateformat_handling(self):
     """Test that dateformat: 'epoch' works correctly."""
-    from src.logstory.main import _update_timestamp
-
     # Sample log line with Unix epoch timestamp
     log_text = '"creationTime": 1705615749, "expirationTime": 1705702149'
 
@@ -219,10 +211,8 @@ class TestFiletimeConversions(unittest.TestCase):
     )
 
     # Extract the new epoch timestamp
-    import re
-
     match = re.search(r'"creationTime":\s*(\d{10})', updated_log)
-    self.assertIsNotNone(match, "Updated log should contain an epoch timestamp")
+    assert match is not None, "Updated log should contain an epoch timestamp"
 
     new_epoch = int(match.group(1))
     new_dt = datetime.datetime.fromtimestamp(new_epoch)
@@ -231,9 +221,7 @@ class TestFiletimeConversions(unittest.TestCase):
     current_date = datetime.datetime.now(datetime.UTC).date()
     expected_date = current_date - datetime.timedelta(days=7)
 
-    self.assertEqual(
-        new_dt.date(), expected_date, "Date should be updated to 7 days ago"
-    )
+    assert new_dt.date() == expected_date, "Date should be updated to 7 days ago"
 
 
 if __name__ == "__main__":

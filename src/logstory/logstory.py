@@ -15,10 +15,18 @@
 
 import datetime
 import glob
+import json
 import os
 import shutil
+import subprocess
+import tempfile
 import uuid
 from importlib.metadata import version
+
+try:
+  from . import main as imported_main
+except ImportError:
+  import main as imported_main  # type: ignore[no-redef]
 
 import typer
 from dotenv import load_dotenv
@@ -41,7 +49,7 @@ def version_callback(value: bool):
     except Exception:
       __version__ = "unknown"
     typer.echo(f"logstory {__version__}")
-    raise typer.Exit()
+    raise typer.Exit
 
 
 # Create Typer app and command groups
@@ -112,9 +120,6 @@ def get_credentials_default():
   credentials_json = os.getenv("LOGSTORY_CREDENTIALS")
   if credentials_json:
     # Write to temp file and return path
-    import json
-    import tempfile
-
     try:
       # Validate it's valid JSON
       json.loads(credentials_json)
@@ -315,8 +320,6 @@ def usecases_list(
 
   # Handle --open flag as a special case
   if open_usecase:
-    import subprocess  # nosec B404
-
     usecase_dirs = glob.glob(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "usecases/*")
     )
@@ -333,19 +336,19 @@ def usecases_list(
           for md_file in md_files:
             typer.echo(f"Opening {md_file} in VS Code...")
             try:
-              subprocess.run(["code", md_file], check=True)  # nosec B603 B607
+              subprocess.run(["code", md_file], check=True)  # nosec B603 B607 # noqa: S603,S607
             except subprocess.CalledProcessError:
               typer.echo(
                   "Error: Could not run 'code' command. Make sure VS Code is installed"
                   " and in PATH."
               )
-              raise typer.Exit(1)
+              raise typer.Exit(1) from None
             except FileNotFoundError:
               typer.echo(
                   "Error: 'code' command not found. Make sure VS Code is installed and"
                   " in PATH."
               )
-              raise typer.Exit(1)
+              raise typer.Exit(1) from None
         else:
           typer.echo(f"No markdown files found in usecase '{open_usecase}'")
           raise typer.Exit(1)
@@ -1045,12 +1048,6 @@ def _replay_usecases(
     local_file_output: bool = False,
 ):
   """Core replay logic shared by replay commands."""
-  # Late import to avoid circular imports
-  try:
-    from . import main as imported_main  # type: ignore
-  except ImportError:
-    import main as imported_main  # type: ignore
-
   logstory_exe_time = _get_current_time()
   logs_loaded = False
 

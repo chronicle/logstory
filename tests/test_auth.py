@@ -39,7 +39,9 @@ class TestCredentialValidation:
         "private_key": "fake-key",
     }
 
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(
+        ValueError, match="Invalid credentials for REST API"
+    ) as exc_info:
       validate_credentials_match_api_type("rest", service_account_info=malachite_creds)
 
     assert "Invalid credentials for REST API" in str(exc_info.value)
@@ -100,7 +102,9 @@ class TestCredentialValidation:
 
     try:
       # Should raise error for REST API with malachite credentials
-      with pytest.raises(ValueError) as exc_info:
+      with pytest.raises(
+          ValueError, match="Invalid credentials for REST API"
+      ) as exc_info:
         validate_credentials_match_api_type("rest", credentials_path=temp_path)
 
       assert "Invalid credentials for REST API" in str(exc_info.value)
@@ -143,7 +147,9 @@ class TestCredentialValidation:
         "project_id": "malachite-ltstr740",
     }
 
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(
+        ValueError, match="Invalid credentials for REST API"
+    ) as exc_info:
       create_auth_handler(api_type="rest", service_account_info=malachite_creds)
 
     assert "Invalid credentials for REST API" in str(exc_info.value)
@@ -164,7 +170,9 @@ class TestCredentialValidation:
           "private_key": "fake-key",
       }
 
-      with pytest.raises(ValueError) as exc_info:
+      with pytest.raises(
+          ValueError, match="Invalid credentials for REST API"
+      ) as exc_info:
         validate_credentials_match_api_type("rest", service_account_info=creds)
 
       assert "Invalid credentials for REST API" in str(exc_info.value)

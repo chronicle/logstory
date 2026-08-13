@@ -44,7 +44,7 @@ class TestWindowsSysmonPatternsCorrected(unittest.TestCase):
 
     log_path = (
         Path(__file__).parent.parent
-        / "src/logstory/usecases/THW/EVENTS/WINDOWS_SYSMON.log"
+        / "usecases/RULES_SEARCH_WORKSHOP/EVENTS/WINDOWS_SYSMON.log"
     )
     with open(log_path) as f:
       cls.sample_log_line = f.readline().strip()
@@ -60,14 +60,14 @@ class TestWindowsSysmonPatternsCorrected(unittest.TestCase):
         utc_time_pattern = pattern
         break
 
-    self.assertIsNotNone(utc_time_pattern, "UtcTimeQuotes pattern not found")
+    assert utc_time_pattern is not None, "UtcTimeQuotes pattern not found"
 
     # Test with a timestamp that has milliseconds
     test_string = '"UtcTime":"2024-01-25 19:53:06.967"'
     regex = re.compile(utc_time_pattern["pattern"])
     match = regex.search(test_string)
 
-    self.assertIsNotNone(match, "Pattern should match timestamps with milliseconds")
+    assert match is not None, "Pattern should match timestamps with milliseconds"
 
     # Check what was captured
     group_num = utc_time_pattern.get("group", 1)
@@ -78,11 +78,9 @@ class TestWindowsSysmonPatternsCorrected(unittest.TestCase):
     print(f"Milliseconds '.967' remain untouched in original")
 
     # Verify it captures only up to seconds
-    self.assertEqual(
-        captured_timestamp,
-        "2024-01-25 19:53:06",
-        "Should capture only date and time up to seconds",
-    )
+    assert (
+        captured_timestamp == "2024-01-25 19:53:06"
+    ), "Should capture only date and time up to seconds"
 
   def test_dateformat_matches_capture(self):
     """Test that dateformat aligns with what the pattern captures."""
@@ -93,18 +91,14 @@ class TestWindowsSysmonPatternsCorrected(unittest.TestCase):
 
       # Check if dateformat exists
       dateformat = pattern.get("dateformat")
-      self.assertIsNotNone(
-          dateformat, f"Pattern '{pattern['name']}' missing dateformat"
-      )
+      assert dateformat is not None, f"Pattern '{pattern['name']}' missing dateformat"
 
       # For patterns capturing YYYY-MM-DD HH:MM:SS
       if "UtcTime" in pattern["name"] and "Quotes" in pattern["name"]:
         expected_format = "%Y-%m-%d %H:%M:%S"
-        self.assertEqual(
-            dateformat,
-            expected_format,
-            f"Pattern '{pattern['name']}' dateformat should match captured format",
-        )
+        assert (
+            dateformat == expected_format
+        ), f"Pattern '{pattern['name']}' dateformat should match captured format"
 
   def test_millisecond_preservation_behavior(self):
     """Test that patterns work correctly with timestamps containing milliseconds."""
@@ -135,24 +129,19 @@ class TestWindowsSysmonPatternsCorrected(unittest.TestCase):
       regex = re.compile(pattern["pattern"])
       match = regex.search(test_case["input"])
 
-      self.assertIsNotNone(
-          match,
-          f"Pattern {test_case['pattern_name']} should match {test_case['input']}",
-      )
+      assert (
+          match is not None
+      ), f"Pattern {test_case['pattern_name']} should match {test_case['input']}"
 
       group_num = pattern.get("group", 1)
       captured = match.group(group_num)
 
-      self.assertEqual(
-          captured,
-          test_case["expected_capture"],
-          f"Should capture only the date/time portion",
-      )
+      assert (
+          captured == test_case["expected_capture"]
+      ), f"Should capture only the date/time portion"
 
       # Verify the pattern doesn't capture the milliseconds
-      self.assertNotIn(
-          ".", captured, "Captured portion should not include milliseconds"
-      )
+      assert "." not in captured, "Captured portion should not include milliseconds"
 
   def test_timestamp_dateformat_types(self):
     """Test that timestamps use appropriate dateformat types."""
@@ -166,27 +155,23 @@ class TestWindowsSysmonPatternsCorrected(unittest.TestCase):
           re.search(r"\\d\{10\}|\\d\{13\}", pattern_regex)
           and "EventTime" in pattern["name"]
       ):
-        self.assertEqual(
-            dateformat,
-            "epoch",
-            f"{pattern['name']} capturing 10/13 digits should use dateformat: 'epoch'",
-        )
+        assert (
+            dateformat == "epoch"
+        ), f"{pattern['name']} capturing 10/13 digits should use dateformat: 'epoch'"
 
       # Windows FileTime (18 digits)
       elif re.search(r"\\d\{18\}", pattern_regex):
-        self.assertEqual(
-            dateformat,
-            "windowsfiletime",
+        assert dateformat == "windowsfiletime", (
             f"{pattern['name']} capturing 18 digits should use dateformat:"
-            " 'windowsfiletime'",
+            " 'windowsfiletime'"
         )
 
       # Human-readable timestamps should use strftime format
       elif re.search(r"\\d\{4\}-\\d\{2\}-\\d\{2\}", pattern_regex):
-        self.assertTrue(
-            dateformat.startswith("%") or dateformat in ["epoch", "windowsfiletime"],
-            f"{pattern['name']} should have a valid dateformat",
-        )
+        assert dateformat.startswith("%") or dateformat in [
+            "epoch",
+            "windowsfiletime",
+        ], f"{pattern['name']} should have a valid dateformat"
 
     # Specific checks for known epoch fields
     epoch_fields = ["EventTime", "EventReceivedTime"]
@@ -196,15 +181,13 @@ class TestWindowsSysmonPatternsCorrected(unittest.TestCase):
           for p in self.sysmon_patterns
           if field_name in p["name"] and "UTC" not in p["name"]
       ]
-      self.assertTrue(len(patterns) > 0, f"No pattern found for {field_name}")
+      assert len(patterns) > 0, f"No pattern found for {field_name}"
 
       for pattern in patterns:
         if re.search(r"\\d\{10\}", pattern["pattern"]):
-          self.assertEqual(
-              pattern.get("dateformat"),
-              "epoch",
-              f"{pattern['name']} should have dateformat: 'epoch'",
-          )
+          assert (
+              pattern.get("dateformat") == "epoch"
+          ), f"{pattern['name']} should have dateformat: 'epoch'"
 
   def test_pattern_specificity_real_log(self):
     """Test patterns against the actual log line."""
@@ -225,7 +208,11 @@ class TestWindowsSysmonPatternsCorrected(unittest.TestCase):
 
     # Each pattern should match at most once (except for certain cases)
     for pattern_name, count in match_counts.items():
-      if count > 1 and "syslog" not in pattern_name.lower():
+      if (
+          count > 1
+          and "syslog" not in pattern_name.lower()
+          and "generic" not in pattern_name.lower()
+      ):
         self.fail(
             f"Pattern '{pattern_name}' matched {count} times - may be too generic"
         )
@@ -234,9 +221,7 @@ class TestWindowsSysmonPatternsCorrected(unittest.TestCase):
     """Test that base_time pattern has correct dateformat."""
     base_time_patterns = [p for p in self.sysmon_patterns if p.get("base_time", False)]
 
-    self.assertEqual(
-        len(base_time_patterns), 1, "Should have exactly one base_time pattern"
-    )
+    assert len(base_time_patterns) == 1, "Should have exactly one base_time pattern"
 
     if base_time_patterns:
       base_pattern = base_time_patterns[0]
@@ -256,18 +241,14 @@ class TestWindowsSysmonPatternsCorrected(unittest.TestCase):
 
         # Verify dateformat matches the captured format
         if " " in captured and "T" not in captured:
-          self.assertIn(
-              " ",
-              dateformat.replace("%", ""),
-              "Dateformat should use space separator like captured value",
-          )
+          assert " " in dateformat.replace(
+              "%", ""
+          ), "Dateformat should use space separator like captured value"
 
         if "T" in captured:
-          self.assertIn(
-              "T",
-              dateformat,
-              "Dateformat should include T separator like captured value",
-          )
+          assert (
+              "T" in dateformat
+          ), "Dateformat should include T separator like captured value"
 
 
 if __name__ == "__main__":

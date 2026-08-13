@@ -116,9 +116,12 @@ class TestDoubleUpdateFix(unittest.TestCase):
     print(f"\nFinal result: {result_line}")
 
     # Verify the result
-    self.assertIn("2025-07-31", result_line, "UtcTime should be updated to yesterday")
+    expected_date = (
+        datetime.datetime.now(datetime.UTC).date() - datetime.timedelta(days=1)
+    ).strftime("%Y-%m-%d")
+    assert expected_date in result_line, "UtcTime should be updated to yesterday"
     # The epoch timestamp should also be updated
-    self.assertNotIn("1706212385", result_line, "EventTime should be updated")
+    assert "1706212385" not in result_line, "EventTime should be updated"
 
     print("\n✓ SUCCESS: Each timestamp updated exactly once!")
 
@@ -182,9 +185,12 @@ class TestDoubleUpdateFix(unittest.TestCase):
     print(f"Final: {result_line}")
 
     # Should only have one update
-    self.assertEqual(
-        result_line.count("2025-07-31"), 1, "Timestamp should be updated exactly once"
-    )
+    expected_date = (
+        datetime.datetime.now(datetime.UTC).date() - datetime.timedelta(days=1)
+    ).strftime("%Y-%m-%d")
+    assert (
+        result_line.count(expected_date) == 1
+    ), "Timestamp should be updated exactly once"
 
     print("\n✓ SUCCESS: Overlapping patterns handled correctly!")
 
@@ -247,7 +253,7 @@ class TestDoubleUpdateFix(unittest.TestCase):
 
     print(f"\nFound {len(replacements)} timestamps to update")
 
-    for match, replacement, name in replacements:
+    for match, replacement, _name in replacements:
       result_line = (
           result_line[: match.start()] + replacement + result_line[match.end() :]
       )
@@ -255,11 +261,11 @@ class TestDoubleUpdateFix(unittest.TestCase):
     print(f"\nFinal:\n{result_line}")
 
     # Verify all timestamps were updated
-    self.assertNotIn("2024-01-25", result_line, "All 2024 dates should be updated")
-    self.assertNotIn("1706212385", result_line, "Epoch timestamp should be updated")
+    assert "2024-01-25" not in result_line, "All 2024 dates should be updated"
+    assert "1706212385" not in result_line, "Epoch timestamp should be updated"
 
     # Verify milliseconds were preserved
-    self.assertIn(".123", result_line, "Milliseconds should be preserved")
+    assert ".123" in result_line, "Milliseconds should be preserved"
 
     print("\n✓ SUCCESS: Complex log line processed correctly!")
 

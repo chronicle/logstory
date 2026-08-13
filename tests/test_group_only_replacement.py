@@ -70,25 +70,19 @@ class TestGroupOnlyReplacement(unittest.TestCase):
         })
 
     # Both should find the same timestamp at the same position
-    self.assertEqual(len(results), 2, "Both patterns should match")
+    assert len(results) == 2, "Both patterns should match"
 
     # Check that they match the same position
-    self.assertEqual(
-        results[0]["start"],
-        results[1]["start"],
-        "Should match at the same start position",
-    )
-    self.assertEqual(
-        results[0]["end"], results[1]["end"], "Should match at the same end position"
-    )
-    self.assertEqual(
-        results[0]["text"], results[1]["text"], "Should match the same text"
-    )
-    self.assertEqual(
-        results[0]["replacement"],
-        results[1]["replacement"],
-        "Should produce the same replacement",
-    )
+    assert (
+        results[0]["start"] == results[1]["start"]
+    ), "Should match at the same start position"
+    assert (
+        results[0]["end"] == results[1]["end"]
+    ), "Should match at the same end position"
+    assert results[0]["text"] == results[1]["text"], "Should match the same text"
+    assert (
+        results[0]["replacement"] == results[1]["replacement"]
+    ), "Should produce the same replacement"
 
     print(f"\nBoth patterns found the same timestamp:")
     print(f"  Position: {results[0]['start']}-{results[0]['end']}")
@@ -146,9 +140,7 @@ class TestGroupOnlyReplacement(unittest.TestCase):
           print(f"\n{pattern['name']}: Already in change map (deduped)")
 
     # Should have exactly 2 entries (one for each distinct timestamp position)
-    self.assertEqual(
-        len(change_map), 2, "Should have 2 unique timestamps even with 3 patterns"
-    )
+    assert len(change_map) == 2, "Should have 2 unique timestamps even with 3 patterns"
 
   def test_replacement_only_affects_group(self):
     """Test that only the specified group is replaced, not the entire match."""
@@ -168,23 +160,21 @@ class TestGroupOnlyReplacement(unittest.TestCase):
         log_line, pattern, old_base_time, ts_delta_dict
     )
 
-    self.assertIsNotNone(result)
+    assert result is not None
     match, replacement = result
 
     # The match should be for ONLY the timestamp group
-    self.assertEqual(
-        match.group(0),
-        "1706212385",
-        "Should match only the timestamp, not the full pattern",
-    )
+    assert (
+        match.group(0) == "1706212385"
+    ), "Should match only the timestamp, not the full pattern"
 
     # Apply the replacement like the main code would
     result_line = log_line[: match.start()] + replacement + log_line[match.end() :]
 
     # Verify the field name and structure are preserved
-    self.assertIn(r'"LastLogon":"\/Date(', result_line)
-    self.assertIn(r'000)\/"', result_line)
-    self.assertNotIn("1706212385", result_line)
+    assert r'"LastLogon":"\/Date(' in result_line
+    assert r'000)\/"' in result_line
+    assert "1706212385" not in result_line
 
     print(f"\nGroup-only replacement:")
     print(f"  Original: {log_line}")

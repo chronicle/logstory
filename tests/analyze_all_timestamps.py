@@ -22,6 +22,7 @@ including overlap detection and selectivity recommendations.
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 from test_timestamp_patterns import analyze_pattern_matches, load_timestamp_patterns
@@ -85,7 +86,6 @@ def find_best_patterns(results: dict[str, dict]) -> dict[str, list[dict]]:
   recommendations = {}
 
   for log_file, file_results in results.items():
-    best_matches = []
     max_matches = 0
     best_log_type = None
 
@@ -189,9 +189,10 @@ def generate_summary_report(
               report.append(f"\n{file_name} ({log_type}):")
               has_overlaps = True
             report.append(
-                f"  {all_matches[i]['pattern']} [{all_matches[i]['start']}:{all_matches[i]['end']}] "
-                "overlaps"
-                f" {all_matches[j]['pattern']} [{all_matches[j]['start']}:{all_matches[j]['end']}]"
+                f"  {all_matches[i]['pattern']}"
+                f" [{all_matches[i]['start']}:{all_matches[i]['end']}] overlaps"
+                f" {all_matches[j]['pattern']}"
+                f" [{all_matches[j]['start']}:{all_matches[j]['end']}]"
             )
 
   return "\n".join(report)
@@ -263,4 +264,4 @@ def main():
 
 
 if __name__ == "__main__":
-  exit(main())
+  sys.exit(main())
