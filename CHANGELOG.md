@@ -2,6 +2,14 @@
 
 <!--next-version-placeholder-->
 
+## v1.2.1 (2026-08-13)
+
+### Changed
+- Updated copyright year to 2026 across all Python source files, tests, documentation, and YAML configurations
+- Added Apache 2.0 license headers to missing package init files (`src/logstory/usecases/__init__.py` and `src/logstory/usecases/NETWORK_ANALYSIS/__init__.py`)
+- Updated codespell dictionary configuration in `.pre-commit-config.yaml` to ignore `thw`
+- Resolved ruff lint annotations in `auth` and `ingestion` modules
+
 ## v1.2.0 (2026-08-13)
 
 ### Changed
