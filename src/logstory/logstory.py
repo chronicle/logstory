@@ -18,7 +18,7 @@ import glob
 import json
 import os
 import shutil
-import subprocess
+import subprocess  # nosec B404
 import tempfile
 import uuid
 from importlib.metadata import version
