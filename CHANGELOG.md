@@ -2,6 +2,16 @@
 
 <!--next-version-placeholder-->
 
+## v1.2.2 (2026-08-13)
+
+### Changed
+- Brought codebase into full compliance with Google Python Style Guide (Issue #11)
+  - Hoisted all deferred imports to module top level
+  - Added Google-style docstrings across all modules, classes, protocols, and public methods
+  - Modernized test suite to use standard pytest assertions
+  - Formatted repository with pyink (2-space indentation)
+  - Tightened Ruff linter configuration to enforce Google Python style rules in CI
+
 ## v1.2.1 (2026-08-13)
 
 ### Changed
