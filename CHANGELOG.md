@@ -2,6 +2,14 @@
 
 <!--next-version-placeholder-->
 
+## v1.2.3 (2026-08-13)
+
+### Fixed
+- Handled special characters in unstructured log entries to prevent API timeouts with requests 2.32+ (Issue #24)
+  - Added `sanitize_log_text` helper to strip problematic trademark and copyright symbols (e.g. `®`, `©`, `™`)
+  - Enforced `ensure_ascii=True` serialization in legacy ingestion backend for ASCII-safe transport
+  - Added test suite in `tests/test_special_characters.py`
+
 ## v1.2.2 (2026-08-13)
 
 ### Changed
