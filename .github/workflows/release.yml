@@ -42,24 +42,24 @@ jobs:
 
       - name: Run linting with Ruff
         run: |
-          echo "🔍 Running Ruff linter..."
-          ruff check . --output-format=github || echo "⚠️ Linting issues found - not enforced yet"
+          echo " Running Ruff linter..."
+          ruff check . --output-format=github || echo " Linting issues found - not enforced yet"
 
       - name: Run formatting check with Ruff
         run: |
-          echo "🎨 Checking code formatting..."
-          ruff format --check . || echo "⚠️ Formatting issues found - not enforced yet"
+          echo " Checking code formatting..."
+          ruff format --check . || echo " Formatting issues found - not enforced yet"
 
       - name: Run tests
         run: |
-          echo "🧪 Running test suite..."
+          echo " Running test suite..."
           cd tests
           python test_yaml.py
           python test_logstory.py
 
       - name: Run timestamp validation
         run: |
-          echo "⏱️ Validating timestamp configurations..."
+          echo "⏱ Validating timestamp configurations..."
           python -c "
           import yaml
           import sys
@@ -73,22 +73,22 @@ jobs:
               try:
                   with open(file) as f:
                       yaml.safe_load(f)
-                  print(f'✅ {file} - Valid YAML syntax')
+                  print(f' {file} - Valid YAML syntax')
               except yaml.YAMLError as e:
-                  print(f'❌ {file} - Invalid YAML: {e}')
+                  print(f' {file} - Invalid YAML: {e}')
                   sys.exit(1)
 
-          print('✅ All timestamp configurations are valid')
+          print(' All timestamp configurations are valid')
           "
 
       - name: Build package
         run: |
-          echo "📦 Building Python package..."
+          echo " Building Python package..."
           python -m build
 
       - name: Verify package
         run: |
-          echo "🔍 Verifying built package..."
+          echo " Verifying built package..."
           python -m twine check dist/*
 
   build-and-publish:
@@ -129,7 +129,7 @@ jobs:
             VERSION="${GITHUB_EVENT_INPUTS_VERSION}"
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "🏷️ Release version: $VERSION"
+          echo " Release version: $VERSION"
         env:
           GITHUB_EVENT_RELEASE_TAG_NAME: ${{ github.event.release.tag_name }}
           GITHUB_EVENT_INPUTS_VERSION: ${{ github.event.inputs.version }}
@@ -137,7 +137,7 @@ jobs:
       - name: Update version in pyproject.toml
         run: |
           VERSION="${STEPS_VERSION_OUTPUTS_VERSION}"
-          echo "📝 Updating version to $VERSION in pyproject.toml"
+          echo " Updating version to $VERSION in pyproject.toml"
           sed -i "s/version = \".*\"/version = \"$VERSION\"/" pyproject.toml
 
           # Verify the update
@@ -147,7 +147,7 @@ jobs:
 
       - name: Build package
         run: |
-          echo "📦 Building Python package..."
+          echo " Building Python package..."
           python -m build
 
           # List built files
@@ -155,7 +155,7 @@ jobs:
 
       - name: Verify package
         run: |
-          echo "🔍 Verifying package integrity..."
+          echo " Verifying package integrity..."
           python -m twine check dist/*
 
       - name: Publish to PyPI
@@ -163,18 +163,18 @@ jobs:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
         run: |
-          echo "🚀 Publishing to PyPI..."
+          echo " Publishing to PyPI..."
           python -m twine upload dist/*
 
       - name: Upload wheel to release
         if: github.event_name == 'release'
         run: |
-          echo "📎 Uploading build artifacts to GitHub release..."
+          echo " Uploading build artifacts to GitHub release..."
           for file in dist/*.whl; do
             if [ -f "$file" ]; then
               filename=$(basename "$file")
               gh release upload ${GITHUB_EVENT_RELEASE_TAG_NAME} "$file" --clobber
-              echo "✅ Uploaded $filename"
+              echo " Uploaded $filename"
             fi
           done
 
@@ -182,7 +182,7 @@ jobs:
             if [ -f "$file" ]; then
               filename=$(basename "$file")
               gh release upload ${GITHUB_EVENT_RELEASE_TAG_NAME} "$file" --clobber
-              echo "✅ Uploaded $filename"
+              echo " Uploaded $filename"
             fi
           done
         env:
@@ -197,9 +197,9 @@ jobs:
     steps:
       - name: Success notification
         run: |
-          echo "✅ Release pipeline completed successfully!"
-          echo "🎉 All quality gates passed and release published"
-          echo "📦 Package version ${{ needs.build-and-publish.outputs.version || 'unknown' }} published to PyPI"
+          echo " Release pipeline completed successfully!"
+          echo " All quality gates passed and release published"
+          echo " Package version ${{ needs.build-and-publish.outputs.version || 'unknown' }} published to PyPI"
 
   notify-failure:
     name: Notify Failure
@@ -209,6 +209,6 @@ jobs:
     steps:
       - name: Failure notification
         run: |
-          echo "❌ Release pipeline failed!"
-          echo "🔍 Check the logs above for details"
+          echo " Release pipeline failed!"
+          echo " Check the logs above for details"
           exit 1

@@ -31,25 +31,25 @@ jobs:
 
       - name: Run Ruff linter
         run: |
-          echo "🔍 Running Ruff linter..."
-          ruff check . --output-format=github || echo "⚠️ Linting issues found - not enforced yet"
+          echo " Running Ruff linter..."
+          ruff check . --output-format=github || echo " Linting issues found - not enforced yet"
 
       - name: Check code formatting
         run: |
-          echo "🎨 Checking code formatting with Ruff..."
-          ruff format --check . || echo "⚠️ Formatting issues found - not enforced yet"
+          echo " Checking code formatting with Ruff..."
+          ruff format --check . || echo " Formatting issues found - not enforced yet"
 
       - name: Check for common issues
         run: |
-          echo "🧹 Checking for common code issues..."
+          echo " Checking for common code issues..."
           # Check for TODO/FIXME comments in production code
           if grep -r "TODO\|FIXME\|XXX" src/ --exclude-dir=__pycache__ || true; then
-            echo "⚠️ Found TODO/FIXME comments in production code"
+            echo " Found TODO/FIXME comments in production code"
           fi
 
           # Check for debug prints
           if grep -r "print(" src/ --exclude-dir=__pycache__ | grep -v "# debug: ok" || true; then
-            echo "⚠️ Found print statements in production code"
+            echo " Found print statements in production code"
           fi
 
   security-checks:
@@ -71,13 +71,13 @@ jobs:
 
       - name: Run Bandit security linter
         run: |
-          echo "🔒 Running Bandit security checks..."
+          echo " Running Bandit security checks..."
           bandit -r src/ -f json -o bandit-report.json || true
           bandit -r src/ -f txt
 
       - name: Check dependencies for vulnerabilities
         run: |
-          echo "🛡️ Checking dependencies for known vulnerabilities..."
+          echo " Checking dependencies for known vulnerabilities..."
           # Create requirements.txt from pyproject.toml dependencies
           python -c "
           import toml
@@ -96,7 +96,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.10', '3.11', '3.12']
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -113,7 +113,7 @@ jobs:
 
       - name: Run core tests
         run: |
-          echo "🧪 Running tests with Python ${{ matrix.python-version }}"
+          echo " Running tests with Python ${{ matrix.python-version }}"
           cd tests
           python test_yaml.py
           python test_logstory.py
@@ -137,7 +137,7 @@ jobs:
 
       - name: Comprehensive timestamp validation
         run: |
-          echo "⏱️ Running comprehensive timestamp validation..."
+          echo "⏱ Running comprehensive timestamp validation..."
           python -c "
           import yaml
           import sys
@@ -201,19 +201,19 @@ jobs:
               errors, warnings = validate_timestamp_config(file_path)
 
               for error in errors:
-                  print(f'❌ {error}')
+                  print(f' {error}')
                   total_errors += 1
 
               for warning in warnings:
-                  print(f'⚠️ {warning}')
+                  print(f' {warning}')
                   total_warnings += 1
 
               if not errors and not warnings:
-                  print(f'✅ {file_path} validation passed')
+                  print(f' {file_path} validation passed')
               elif not errors:
-                  print(f'✅ {file_path} validation passed with {len(warnings)} warnings')
+                  print(f' {file_path} validation passed with {len(warnings)} warnings')
 
-          print(f'\n📊 Summary: {total_errors} errors, {total_warnings} warnings')
+          print(f'\n Summary: {total_errors} errors, {total_warnings} warnings')
 
           if total_errors > 0:
               sys.exit(1)
@@ -238,21 +238,21 @@ jobs:
 
       - name: Build package
         run: |
-          echo "📦 Building Python package..."
+          echo " Building Python package..."
           python -m build
 
       - name: Verify package
         run: |
-          echo "🔍 Verifying package integrity..."
+          echo " Verifying package integrity..."
           python -m twine check dist/*
 
       - name: Test package installation
         run: |
-          echo "🧪 Testing package installation..."
+          echo " Testing package installation..."
           pip install dist/*.whl
 
           # Test that the package can be imported
-          python -c "import logstory; print('✅ Package imports successfully')"
+          python -c "import logstory; print(' Package imports successfully')"
 
           # Test the CLI entry point
           which logstory
@@ -272,7 +272,7 @@ jobs:
     steps:
       - name: Check all quality gates
         run: |
-          echo "📋 Quality Gates Summary:"
+          echo " Quality Gates Summary:"
           echo "========================"
 
           # Check each job status
@@ -282,19 +282,19 @@ jobs:
           timestamp_status="${NEEDS_TIMESTAMP_VALIDATION_RESULT}"
           build_status="${NEEDS_BUILD_TEST_RESULT}"
 
-          echo "🔍 Lint and Format: $lint_status"
-          echo "🔒 Security Checks: $security_status"
-          echo "🧪 Test Matrix: $test_status"
-          echo "⏱️ Timestamp Validation: $timestamp_status"
-          echo "📦 Build Test: $build_status"
+          echo " Lint and Format: $lint_status"
+          echo " Security Checks: $security_status"
+          echo " Test Matrix: $test_status"
+          echo "⏱ Timestamp Validation: $timestamp_status"
+          echo " Build Test: $build_status"
           echo ""
 
           # Determine overall status
           if [[ "$lint_status" == "success" && "$security_status" == "success" && "$test_status" == "success" && "$timestamp_status" == "success" && "$build_status" == "success" ]]; then
-            echo "✅ All quality gates passed! Ready for release."
+            echo " All quality gates passed! Ready for release."
             exit 0
           else
-            echo "❌ One or more quality gates failed. Please review and fix issues."
+            echo " One or more quality gates failed. Please review and fix issues."
             exit 1
           fi
 

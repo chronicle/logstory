@@ -316,7 +316,7 @@ gs://logstory-usecases-20241216/EDR_WORKSHOP \
 
 To make that easier:
 ```
-❯ logstory usecases list-available
+$ logstory usecases list-available
 
 Available usecases in source 'gs://logstory-usecases-20241216':
 - EDR_WORKSHOP
@@ -325,8 +325,8 @@ Available usecases in source 'gs://logstory-usecases-20241216':
 
 For multiple sources:
 ```
-❯ export LOGSTORY_USECASES_BUCKETS=gs://logstory-usecases-20241216,gs://my-private-bucket  
-❯ logstory usecases list-available
+$ export LOGSTORY_USECASES_BUCKETS=gs://logstory-usecases-20241216,gs://my-private-bucket  
+$ logstory usecases list-available
 
 Available usecases in source 'gs://logstory-usecases-20241216':
 - EDR_WORKSHOP
@@ -340,7 +340,7 @@ All available usecases: CUSTOM_USECASE, EDR_WORKSHOP, RULES_SEARCH_WORKSHOP, TEA
 ```
 
 ```
-❯ logstory usecases get EDR_WORKSHOP
+$ logstory usecases get EDR_WORKSHOP
 Downloading usecase 'EDR_WORKSHOP' from source 'gs://logstory-usecases-20241216'
 Downloading EDR_WORKSHOP/EDR_WORKSHOP.md to [redacted]/logstory/usecases/EDR_WORKSHOP/EDR_WORKSHOP.md
 Downloading EDR_WORKSHOP/EVENTS/CS_DETECTS.log to [redacted]/logstory/src/logstory/usecases/EDR_WORKSHOP/EVENTS/CS_DETECTS.log
@@ -349,7 +349,7 @@ Downloading EDR_WORKSHOP/EVENTS/WINDOWS_SYSMON.log to [redacted]/logstory/src/lo
 ```
 
 ```
-❯ logstory usecases list-installed
+$ logstory usecases list-installed
 #
 # EDR_WORKSHOP
 #

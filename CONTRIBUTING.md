@@ -138,10 +138,10 @@ gh workflow run release.yml -f version=1.2.4
 
 Before creating a release, ensure:
 
-- ✅ All tests pass on main branch
-- ✅ Version number follows [semantic versioning](https://semver.org/)
-- ✅ Release notes describe changes clearly
-- ✅ `PYPI_TOKEN` secret is configured in repository settings
+- All tests pass on main branch
+- Version number follows [semantic versioning](https://semver.org/)
+- Release notes describe changes clearly
+- `PYPI_TOKEN` secret is configured in repository settings
 
 #### Quality Gates
 
