@@ -32,7 +32,7 @@ try:
       detect_auth_type,
       has_application_default_credentials,
   )
-  from .ingestion import IngestionBackend, create_ingestion_backend
+  from .ingestion import IngestionBackend, create_ingestion_backend, sanitize_log_text
 except ImportError:
   # Fallback for when running as main module
   from auth import (  # type: ignore[import-not-found,no-redef]
@@ -43,6 +43,7 @@ except ImportError:
   from ingestion import (  # type: ignore[import-not-found,no-redef]
       IngestionBackend,
       create_ingestion_backend,
+      sanitize_log_text,
   )
 
 
@@ -330,7 +331,7 @@ def _get_log_content(
   # Local filesystem case
   script_dir = os.path.dirname(os.path.abspath(__file__))
   local_file_path = os.path.join(script_dir, "usecases/", object_name)
-  with open(local_file_path) as f:
+  with open(local_file_path, encoding="utf-8", errors="replace") as f:
     return f.read()
 
 
@@ -777,7 +778,7 @@ def usecase_replay_logtype(
       LOGGER.debug("now as repr:")
       LOGGER.debug(repr(log_text))
       if api_for_log_type == "unstructuredlogentries":
-        entries.append({"logText": log_text})
+        entries.append({"logText": sanitize_log_text(log_text)})
       elif api_for_log_type in {"udmevents", "entities"}:
         entries.append(json.loads(log_text))
       else:

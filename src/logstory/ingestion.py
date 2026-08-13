@@ -14,10 +14,11 @@
 """Ingestion backend abstraction for Logstory supporting multiple APIs."""
 
 import base64
+import json
 import logging
 import uuid
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 import requests as real_requests
@@ -82,6 +83,25 @@ REST_REGION_NAME_MAP = {
     "zurich": "europe-west6",
     "europe-west6": "europe-west6",
 }
+
+
+def sanitize_log_text(text: str) -> str:
+  """Sanitize special characters in log text to prevent API gateway timeouts.
+
+  Removes or replaces trademark, copyright, and non-standard symbols that
+  cause Chronicle Malachite Ingestion API timeouts.
+
+  Args:
+    text: The raw log text string to sanitize.
+
+  Returns:
+    Sanitized log text string safe for API ingestion.
+  """
+  if not text:
+    return text
+
+  # Strip registered trademark (\u00ae), copyright (\u00a9), trademark (\u2122)
+  return text.replace("\u00ae", "").replace("\u00a9", "").replace("\u2122", "")
 
 
 class IngestionBackend(ABC):
@@ -163,15 +183,24 @@ class LegacyIngestionBackend(IngestionBackend):
   ) -> None:
     """Post unstructured log entries using legacy API."""
     uri = f"{self.get_base_url()}/v2/unstructuredlogentries:batchCreate"
+    sanitized_entries = []
+    for entry in entries:
+      if isinstance(entry, dict) and "logText" in entry:
+        sanitized_entries.append({"logText": sanitize_log_text(entry["logText"])})
+      else:
+        sanitized_entries.append(entry)
+
     body = {
         "customer_id": self.customer_id,
         "log_type": log_type,
-        "entries": entries,
+        "entries": sanitized_entries,
     }
     if labels:
       body["labels"] = labels
 
-    response = self.http_client.post(uri, json=body)
+    payload = json.dumps(body, ensure_ascii=True)
+    headers = {"Content-Type": "application/json"}
+    response = self.http_client.post(uri, data=payload, headers=headers)
     self._check_response(response)
 
   def post_udm_events(
@@ -186,7 +215,9 @@ class LegacyIngestionBackend(IngestionBackend):
     if labels:
       body["labels"] = labels
 
-    response = self.http_client.post(uri, json=body)
+    payload = json.dumps(body, ensure_ascii=True)
+    headers = {"Content-Type": "application/json"}
+    response = self.http_client.post(uri, data=payload, headers=headers)
     self._check_response(response)
 
   def post_entities(
@@ -203,7 +234,9 @@ class LegacyIngestionBackend(IngestionBackend):
         "entities": entries,
     }
 
-    response = self.http_client.post(uri, json=body)
+    payload = json.dumps(body, ensure_ascii=True)
+    headers = {"Content-Type": "application/json"}
+    response = self.http_client.post(uri, data=payload, headers=headers)
     self._check_response(response)
 
   def _check_response(self, response: real_requests.Response) -> None:
@@ -333,13 +366,14 @@ class RestIngestionBackend(IngestionBackend):
     logs = []
     for entry in entries:
       log_text = entry.get("logText", "")
+      sanitized_log = sanitize_log_text(log_text)
       # Base64 encode the log text
-      encoded_log = base64.b64encode(log_text.encode("utf-8")).decode("utf-8")
+      encoded_log = base64.b64encode(sanitized_log.encode("utf-8")).decode("utf-8")
 
       log_entry = {
           "data": encoded_log,
-          "log_entry_time": datetime.now().isoformat() + "Z",
-          "collection_time": datetime.now().isoformat() + "Z",
+          "log_entry_time": datetime.now(UTC).isoformat(),
+          "collection_time": datetime.now(UTC).isoformat(),
       }
 
       # Add labels if provided
@@ -376,7 +410,7 @@ class RestIngestionBackend(IngestionBackend):
 
       # Add timestamp if missing
       if "event_timestamp" not in entry["metadata"]:
-        entry["metadata"]["event_timestamp"] = datetime.now().isoformat() + "Z"
+        entry["metadata"]["event_timestamp"] = datetime.now(UTC).isoformat()
 
       # Add ID if missing
       if "id" not in entry["metadata"]:
