@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.10', '3.11', '3.12']
 
     steps:
     - uses: actions/checkout@v4
@@ -34,7 +34,7 @@ jobs:
     - name: Validate timestamp configurations
       run: |
         cd tests
-        echo "✅ Testing timestamp validation with Python ${{ matrix.python-version }}"
+        echo " Testing timestamp validation with Python ${{ matrix.python-version }}"
         python -c "
         import yaml
         import sys
@@ -46,9 +46,9 @@ jobs:
         # Import validation function from main.py
         try:
             from main import _validate_timestamp_config
-            print('✅ Successfully imported validation function')
+            print(' Successfully imported validation function')
         except ImportError as e:
-            print(f'❌ Import failed: {e}')
+            print(f' Import failed: {e}')
             # Define validation function locally for testing
             def _validate_timestamp_config(log_type, timestamp_map):
                 if log_type not in timestamp_map:
@@ -68,7 +68,7 @@ jobs:
                         raise ValueError(f'Timestamp {i} missing dateformat field')
                 if base_time_count != 1:
                     raise ValueError(f'Expected 1 base_time, got {base_time_count}')
-                print(f'✅ Validation passed for {log_type}')
+                print(f' Validation passed for {log_type}')
 
         # Test a few key log types from each file
         test_cases = [
@@ -85,10 +85,10 @@ jobs:
                     try:
                         _validate_timestamp_config(log_type, timestamp_map)
                     except Exception as e:
-                        print(f'❌ {log_type}: {e}')
+                        print(f' {log_type}: {e}')
                         sys.exit(1)
                 else:
-                    print(f'⚠️  {log_type} not found in {yaml_file}')
+                    print(f'  {log_type} not found in {yaml_file}')
 
-        print('✅ All runtime validation tests passed!')
+        print(' All runtime validation tests passed!')
         "

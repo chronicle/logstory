@@ -6,12 +6,12 @@ This document describes the automated release pipeline implemented for the LogSt
 
 The LogStory project now features a fully automated release pipeline that:
 
-- ✅ Triggers on GitHub Release creation (manual control)
-- ✅ Runs comprehensive quality gates
-- ✅ Publishes to PyPI automatically
-- ✅ Uploads build artifacts to GitHub releases
-- ✅ Prevents human error in version management
-- ✅ Provides complete release control and transparency
+- Triggers on GitHub Release creation (manual control)
+- Runs comprehensive quality gates
+- Publishes to PyPI automatically
+- Uploads build artifacts to GitHub releases
+- Prevents human error in version management
+- Provides complete release control and transparency
 
 ## Quick Start
 
@@ -280,7 +280,7 @@ This automated system replaces the previous manual release process:
 
 The new system eliminates human error and ensures consistent, reliable releases while maintaining full traceability and control.
 
-## 🎯 Release Control Summary
+## Release Control Summary
 
 ### GitHub Release-Based Workflow
 Releases are now **manually controlled** by creating GitHub Releases:
@@ -296,10 +296,10 @@ Releases are now **manually controlled** by creating GitHub Releases:
 - Version is extracted and applied to `pyproject.toml`
 
 ### Benefits
-- ✅ **Manual control** - releases only when you want them
-- ✅ **Quality assured** - comprehensive testing before publish
-- ✅ **Transparent** - clear release notes and artifacts
-- ✅ **Safe** - no accidental releases from development work
+- **Manual control** - releases only when you want them
+- **Quality assured** - comprehensive testing before publish
+- **Transparent** - clear release notes and artifacts
+- **Safe** - no accidental releases from development work
 
 ### Typical Workflow
 ```bash

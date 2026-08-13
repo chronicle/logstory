@@ -123,7 +123,7 @@ class TestDoubleUpdateFix(unittest.TestCase):
     # The epoch timestamp should also be updated
     assert "1706212385" not in result_line, "EventTime should be updated"
 
-    print("\n✓ SUCCESS: Each timestamp updated exactly once!")
+    print("\nSUCCESS: Each timestamp updated exactly once!")
 
   def test_overlapping_pattern_positions(self):
     """Test edge case where patterns might match the same position."""
@@ -192,7 +192,7 @@ class TestDoubleUpdateFix(unittest.TestCase):
         result_line.count(expected_date) == 1
     ), "Timestamp should be updated exactly once"
 
-    print("\n✓ SUCCESS: Overlapping patterns handled correctly!")
+    print("\nSUCCESS: Overlapping patterns handled correctly!")
 
   def test_complex_log_line(self):
     """Test a complex real-world scenario."""
@@ -267,7 +267,7 @@ class TestDoubleUpdateFix(unittest.TestCase):
     # Verify milliseconds were preserved
     assert ".123" in result_line, "Milliseconds should be preserved"
 
-    print("\n✓ SUCCESS: Complex log line processed correctly!")
+    print("\nSUCCESS: Complex log line processed correctly!")
 
 
 if __name__ == "__main__":

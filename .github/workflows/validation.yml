@@ -35,7 +35,7 @@ jobs:
 
     - name: Validate YAML syntax
       run: |
-        echo "🔍 Checking YAML syntax..."
+        echo " Checking YAML syntax..."
         python -c "
         import yaml
         import sys
@@ -49,21 +49,21 @@ jobs:
             try:
                 with open(file) as f:
                     yaml.safe_load(f)
-                print(f'✅ {file} - Valid YAML syntax')
+                print(f' {file} - Valid YAML syntax')
             except yaml.YAMLError as e:
-                print(f'❌ {file} - Invalid YAML: {e}')
+                print(f' {file} - Invalid YAML: {e}')
                 sys.exit(1)
         "
 
     - name: Run comprehensive timestamp validation
       run: |
         cd tests
-        echo "🧪 Running comprehensive timestamp validation tests..."
+        echo " Running comprehensive timestamp validation tests..."
         python test_yaml.py
 
     - name: Check for dateformat consistency
       run: |
-        echo "🔍 Checking for dateformat consistency..."
+        echo " Checking for dateformat consistency..."
         python -c "
         import yaml
         import sys
@@ -85,24 +85,24 @@ jobs:
                     continue
                 for i, ts in enumerate(entry['timestamps']):
                     if 'dateformat' not in ts:
-                        print(f'❌ {file}:{log_type}:timestamp[{i}] missing dateformat field')
+                        print(f' {file}:{log_type}:timestamp[{i}] missing dateformat field')
                         issues += 1
 
             if issues == 0:
-                print(f'✅ {file} - All timestamps have dateformat')
+                print(f' {file} - All timestamps have dateformat')
             else:
                 total_issues += issues
 
         if total_issues > 0:
-            print(f'❌ Found {total_issues} dateformat issues')
+            print(f' Found {total_issues} dateformat issues')
             sys.exit(1)
         else:
-            print('✅ All timestamp configurations are consistent!')
+            print(' All timestamp configurations are consistent!')
         "
 
     - name: Validate log type coverage
       run: |
-        echo "📊 Checking log type coverage..."
+        echo " Checking log type coverage..."
         python -c "
         import yaml
 
@@ -115,7 +115,7 @@ jobs:
         events_count = len(events)
         total = entities_count + events_count
 
-        print(f'📈 Coverage Summary:')
+        print(f' Coverage Summary:')
         print(f'   • Entities: {entities_count} log types')
         print(f'   • Events: {events_count} log types')
         print(f'   • Total: {total} log types validated')
@@ -130,12 +130,12 @@ jobs:
         print(f'   • Events with base_time: {events_with_base_time}/{events_count}')
 
         if entities_with_base_time != entities_count:
-            print(f'❌ {entities_count - entities_with_base_time} entity log types missing base_time')
+            print(f' {entities_count - entities_with_base_time} entity log types missing base_time')
         if events_with_base_time != events_count:
-            print(f'❌ {events_count - events_with_base_time} event log types missing base_time')
+            print(f' {events_count - events_with_base_time} event log types missing base_time')
 
         if entities_with_base_time == entities_count and events_with_base_time == events_count:
-            print('✅ All log types have base_time configured')
+            print(' All log types have base_time configured')
         "
 
   test-runtime-validation:
@@ -158,7 +158,7 @@ jobs:
 
     - name: Test validation with invalid configurations
       run: |
-        echo "🧪 Testing runtime validation with invalid configurations..."
+        echo " Testing runtime validation with invalid configurations..."
         python -c "
         import tempfile
         import yaml
@@ -206,9 +206,9 @@ jobs:
 
         try:
             validate_timestamp_config('TEST_LOG', valid_config)
-            print('✅ Valid configuration passed')
+            print(' Valid configuration passed')
         except Exception as e:
-            print(f'❌ Valid configuration failed: {e}')
+            print(f' Valid configuration failed: {e}')
             sys.exit(1)
 
         # Test 2: Invalid configuration should fail
@@ -227,10 +227,10 @@ jobs:
 
         try:
             validate_timestamp_config('TEST_LOG', invalid_config)
-            print('❌ Invalid configuration incorrectly passed')
+            print(' Invalid configuration incorrectly passed')
             sys.exit(1)
         except Exception as e:
-            print(f'✅ Invalid configuration correctly rejected: {e}')
+            print(f' Invalid configuration correctly rejected: {e}')
 
-        print('✅ Runtime validation tests passed!')
+        print(' Runtime validation tests passed!')
         "
