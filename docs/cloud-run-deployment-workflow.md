@@ -20,22 +20,22 @@ export LOGSTORY_REGION=US  # optional, defaults to US
 export LOGSTORY_API_TYPE=rest  # or 'legacy' for malachite API
 ```
 
-## Deployment Method: Makefile vs Terraform
+## Deployment Method: Justfile vs Terraform
 
-This project uses **Makefile** for Cloud Run deployment instead of Terraform because:
+This project uses **Justfile** (`just`) for Cloud Run deployment instead of Terraform because:
 - **Simpler** - Direct gcloud commands, no HCL syntax
 - **Faster** - No terraform plan/apply cycle
 - **No state management** - No terraform state file issues
 - **Transparent** - See exactly what commands run
-- **Already integrated** - Makefile has all targets ready
+- **Already integrated** - Justfile has all recipes ready
 
 Quick deployment:
 ```bash
-make enable-apis          # Enable required Google Cloud APIs
-make create-secret CREDENTIALS_FILE=/path/to/credentials.json  # One-time setup
-make setup-permissions    # Grant permissions to default compute service account
-make deploy-cloudrun-all  # Build Docker image and deploy the Cloud Run job
-make schedule-cloudrun-all # Set up all 4 schedulers with different parameters
+just apis-enable          # Enable required Google Cloud APIs
+just secret-create /path/to/credentials.json  # One-time setup
+just permissions-setup    # Grant permissions to default compute service account
+just cloudrun-job-deploy  # Build Docker image and deploy the Cloud Run job
+just cloudrun-schedule-all # Set up all 4 schedulers with different parameters
 ```
 
 ## Complete Deployment Workflow
@@ -45,7 +45,7 @@ make schedule-cloudrun-all # Set up all 4 schedulers with different parameters
 Enable the necessary Google Cloud APIs:
 
 ```bash
-make enable-apis
+just apis-enable
 ```
 
 This enables:
@@ -53,14 +53,17 @@ This enables:
 - Cloud Build API
 - Cloud Scheduler API
 - Secret Manager API
+- IAM API
+- Cloud Resource Manager API
+- Artifact Registry API
 
 ### 2. Create Secret in Secret Manager
 
 Store your service account credentials JSON in Secret Manager:
 
 ```bash
-# Using the Makefile (recommended):
-make create-secret CREDENTIALS_FILE=/path/to/your/credentials.json
+# Using the Justfile (recommended):
+just secret-create /path/to/your/credentials.json
 
 # Or manually:
 gcloud secrets create chronicle-api-key \
@@ -77,8 +80,8 @@ gcloud secrets versions add chronicle-api-key \
 Grant necessary permissions to the default compute service account:
 
 ```bash
-# Using the Makefile (recommended):
-make setup-permissions
+# Using the Justfile (recommended):
+just permissions-setup
 
 # This grants Secret Manager access to the default compute service account
 # PROJECT_NUMBER-compute@developer.gserviceaccount.com
@@ -89,8 +92,8 @@ make setup-permissions
 Deploy a single Cloud Run job that will be invoked with different parameters:
 
 ```bash
-# Using the Makefile (builds Docker image and deploys):
-make deploy-cloudrun-all
+# Using the Justfile (builds Docker image and deploys):
+just cloudrun-job-deploy
 
 # This creates a single job called 'logstory-replay'
 # The job uses the Docker image built from your local wheel file
@@ -101,8 +104,8 @@ make deploy-cloudrun-all
 Create schedulers that invoke the same job with different arguments:
 
 ```bash
-# Using the Makefile (creates all 4 schedulers):
-make schedule-cloudrun-all
+# Using the Justfile (creates all 4 schedulers):
+just cloudrun-schedule-all
 ```
 
 This creates 4 schedulers that all invoke the same `logstory-replay` job:
@@ -154,27 +157,25 @@ The deployment uses a **single Cloud Run job** with **multiple schedulers** that
 ### View Status
 ```bash
 # Check job and scheduler status
-make cloudrun-status
+just cloudrun-status
 
 # View recent execution logs
-make cloudrun-logs
+just cloudrun-logs
 ```
 
 ### Test the Job
 ```bash
 # Test with sample parameters
-make test-cloudrun-all
+just cloudrun-job-test
 
-# Or test manually with specific args
-gcloud run jobs execute logstory-replay \
-  --region us-central1 \
-  --args "logstory,replay,all"
+# Or test with specific args via just
+just cloudrun-job-run "logstory,replay,all"
 ```
 
 ### Clean Up
 ```bash
 # Delete all schedulers and the job
-make delete-cloudrun-all
+just cloudrun-delete-all
 ```
 
 ## Container Argument Overrides
@@ -202,6 +203,10 @@ This allows one job to handle multiple use cases:
 To add a new scheduler for a specific usecase:
 
 ```bash
+# Using Justfile:
+just cloudrun-schedule-custom logstory-aws-daily "0 10 * * *" '["logstory","replay","usecase","AWS"]'
+
+# Or manually:
 gcloud scheduler jobs create http logstory-aws-daily \
   --location us-central1 \
   --schedule "0 10 * * *" \
@@ -215,10 +220,13 @@ gcloud scheduler jobs create http logstory-aws-daily \
 ## Testing Locally with Docker
 
 ```bash
-# Build the image
-docker build -t logstory-test -f Dockerfile.minimal .
+# Build the image using Justfile
+just docker-build-local
 
-# Run with environment variables
+# Run with environment variables using Justfile
+just docker-run-local
+
+# Or manually:
 docker run \
   -e LOGSTORY_CUSTOMER_ID="your-uuid" \
   -e LOGSTORY_CREDENTIALS="$(cat credentials.json)" \
@@ -288,22 +296,22 @@ CMD ["uvx", "logstory", "replay", "all"]
 
 ### Authentication Errors
 If you get 401 errors from Cloud Scheduler:
-1. Verify the service account is correct: `make setup-permissions`
+1. Verify the service account is correct: `just permissions-setup`
 2. The default compute service account should have necessary permissions
 3. Check scheduler configuration: `gcloud scheduler jobs describe SCHEDULER_NAME`
 
 ### Secret Access Errors
 If you get errors accessing the secret:
-1. Verify the secret exists: `gcloud secrets list`
-2. Check permissions were granted: `make setup-permissions`
-3. View secret IAM policy: `gcloud secrets get-iam-policy chronicle-api-key`
-4. Update the secret if needed: `make create-secret CREDENTIALS_FILE=/new/path.json`
+1. Verify the secret exists: `just secret-list`
+2. Check permissions were granted: `just permissions-setup`
+3. View secret IAM policy: `just secret-iam`
+4. Update the secret if needed: `just secret-create /new/path.json`
 
 ### Container Override Errors
 If schedulers fail to pass arguments:
 1. Check the message body JSON is valid
 2. Verify the args array format: `["logstory", "replay", "all", "--entities"]`
-3. Test manually: `gcloud run jobs execute logstory-replay --args "logstory,replay,all"`
+3. Test manually: `just cloudrun-job-run "logstory,replay,all"`
 
 ## Notes
 
@@ -312,4 +320,4 @@ If schedulers fail to pass arguments:
 - **Wheel-based Deployment**: Builds from local wheel file for immediate testing of changes
 - **Memory Settings**: Default 1GB memory, adjust based on your data volume
 - **Timeout**: 3600 seconds (1 hour) default, increase for large datasets
-- **Makefile Automation**: All operations are wrapped in simple make commands for consistency
+- **Justfile Automation**: All operations are wrapped in simple `just` recipes for consistency

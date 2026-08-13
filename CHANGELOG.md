@@ -2,6 +2,20 @@
 
 <!--next-version-placeholder-->
 
+## v1.2.0 (2026-08-13)
+
+### Changed
+- Migrated from `Makefile` to `Justfile` (`just`) for development and cloud workflows
+  - Enables direct, robust gcloud setup and deployment recipes
+  - Automatic `.env` loading and environment variable fallback support
+  - Integrated recipes for Google Cloud setup (`auth-login`, `auth-adc`, `project-set`, `project-get`, `apis-enable`)
+  - Integrated recipes for Secret Manager (`secret-create`, `secret-describe`, `secret-list`, `secret-iam`)
+  - Integrated recipes for Cloud Run deployment & schedulers (`cloudrun-job-deploy`, `cloudrun-service-deploy`, `cloudrun-schedule-all`, `cloudrun-schedule-custom`, `cloudrun-status`, `cloudrun-logs`, `cloudrun-delete-all`)
+  - Integrated recipes for Usecases / GCS bucket synchronization (`usecase-publish`, `usecase-publish-all`, `usecase-list-gcs`)
+  - Integrated recipes for PyPI / TestPyPI publishing and testing (`pypi-publish-test`, `pypi-test-install`, `pypi-publish`)
+  - Integrated recipes for Sphinx documentation (`docs-build`, `docs-live`, `docs-clean`)
+  - Integrated recipes for local Docker testing (`docker-build-local`, `docker-run-local`)
+
 ## v1.1.2 (2026-08-13)
 
 ### Changed
@@ -11,7 +25,6 @@
   - Removed separate `requirements_dev.txt` in favor of `.[dev]` and `uv` workflows
   - Recompiled and pinned `src/logstory/requirements.txt` directly from `pyproject.toml`
   - Updated `uv.lock` with latest dependencies
-  - Enhanced `Makefile` with `lock` and `compile-requirements` targets
 - **BREAKING**: Migrated CLI from Abseil to Typer with command groups and subcommands
   - Command structure now uses groups: `logstory usecases COMMAND` and `logstory replay COMMAND`
   - Flag names changed to use hyphens: `--customer-id` instead of `--customer_id`

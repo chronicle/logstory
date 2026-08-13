@@ -370,11 +370,12 @@ For detailed development and release documentation, see [Development Documentati
 
 ## Development and re-building for publication on PyPI
 
-```
+```bash
 git clone git@gitlab.com:google-cloud-ce/googlers/dandye/logstory.git
 # Edit, edit, edit...
-make build
-# ToDo: pub to PyPI command
+just package-build
+# To publish to PyPI:
+just pypi-publish
 ```
 
 ### Testing
@@ -428,33 +429,26 @@ Your Google Security Operations representative will provide you with a Google De
 
 ### Google Cloud project configuration
 
-Authenticate to the [Google Cloud project](https://cloud.google.com/resource-manager/docs/creating-managing-projects) that is bound to your Chronicle tenant.
+Authenticate to Google Cloud and configure your project:
 
 ~~~bash
-gcloud auth login
-PROJECT_ID=your_project_id_here
-gcloud config set project $PROJECT_ID
+just auth-login
+just project-set your_project_id_here
 ~~~
 
-The Cloud Run deployment uses the default compute service account and Makefile targets for simplified deployment.
-
-Enable the Google APIs in your project that are required to run Logstory.
+Enable the Google APIs required to run Logstory:
 
 ~~~bash
-gcloud services enable cloudresourcemanager.googleapis.com
-gcloud services enable secretmanager.googleapis.com
-gcloud services enable iam.googleapis.com
-gcloud services enable run.googleapis.com
-gcloud services enable cloudscheduler.googleapis.com
-gcloud services enable artifactregistry.googleapis.com
-gcloud services enable cloudbuild.googleapis.com
+just apis-enable
 ~~~
+
+The Cloud Run deployment uses the default compute service account and Justfile recipes for simplified deployment.
 
 ## Configuration
 
 For complete Cloud Run deployment instructions including environment setup, service account configuration, and deployment commands, see the [Cloud Run Deployment Workflow](cloud-run-deployment-workflow.md) guide.
 
-Quick start using Makefile targets:
+Quick start using Justfile recipes:
 ```bash
 # Set required environment variables
 export LOGSTORY_PROJECT_ID=your-gcp-project-id
@@ -462,24 +456,24 @@ export LOGSTORY_CUSTOMER_ID=your-chronicle-customer-uuid
 export LOGSTORY_API_TYPE=rest  # or 'legacy'
 
 # Deploy to Cloud Run
-make enable-apis
-make create-secret CREDENTIALS_FILE=/path/to/credentials.json
-make setup-permissions
-make deploy-cloudrun-job
-make schedule-cloudrun-all
+just apis-enable
+just secret-create /path/to/credentials.json
+just permissions-setup
+just cloudrun-job-deploy
+just cloudrun-schedule-all
 ```
 
 ## Deployment
 
-The project now deploys using Makefile targets instead of Terraform:
+The project now deploys using Justfile recipes instead of Terraform:
 
 ```bash
 # Deploy the Cloud Run job and set up schedulers
-make deploy-cloudrun-job
-make schedule-cloudrun-all
+just cloudrun-job-deploy
+just cloudrun-schedule-all
 
 # Check deployment status
-make cloudrun-status
+just cloudrun-status
 ```
 
 Navigate to the Cloud Run and Cloud Scheduler pages in the Google Cloud console and verify that the Logstory artifacts were created.
@@ -492,7 +486,7 @@ Sample detection rules are included within individual usecases under their respe
 
 ## Cleanup
 
-- Run `make delete-cloudrun-all` to remove all Cloud Run services, jobs, and schedulers
+- Run `just cloudrun-delete-all` to remove all Cloud Run services, jobs, and schedulers
 - Delete the rules created in your Chronicle SIEM using [Delete Rule API](https://cloud.google.com/chronicle/docs/reference/detection-engine-api#deleterule)
 
 ## Authors and acknowledgment
