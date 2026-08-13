@@ -708,7 +708,7 @@ api-detection-debug: cloudrun-env-check
     @echo "  LOGSTORY_API_TYPE:   {{ api_type }}"
     @echo "  LOGSTORY_PROJECT_ID: {{ project_id }}"
     @echo "  LOGSTORY_REGION:     {{ chronicle_region }}"
-    @python3 -c "import sys; from logstory.auth import detect_auth_type; print(f'Detected API type: {detect_auth_type()}')"
+    @python3 -c "import sys; sys.path.insert(0, 'src'); from logstory.auth import detect_auth_type; print(f'Detected API type: {detect_auth_type()}')"
 
 # Show Cloud Run deployment help
 cloudrun-help:

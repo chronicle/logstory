@@ -370,12 +370,12 @@ For detailed development and release documentation, see [Development Documentati
 
 ## Development and re-building for publication on PyPI
 
-```
+```bash
 git clone git@gitlab.com:google-cloud-ce/googlers/dandye/logstory.git
 # Edit, edit, edit...
-just build
+just package-build
 # To publish to PyPI:
-just publish-pypi
+just pypi-publish
 ```
 
 ### Testing
@@ -433,7 +433,7 @@ Authenticate to Google Cloud and configure your project:
 
 ~~~bash
 just auth-login
-just set-project your_project_id_here
+just project-set your_project_id_here
 ~~~
 
 Enable the Google APIs required to run Logstory:
