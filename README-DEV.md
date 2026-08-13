@@ -43,10 +43,18 @@ gs://logstory-usecases-20241216/RULES_SEARCH_WORKSHOP
 ```
 
 #
-# Edit and Publish Docs
+# Dependency Management
 #
 
-To edit the docs, use `cd docs/ && make livehtml` and then view the docs at localhost:8000
+`pyproject.toml` is the single source of truth for all dependencies:
+- **Runtime**: `[project.dependencies]`
+- **Development**: `[project.optional-dependencies] dev`
+- **Documentation**: `[project.optional-dependencies] docs`
+
+### Workflows:
+- **Lock dependencies**: `uv lock --upgrade` (or `make lock`)
+- **Sync local environment**: `uv sync --all-extras`
+- **Compile deploy requirements**: `uv pip compile pyproject.toml -o src/logstory/requirements.txt` (or `make compile-requirements`)
 
 ## Contributing
 

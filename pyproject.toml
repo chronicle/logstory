@@ -17,18 +17,44 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "typer[all] >= 0.12.0",
-    "google-cloud-storage == 2.10",
-    "google-cloud-secret-manager ~= 2.16.0", # Updated version
-    "setuptools >= 61.0", # Added setuptools
-    "google-api-python-client == 2.98",
-    "google-auth == 2.23",
-    "google-auth-httplib2 >= 0.2.0",  # For REST API auth
-    "google-auth-oauthlib >= 1.0.0",  # For OAuth flows
+    "typer >= 0.12.0",
+    "google-cloud-storage >= 2.10.0",
+    "google-cloud-secret-manager >= 2.16.0",
+    "setuptools >= 61.0",
+    "google-api-python-client >= 2.98.0",
+    "google-auth >= 2.23.0",
+    "google-auth-httplib2 >= 0.2.0",
+    "google-auth-oauthlib >= 1.0.0",
     "oyaml >= 1.0",
-    "requests ~= 2.32.3",
+    "requests >= 2.32.0",
     "python-dotenv >= 1.0.0",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "build",
+    "twine",
+    "ruff",
+    "pre-commit",
+    "mypy",
+    "pytest",
+    "types-requests",
+    "types-PyYAML",
+    "interrogate",
+    "isort",
+    "yamllint",
+    "codespell",
+    "pyink",
+]
+docs = [
+    "sphinx",
+    "furo",
+    "sphinx-autobuild",
+    "sphinx-copybutton",
+    "myst-parser",
+    "cogapp",
+]
+
 
 [project.urls]
 "Homepage" = "https://github.com/chronicle/logstory"
@@ -84,6 +110,7 @@ ignore = [
     "E501",  # Line too long (we'll use a longer line length for existing code)
     "S101",  # Use of assert detected (common in tests)
     "PLR0913", # Too many arguments
+    "PLR0917", # Too many positional arguments
     "PLR0912", # Too many branches
     "PLR0915", # Too many statements
     "C901",  # Function is too complex

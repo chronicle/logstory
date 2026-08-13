@@ -32,13 +32,12 @@ ifneq ($(wildcard $(ENV_FILE)),)
   $(info Using environment file: $(ENV_FILE))
 endif
 -include $(ENV_FILE)
-export
 
 # Cloud deployment variables - read from environment or use defaults
 ifdef LOGSTORY_PROJECT_ID
 PROJECT_ID ?= $(LOGSTORY_PROJECT_ID)
 else
-PROJECT_ID ?= $(shell gcloud config get-value project)
+PROJECT_ID = $(shell gcloud config get-value project 2>/dev/null)
 endif
 
 # Chronicle region (US, EUROPE, etc) for LOGSTORY_REGION env var
@@ -70,10 +69,7 @@ endif
 
 CUSTOMER_ID ?= $(LOGSTORY_CUSTOMER_ID)
 
-ifndef LOGSTORY_API_TYPE
-$(error LOGSTORY_API_TYPE environment variable must be set to 'rest' or 'legacy')
-endif
-API_TYPE := $(LOGSTORY_API_TYPE)
+API_TYPE ?= $(LOGSTORY_API_TYPE)
 
 ifdef LOGSTORY_FORWARDER_NAME
 FORWARDER_NAME ?= $(LOGSTORY_FORWARDER_NAME)
@@ -81,8 +77,8 @@ else
 FORWARDER_NAME ?= Logstory-REST-Forwarder
 endif
 SECRET_NAME ?= chronicle-api-key
-PROJECT_NUMBER ?= $(shell gcloud projects describe $(PROJECT_ID) --format="value(projectNumber)")
-SERVICE_ACCOUNT ?= $(PROJECT_NUMBER)-compute@developer.gserviceaccount.com
+PROJECT_NUMBER = $(if $(PROJECT_ID),$(shell gcloud projects describe $(PROJECT_ID) --format="value(projectNumber)" 2>/dev/null),)
+SERVICE_ACCOUNT = $(if $(PROJECT_NUMBER),$(PROJECT_NUMBER)-compute@developer.gserviceaccount.com,)
 
 # Define the Python build command
 build: ## Build the Python package
@@ -179,12 +175,18 @@ venv-clean: ## Remove virtual environment
 	rm -rf $(VENV)
 
 dev-setup: venv ## Setup development environment (install deps + pre-commit)
-	$(PIP) install -r requirements_dev.txt
+	$(PIP) install -e ".[dev]"
 	$(VENV)/bin/pre-commit install
 
 dev-setup-no-venv: ## Setup dev environment without venv (use current environment)
-	pip install -r requirements_dev.txt
+	pip install -e ".[dev]"
 	pre-commit install
+
+lock: ## Update uv.lock with latest compatible dependencies
+	uv lock --upgrade
+
+compile-requirements: ## Compile src/logstory/requirements.txt from pyproject.toml
+	uv pip compile pyproject.toml -o src/logstory/requirements.txt
 
 # ========== Cloud Run Deployment Targets ==========
 
@@ -199,6 +201,10 @@ check-cloudrun-env: ## Check required environment for Cloud Run deployment
 		echo "Error: LOGSTORY_PROJECT_ID is not set."; \
 		echo "Set it with: export LOGSTORY_PROJECT_ID=your-project-id"; \
 		echo "Or it will default to: gcloud config get-value project"; \
+		exit 1; \
+	fi
+	@if [ -z "$(API_TYPE)" ]; then \
+		echo "Error: LOGSTORY_API_TYPE environment variable must be set to 'rest' or 'legacy'"; \
 		exit 1; \
 	fi
 	@if [ "$(API_TYPE)" = "rest" ] && [ -z "$(PROJECT_ID)" ]; then \
