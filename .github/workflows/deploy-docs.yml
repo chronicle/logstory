@@ -8,11 +8,8 @@ on:
       - 'docs/**' # Trigger only on changes within the docs directory
   workflow_dispatch: # Allows manual triggering
 
-# Required for GitHub Pages API deployment
 permissions:
   contents: read
-  pages: write  # Needed to push to gh-pages branch
-  id-token: write
 
 # Allow only one concurrent deployment
 concurrency:
@@ -63,6 +60,9 @@ jobs:
 
   deploy:
     needs: build-docs
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

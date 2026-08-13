@@ -1,5 +1,8 @@
 name: Timestamp Configuration Validation
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [ main, chronicle-main ]

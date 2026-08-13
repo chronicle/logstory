@@ -1,5 +1,8 @@
 name: Quality Gates
 
+permissions:
+  contents: read
+
 on:
   pull_request:
     branches: [main, chronicle-main]
