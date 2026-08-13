@@ -40,35 +40,43 @@ for this purpose.
    ```
 
 2. **Set up development environment**:
+
+   **Using `uv` (recommended)**:
    ```bash
-   python -m pip install --upgrade pip
-   pip install -e .
-   pip install ruff pytest pyyaml
+   uv sync --all-extras
+   uv run pre-commit install
    ```
 
-3. **Install pre-commit hooks** (optional but recommended):
+   **Using `make` / `pip`**:
    ```bash
-   pip install pre-commit
+   make dev-setup
+   # or manually:
+   python -m pip install --upgrade pip
+   pip install -e ".[dev]"
    pre-commit install
    ```
 
 ### Code Standards
 
-- **Linting**: Ruff is available for code linting and formatting (currently non-enforced)
+- **Linting & Formatting**: Ruff is used for linting, and Pyink (2-space Google style) for formatting
 - **Testing**: Add tests for new functionality in the `tests/` directory
 - **Documentation**: Update relevant documentation for user-facing changes
 
-### Running Tests
+### Running Tests and Quality Checks
 
 ```bash
-# Run timestamp validation tests
-cd tests
-python test_yaml.py
-python test_logstory.py
+# Run timestamp and core tests
+cd tests && uv run python test_yaml.py
+cd tests && uv run python test_logstory.py
 
-# Run linting
-ruff check .
-ruff format --check .
+# Or run tests using pytest
+uv run pytest
+
+# Run linting and format checks
+uv run ruff check .
+uv run pyink . --check
+# or via make
+make check
 ```
 
 ## Releases

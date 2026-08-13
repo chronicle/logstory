@@ -2,9 +2,16 @@
 
 <!--next-version-placeholder-->
 
-## Unreleased
+## v1.1.2 (2026-08-13)
 
 ### Changed
+- Modernized dependency management using `pyproject.toml` (PEP 621) as single source of truth
+  - Replaced outdated pinned dependencies with modern version bounds (`>=`)
+  - Consolidated development and documentation dependencies into `[project.optional-dependencies]`
+  - Removed separate `requirements_dev.txt` in favor of `.[dev]` and `uv` workflows
+  - Recompiled and pinned `src/logstory/requirements.txt` directly from `pyproject.toml`
+  - Updated `uv.lock` with latest dependencies
+  - Enhanced `Makefile` with `lock` and `compile-requirements` targets
 - **BREAKING**: Migrated CLI from Abseil to Typer with command groups and subcommands
   - Command structure now uses groups: `logstory usecases COMMAND` and `logstory replay COMMAND`
   - Flag names changed to use hyphens: `--customer-id` instead of `--customer_id`
