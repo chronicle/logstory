@@ -402,7 +402,7 @@ def _calculate_timestamp_replacement(
       # Unix epoch timestamp
       is_epoch = True
       event_time = datetime.datetime.fromtimestamp(int(event_timestamp))
-    elif dateformat == "windowsfiletime":
+    elif dateformat in ("windowsfiletime", "filetime"):
       # Special handling for Windows FileTime
       is_filetime = True
       event_time = filetime_to_datetime(int(event_timestamp))
@@ -469,6 +469,23 @@ def _calculate_timestamp_replacement(
 
       return (GroupMatch(ts_match, timestamp["group"]), new_event_timestamp)
   return None
+
+
+def _update_timestamp(
+    log_text: str,
+    timestamp: dict[str, Any],
+    old_base_time: datetime.datetime,
+    ts_delta_dict: dict[str, int],
+) -> str:
+  """Update a single timestamp in log_text (compatibility wrapper)."""
+  result = _calculate_timestamp_replacement(
+      log_text, timestamp, old_base_time, ts_delta_dict
+  )
+  if result:
+    match_obj, replacement = result
+    start, end = match_obj.start(), match_obj.end()
+    return log_text[:start] + replacement + log_text[end:]
+  return log_text
 
 
 def _write_entries_to_local_file(
