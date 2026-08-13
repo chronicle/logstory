@@ -2,7 +2,7 @@
 
 <!--next-version-placeholder-->
 
-## Unreleased
+## v1.1.2 (2026-08-13)
 
 ### Changed
 - Modernized dependency management using `pyproject.toml` (PEP 621) as single source of truth
