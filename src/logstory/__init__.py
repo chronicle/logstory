@@ -13,6 +13,9 @@
 # limitations under the License.
 
 # read version from installed package
-from importlib.metadata import version
+from importlib.metadata import PackageNotFoundError, version
 
-__version__ = version("logstory")
+try:
+  __version__ = version("logstory")
+except PackageNotFoundError:
+  __version__ = "1.2.0"

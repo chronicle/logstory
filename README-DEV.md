@@ -8,27 +8,27 @@ The public-facing documentation is in `docs/`. This document is for notes on con
 
 The packaging machinery is in `src/logstory/` and the resulting source and wheel packages are in `dist/`
 
-To build a new soure tarball and Python wheel, from git top-level run:
-```
-make build
+To build a new source tarball and Python wheel, from git top-level run:
+```bash
+just package-build
 ```
 
-The wheel to be published is in: dist/logstory-0.1.0-py3-none-any.whl
+The wheel to be published is in: `dist/logstory-*.whl`
 
-That would then be published to Test PyPI with:
+That can then be published to Test PyPI with:
 
-```
-twine upload --repository testpypi dist/*
+```bash
+just pypi-publish-test
 ```
 
 Test that with:
-```
-pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ logstory
+```bash
+just pypi-test-install
 ```
 
-When tested, that would then be published to PyPI with:
-```
-twine upload dist/*
+When tested, that can then be published to PyPI with:
+```bash
+just pypi-publish
 ```
 
 #
@@ -36,10 +36,13 @@ twine upload dist/*
 #
 
 To add a new usecase to the public Storage Bucket:
+```bash
+just usecase-publish RULES_SEARCH_WORKSHOP
 ```
-gcloud storage rsync --recursive \
-/usr/local/google/home/dandye/Projects/pkg101/logstory/usecases/RULES_SEARCH_WORKSHOP \
-gs://logstory-usecases-20241216/RULES_SEARCH_WORKSHOP
+
+Or publish all usecases:
+```bash
+just usecase-publish-all
 ```
 
 #
@@ -52,9 +55,19 @@ gs://logstory-usecases-20241216/RULES_SEARCH_WORKSHOP
 - **Documentation**: `[project.optional-dependencies] docs`
 
 ### Workflows:
-- **Lock dependencies**: `uv lock --upgrade` (or `make lock`)
+- **Lock dependencies**: `just deps-lock` (or `uv lock --upgrade`)
 - **Sync local environment**: `uv sync --all-extras`
-- **Compile deploy requirements**: `uv pip compile pyproject.toml -o src/logstory/requirements.txt` (or `make compile-requirements`)
+- **Compile deploy requirements**: `just deps-compile` (or `uv pip compile pyproject.toml -o src/logstory/requirements.txt`)
+
+#
+# Edit and Publish Docs
+#
+
+To edit and live-preview the docs:
+```bash
+just docs-live
+```
+and then view the docs at http://localhost:8000 (or build static docs with `just docs-build`).
 
 ## Contributing
 
