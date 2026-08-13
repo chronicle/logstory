@@ -39,9 +39,7 @@ def load_timestamp_patterns(yaml_file: Path) -> dict[str, list[dict]]:
     Dictionary mapping log types to their timestamp patterns
   """
   with open(yaml_file) as f:
-    data = yaml.safe_load(f)
-
-  return data
+    return yaml.safe_load(f)
 
 
 def analyze_pattern_matches(

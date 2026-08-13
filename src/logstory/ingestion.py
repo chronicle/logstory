@@ -11,11 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Ingestion backend abstraction for Logstory to support multiple APIs."""
+"""Ingestion backend abstraction for Logstory supporting multiple APIs."""
 
 import base64
-import json
-import os
+import logging
 import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -25,9 +24,68 @@ import requests as real_requests
 
 from .auth import AuthHandler
 
+LOGGER = logging.getLogger(__name__)
+
+HTTP_STATUS_OK = 200
+HTTP_STATUS_BAD_REQUEST = 400
+
+LEGACY_REGION_URL_MAP = {
+    "us": "https://malachiteingestion-pa.googleapis.com",
+    "usa": "https://malachiteingestion-pa.googleapis.com",
+    "europe": "https://europe-malachiteingestion-pa.googleapis.com",
+    "eu": "https://europe-malachiteingestion-pa.googleapis.com",
+    "asia": "https://asia-southeast1-malachiteingestion-pa.googleapis.com",
+    "asia-southeast1": "https://asia-southeast1-malachiteingestion-pa.googleapis.com",
+    "uk": "https://europe-west2-malachiteingestion-pa.googleapis.com",
+    "europe-west2": "https://europe-west2-malachiteingestion-pa.googleapis.com",
+    "sydney": "https://australia-southeast1-malachiteingestion-pa.googleapis.com",
+    "australia-southeast1": (
+        "https://australia-southeast1-malachiteingestion-pa.googleapis.com"
+    ),
+    "tel-aviv": "https://me-west1-malachiteingestion-pa.googleapis.com",
+    "me-west1": "https://me-west1-malachiteingestion-pa.googleapis.com",
+    "doha": "https://me-central1-malachiteingestion-pa.googleapis.com",
+    "me-central1": "https://me-central1-malachiteingestion-pa.googleapis.com",
+    "paris": "https://europe-west9-malachiteingestion-pa.googleapis.com",
+    "europe-west9": "https://europe-west9-malachiteingestion-pa.googleapis.com",
+    "frankfurt": "https://europe-west3-malachiteingestion-pa.googleapis.com",
+    "europe-west3": "https://europe-west3-malachiteingestion-pa.googleapis.com",
+    "turin": "https://europe-west12-malachiteingestion-pa.googleapis.com",
+    "europe-west12": "https://europe-west12-malachiteingestion-pa.googleapis.com",
+    "zurich": "https://europe-west6-malachiteingestion-pa.googleapis.com",
+    "europe-west6": "https://europe-west6-malachiteingestion-pa.googleapis.com",
+}
+
+REST_REGION_NAME_MAP = {
+    "us": "us-central1",
+    "usa": "us-central1",
+    "us-central1": "us-central1",
+    "europe": "europe-west1",
+    "eu": "europe-west1",
+    "europe-west1": "europe-west1",
+    "asia": "asia-southeast1",
+    "asia-southeast1": "asia-southeast1",
+    "uk": "europe-west2",
+    "europe-west2": "europe-west2",
+    "sydney": "australia-southeast1",
+    "australia-southeast1": "australia-southeast1",
+    "tel-aviv": "me-west1",
+    "me-west1": "me-west1",
+    "doha": "me-central1",
+    "me-central1": "me-central1",
+    "paris": "europe-west9",
+    "europe-west9": "europe-west9",
+    "frankfurt": "europe-west3",
+    "europe-west3": "europe-west3",
+    "turin": "europe-west12",
+    "europe-west12": "europe-west12",
+    "zurich": "europe-west6",
+    "europe-west6": "europe-west6",
+}
+
 
 class IngestionBackend(ABC):
-  """Abstract base class for ingestion backends."""
+  """Abstract base class for Chronicle ingestion backends."""
 
   def __init__(
       self,
@@ -40,12 +98,19 @@ class IngestionBackend(ABC):
     Args:
       auth_handler: Authentication handler instance
       customer_id: Customer/instance ID
-      region: Geographic region for the API
+      region: Geographic region for API endpoints
     """
     self.auth_handler = auth_handler
     self.customer_id = customer_id
-    self.region = region or os.environ.get("LOGSTORY_REGION", "US")
-    self.http_client = auth_handler.get_http_client()
+    self.region = region or "US"
+    self._http_client = None
+
+  @property
+  def http_client(self):
+    """Get authenticated HTTP client."""
+    if not self._http_client:
+      self._http_client = self.auth_handler.get_http_client()
+    return self._http_client
 
   @abstractmethod
   def post_unstructured_logs(
@@ -69,28 +134,26 @@ class IngestionBackend(ABC):
       entries: list[dict[str, Any]],
       labels: list[dict[str, str]],
   ) -> None:
-    """Post entity entries."""
+    """Post entities."""
 
   @abstractmethod
   def get_base_url(self) -> str:
-    """Get the base URL for this backend."""
+    """Get the base URL for API calls."""
 
 
 class LegacyIngestionBackend(IngestionBackend):
-  """Ingestion backend for the legacy malachite API."""
+  """Ingestion backend for the legacy Malachite Ingestion API."""
 
   def get_base_url(self) -> str:
-    """Get the base URL for legacy API."""
-    # Handle region prefix
-    url_prefix = f"{self.region.lower()}-" if self.region else ""
-    if url_prefix == "us-":  # US region doesn't use prefix
-      url_prefix = ""
+    """Get the base URL for legacy API based on region.
 
-    base_url = os.environ.get("INGESTION_API_BASE_URL")
-    if base_url:
-      return base_url
-
-    return f"https://{url_prefix}malachiteingestion-pa.googleapis.com"
+    Returns:
+      Base URL string for the regional legacy API endpoint.
+    """
+    region = self.region.lower() if self.region else "us"
+    return LEGACY_REGION_URL_MAP.get(
+        region, "https://malachiteingestion-pa.googleapis.com"
+    )
 
   def post_unstructured_logs(
       self,
@@ -100,33 +163,30 @@ class LegacyIngestionBackend(IngestionBackend):
   ) -> None:
     """Post unstructured log entries using legacy API."""
     uri = f"{self.get_base_url()}/v2/unstructuredlogentries:batchCreate"
-    body = json.dumps({
+    body = {
         "customer_id": self.customer_id,
         "log_type": log_type,
         "entries": entries,
-        "labels": labels,
-    })
+    }
+    if labels:
+      body["labels"] = labels
 
-    response = self.http_client.post(uri, data=body)
+    response = self.http_client.post(uri, json=body)
     self._check_response(response)
 
   def post_udm_events(
       self, entries: list[dict[str, Any]], labels: list[dict[str, str]]
   ) -> None:
     """Post UDM events using legacy API."""
-    # Add labels to each event's metadata
-    for entry in entries:
-      if "metadata" not in entry:
-        entry["metadata"] = {}
-      entry["metadata"]["ingestion_labels"] = labels
-
     uri = f"{self.get_base_url()}/v2/udmevents:batchCreate"
-    data = {
+    body = {
         "customer_id": self.customer_id,
         "events": entries,
     }
+    if labels:
+      body["labels"] = labels
 
-    response = self.http_client.post(uri, json=data)
+    response = self.http_client.post(uri, json=body)
     self._check_response(response)
 
   def post_entities(
@@ -137,25 +197,25 @@ class LegacyIngestionBackend(IngestionBackend):
   ) -> None:
     """Post entities using legacy API."""
     uri = f"{self.get_base_url()}/v2/entities:batchCreate"
-    body = json.dumps({
+    body = {
         "customer_id": self.customer_id,
         "log_type": log_type,
         "entities": entries,
-    })
+    }
 
-    response = self.http_client.post(uri, data=body)
+    response = self.http_client.post(uri, json=body)
     self._check_response(response)
 
   def _check_response(self, response: real_requests.Response) -> None:
     """Check API response for errors."""
-    try:
-      response.raise_for_status()
-    except real_requests.exceptions.HTTPError as err:
+    if response.status_code >= HTTP_STATUS_BAD_REQUEST:
       try:
         response_data = response.json()
       except ValueError:
         response_data = response.text
-      raise RuntimeError(f"API request failed: {response_data}") from err
+      raise RuntimeError(
+          f"Legacy API request failed (status {response.status_code}): {response_data}"
+      )
 
 
 class RestIngestionBackend(IngestionBackend):
@@ -169,14 +229,14 @@ class RestIngestionBackend(IngestionBackend):
       region: str | None = None,
       forwarder_name: str | None = None,
   ):
-    """Initialize REST API ingestion backend.
+    """Initialize REST ingestion backend.
 
     Args:
       auth_handler: Authentication handler instance
       customer_id: Customer/instance ID
       project_id: Google Cloud project ID
-      region: Geographic region for the API
-      forwarder_name: Optional custom forwarder name
+      region: Geographic region for API endpoints
+      forwarder_name: Name of the forwarder to use/create
     """
     super().__init__(auth_handler, customer_id, region)
     self.project_id = project_id
@@ -185,39 +245,20 @@ class RestIngestionBackend(IngestionBackend):
     self._forwarder_cache = {}
 
   def get_base_url(self) -> str:
-    """Get the base URL for REST API."""
-    # Map region to Chronicle API format
-    region = self.region.lower()
-    if region in ["us", ""]:
-      region = "us"
-    elif region in ["eu", "europe"]:
-      region = "europe"
-    elif region in ["uk", "london"]:
-      region = "europe-west2"
-    elif region in ["asia", "asia-southeast1"]:
-      region = "asia-southeast1"
-    elif region in ["sydney", "australia-southeast1"]:
-      region = "australia-southeast1"
-    elif region in ["tel_aviv", "me-west1"]:
-      region = "me-west1"
-    elif region in ["dammam", "me-central1"]:
-      region = "me-central1"
-    elif region in ["paris", "europe-west9"]:
-      region = "europe-west9"
-    elif region in ["frankfurt", "europe-west3"]:
-      region = "europe-west3"
-    elif region in ["turin", "europe-west12"]:
-      region = "europe-west12"
-    elif region in ["zurich", "europe-west6"]:
-      region = "europe-west6"
+    """Get the base URL for REST API based on region.
 
-    return f"https://{region}-chronicle.googleapis.com"
+    Returns:
+      Base URL string for the regional REST API endpoint.
+    """
+    region = self.region.lower() if self.region else "us"
+    resolved_region = REST_REGION_NAME_MAP.get(region, region)
+    return f"https://{resolved_region}-chronicle.googleapis.com"
 
   def _get_or_create_forwarder(self) -> str:
     """Get or create a forwarder for log ingestion.
 
     Returns:
-      Forwarder ID
+      Forwarder ID string.
     """
     if self._forwarder_id:
       return self._forwarder_id
@@ -236,7 +277,7 @@ class RestIngestionBackend(IngestionBackend):
     list_url = f"{self.get_base_url()}/v1alpha/{parent}/forwarders"
     response = self.http_client.get(list_url)
 
-    if response.status_code == 200:
+    if response.status_code == HTTP_STATUS_OK:
       forwarders = response.json().get("forwarders", [])
       for forwarder in forwarders:
         if forwarder.get("displayName") == self.forwarder_name:
@@ -260,14 +301,13 @@ class RestIngestionBackend(IngestionBackend):
     }
 
     response = self.http_client.post(create_url, json=payload)
-    if response.status_code == 200:
+    if response.status_code == HTTP_STATUS_OK:
       forwarder = response.json()
       self._forwarder_id = forwarder["name"].split("/")[-1]
       self._forwarder_cache[self.forwarder_name] = self._forwarder_id
       return self._forwarder_id
 
-    # If we can't create a forwarder, try to proceed without one
-    # Some endpoints may work without explicit forwarder
+    # If we cannot create a forwarder, try to proceed with default
     return "default"
 
   def post_unstructured_logs(
@@ -372,8 +412,6 @@ class RestIngestionBackend(IngestionBackend):
         f"/instances/{self.customer_id}"
     )
 
-    # Try using a similar endpoint pattern as UDM
-    # This may need adjustment based on actual API documentation
     url = f"{self.get_base_url()}/v1alpha/{parent}/entities:import"
 
     # Format entities for REST API
@@ -394,7 +432,7 @@ class RestIngestionBackend(IngestionBackend):
 
   def _check_response(self, response: real_requests.Response) -> None:
     """Check API response for errors."""
-    if response.status_code >= 400:
+    if response.status_code >= HTTP_STATUS_BAD_REQUEST:
       try:
         response_data = response.json()
       except ValueError:

@@ -100,22 +100,13 @@ exclude = [
 # Enable pycodestyle (`E`) and Pyflakes (`F`) codes by default
 select = ["E", "F", "W", "C90", "I", "N", "D", "UP", "S", "B", "A", "C4", "ISC", "T20", "PT", "Q", "RSE", "RET", "SIM", "TID", "ARG", "ERA", "PL", "SLF", "PIE", "G"]
 ignore = [
-    "D100",  # Missing docstring in public module
-    "D101",  # Missing docstring in public class
-    "D102",  # Missing docstring in public method
-    "D103",  # Missing docstring in public function
-    "D104",  # Missing docstring in public package
-    "D105",  # Missing docstring in magic method
-    "D107",  # Missing docstring in __init__
-    "E501",  # Line too long (we'll use a longer line length for existing code)
+    "E501",  # Line too long (managed by pyink formatter)
     "S101",  # Use of assert detected (common in tests)
     "PLR0913", # Too many arguments
     "PLR0917", # Too many positional arguments
     "PLR0912", # Too many branches
     "PLR0915", # Too many statements
     "C901",  # Function is too complex
-    "W293",  # Blank line contains whitespace (existing code)
-    "F841",  # Local variable assigned but never used (existing code)
 ]
 
 [tool.ruff.lint.pydocstyle]

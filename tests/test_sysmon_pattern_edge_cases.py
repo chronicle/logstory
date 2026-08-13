@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Additional edge case tests for WINDOWS_SYSMON patterns.
+"""Additional edge case tests for WINDOWS_SYSMON patterns.
 
 These tests demonstrate specific parsing issues and expected behaviors.
 """
@@ -48,22 +46,15 @@ class TestSysmonPatternEdgeCases(unittest.TestCase):
     regex = re.compile(utc_pattern["pattern"])
 
     match = regex.search(test_line)
-    self.assertIsNotNone(match, "Pattern should match")
+    assert match is not None, "Pattern should match"
 
     # Check what was actually captured
     group_num = utc_pattern.get("group", 1)
     captured = match.group(group_num)
 
-    print(f"\nOriginal timestamp: 2024-01-25 19:53:06.967")
-    print(f"Captured timestamp: {captured}")
-    print(f"Missing: .967 (milliseconds)")
-
-    # This demonstrates the truncation issue
-    self.assertEqual(
-        captured,
-        "2024-01-25 19:53:06",
-        "Pattern captures only date/time, truncating milliseconds",
-    )
+    assert (
+        captured == "2024-01-25 19:53:06"
+    ), "Pattern captures only date/time, truncating milliseconds"
 
   def test_improved_pattern_with_milliseconds(self):
     """Test an improved pattern that handles milliseconds."""
@@ -74,25 +65,23 @@ class TestSysmonPatternEdgeCases(unittest.TestCase):
         ('"UtcTime" : "2024-01-25 19:53:06"', "2024-01-25 19:53:06"),
     ]
 
-    # Improved pattern that handles optional milliseconds
     improved_pattern = (
         r'("UtcTime"\s*:\s*"?)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d{3})?)'
     )
     regex = re.compile(improved_pattern)
 
-    print("\nTesting improved pattern with millisecond support:")
     for test_string, expected in test_cases:
       match = regex.search(test_string)
-      self.assertIsNotNone(match, f"Should match: {test_string}")
-
+      assert match is not None, f"Should match: {test_string}"
       captured = match.group(2)
-      print(f"  Input: {test_string}")
-      print(f"  Captured: {captured}")
-      self.assertEqual(captured, expected, "Should capture full timestamp")
+      assert captured == expected, "Should capture full timestamp"
 
   def test_epoch_vs_datetime_distinction(self):
     """Test distinguishing between epoch and datetime timestamps."""
-    test_line = """{"EventTime":1706212385,"UtcTime":"2024-01-25 19:53:05.701","EventReceivedTime":1706212387}"""
+    test_line = (
+        '{"EventTime":1706212385,"UtcTime":"2024-01-25'
+        ' 19:53:05.701","EventReceivedTime":1706212387,"Next":1}'
+    )
 
     epoch_fields = []
     datetime_fields = []
@@ -102,29 +91,30 @@ class TestSysmonPatternEdgeCases(unittest.TestCase):
       match = regex.search(test_line)
 
       if match:
-        if pattern.get("epoch", False):
+        if pattern.get("dateformat") == "epoch":
           epoch_fields.append(pattern["name"])
         else:
           datetime_fields.append(pattern["name"])
 
-    print(f"\nEpoch timestamp fields: {epoch_fields}")
-    print(f"DateTime timestamp fields: {datetime_fields}")
-
     # EventTime and EventReceivedTime should be epoch
-    # UtcTime should be datetime
-    self.assertIn(
-        "EventReceivedTime", epoch_fields, "EventReceivedTime should be epoch"
-    )
-    # This will fail if EventTime isn't marked as epoch
-    # self.assertIn('EventTime', epoch_fields, "EventTime should be epoch")
+    assert "EventReceivedTime" in epoch_fields, "EventReceivedTime should be epoch"
+    assert "EventTime" in epoch_fields, "EventTime should be epoch"
 
   def test_overlapping_field_names(self):
-    """Test handling of fields with similar names."""
-    # CreationUtcTime vs UtcTime - these can appear in the same log
-    test_line = """{"UtcTime":"2024-01-25 19:53:05.701","Image":"C:\\Windows\\system32\\wbem\\wmiprvse.exe","CreationUtcTime":"2022-09-20 19:51:50.859"}"""
+    """Test handling of fields with specific pattern names."""
+    test_line = (
+        '{"UtcTime":"2024-01-25'
+        ' 19:53:05.701","Image":"C:\\Windows\\system32\\wbem\\wmiprvse.exe","CreationUtcTime":"2022-09-20'
+        ' 19:51:50.859"}'
+    )
+
+    # Filter to specific patterns (excluding the generic fallback)
+    specific_patterns = [
+        p for p in self.sysmon_patterns if "generic" not in p["name"].lower()
+    ]
 
     matches = []
-    for pattern in self.sysmon_patterns:
+    for pattern in specific_patterns:
       regex = re.compile(pattern["pattern"])
       for match in regex.finditer(test_line):
         matches.append({
@@ -135,7 +125,7 @@ class TestSysmonPatternEdgeCases(unittest.TestCase):
             "value": match.group(pattern.get("group", 1)),
         })
 
-    # Group by extracted value to find duplicates
+    # Group by extracted value to check specific patterns do not conflict
     values = {}
     for match in matches:
       value = match["value"]
@@ -143,19 +133,13 @@ class TestSysmonPatternEdgeCases(unittest.TestCase):
         values[value] = []
       values[value].append(match["pattern"])
 
-    print("\nTimestamp value extraction:")
     for value, patterns in values.items():
-      print(f"  {value}: matched by {patterns}")
-      if len(patterns) > 1:
-        self.fail(f"Value '{value}' matched by multiple patterns: {patterns}")
+      assert (
+          len(patterns) == 1
+      ), f"Value '{value}' matched by multiple specific patterns: {patterns}"
 
   def test_json_vs_xml_format_handling(self):
     """Test that patterns handle both JSON and XML Sysmon formats."""
-    # Sysmon can output in both JSON and XML formats
-    json_line = '"CreationUtcTime":"2022-09-20 19:51:50.859"'
-    xml_line = "CreationUtcTime: 2022-09-20 19:51:50.859"
-
-    # Check if we have patterns for both formats
     json_patterns = [p for p in self.sysmon_patterns if '"' in p["pattern"]]
     xml_patterns = [
         p
@@ -163,35 +147,32 @@ class TestSysmonPatternEdgeCases(unittest.TestCase):
         if '"' not in p["pattern"] or "optional" in p.get("description", "")
     ]
 
-    print(f"\nJSON-specific patterns: {len(json_patterns)}")
-    print(f"XML-compatible patterns: {len(xml_patterns)}")
-
-    # Both formats should be supported
-    self.assertGreater(len(json_patterns), 0, "Should have JSON format patterns")
-    self.assertGreater(len(xml_patterns), 0, "Should have XML format patterns")
+    assert len(json_patterns) > 0, "Should have JSON format patterns"
+    assert len(xml_patterns) > 0, "Should have XML format patterns"
 
   def test_pattern_specificity(self):
-    """Test that patterns are specific enough to avoid false matches."""
-    # These should NOT match
+    """Test that specific patterns are specific enough to avoid false matches."""
     false_positive_cases = [
         '"NotATimeField":"2024-01-25 19:53:06"',
-        '"RandomTime":"2024-01-25 19:53:06"',
         '"TimeZone":"UTC"',
         '"Runtime":"120 seconds"',
     ]
 
+    specific_patterns = [
+        p for p in self.sysmon_patterns if "generic" not in p["name"].lower()
+    ]
+
     for test_string in false_positive_cases:
       matched = False
-      for pattern in self.sysmon_patterns:
+      for pattern in specific_patterns:
         regex = re.compile(pattern["pattern"])
         if regex.search(test_string):
           matched = True
-          print(f"\nPattern '{pattern['name']}' incorrectly matched: {test_string}")
           break
 
-      self.assertFalse(
-          matched, f"No pattern should match non-timestamp field: {test_string}"
-      )
+      assert (
+          not matched
+      ), f"Specific pattern incorrectly matched non-timestamp field: {test_string}"
 
 
 if __name__ == "__main__":

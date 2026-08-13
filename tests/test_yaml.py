@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+
 import yaml
 
 
@@ -340,7 +342,6 @@ def validate_all_log_types(filepath):
       continue
 
     # Run all the individual validation functions for this log type
-    single_entry_data = {log_type: entry_data}
 
     try:
       # Validate this single log type
@@ -356,26 +357,30 @@ def validate_all_log_types(filepath):
   )
 
 
-# Example usage (replace with the actual file path):
-filepaths = [
-    "../src/logstory/logtypes_entities_timestamps.yaml",
-    "../src/logstory/logtypes_events_timestamps.yaml",
-]
-for filepath in filepaths:
-  try:
-    print(f"\n=== Validating {filepath} ===")
+if __name__ == "__main__":
+  from pathlib import Path
 
-    # Individual validation functions for detailed output
-    validate_base_time(filepath)
-    validate_base_time_format(filepath)
-    validate_timestamp_required_fields(filepath)
-    validate_epoch_dateformat_consistency(filepath)
-    validate_field_types(filepath)
+  base_dir = Path(__file__).parent.parent / "src/logstory"
+  filepaths = [
+      str(base_dir / "logtypes_entities_timestamps.yaml"),
+      str(base_dir / "logtypes_events_timestamps.yaml"),
+  ]
+  for filepath in filepaths:
+    try:
+      print(f"\n=== Validating {filepath} ===")
 
-    # Comprehensive validation for all log types
-    print("\n--- Comprehensive validation for all log types ---")
-    validate_all_log_types(filepath)
+      # Individual validation functions for detailed output
+      validate_base_time(filepath)
+      validate_base_time_format(filepath)
+      validate_timestamp_required_fields(filepath)
+      validate_epoch_dateformat_consistency(filepath)
+      validate_field_types(filepath)
 
-    print(f"\n✅ All validations passed for {filepath}")
-  except (ValueError, FileNotFoundError) as e:
-    print(f"\n❌ Error in {filepath}: {e}")
+      # Comprehensive validation for all log types
+      print("\n--- Comprehensive validation for all log types ---")
+      validate_all_log_types(filepath)
+
+      print(f"\nAll validations passed for {filepath}")
+    except (ValueError, FileNotFoundError) as e:
+      print(f"\nError in {filepath}: {e}")
+      sys.exit(1)

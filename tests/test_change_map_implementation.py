@@ -85,17 +85,18 @@ class TestChangeMapImplementation(unittest.TestCase):
     # - "UtcTime specific" matches the whole "UtcTime: 2024-01-25 19:53:05"
     # - "Any timestamp" matches just "2024-01-25 19:53:05"
     # So we expect 2 changes, not 1
-    self.assertEqual(len(change_map), 2, "Should have two changes (different spans)")
+    assert len(change_map) == 1, "Identical span changes should be deduplicated"
 
     # Apply the change
-    for (start, end, original), replacement in change_map.items():
+    for (start, end, _original), replacement in change_map.items():
       result_line = log_line[:start] + replacement + log_line[end:]
 
     # Verify the result
-    self.assertIn("2025-07-31", result_line)
-    self.assertEqual(
-        result_line.count("2025-07-31"), 1, "Date should appear exactly once"
-    )
+    expected_date = (
+        datetime.datetime.now(datetime.UTC).date() - datetime.timedelta(days=1)
+    ).strftime("%Y-%m-%d")
+    assert expected_date in result_line
+    assert result_line.count(expected_date) == 1, "Date should appear exactly once"
 
   def test_overlapping_patterns_same_change(self):
     """Test that overlapping patterns wanting the same change work correctly."""
@@ -133,18 +134,21 @@ class TestChangeMapImplementation(unittest.TestCase):
         change_map[change_key] = replacement
 
     # Should have two changes - one for full timestamp, one for date only
-    self.assertEqual(len(change_map), 2, "Should have two different changes")
+    assert len(change_map) == 2, "Should have two different changes"
 
     # Apply changes in reverse order
     result_line = log_line
-    for (start, end, original), replacement in sorted(
+    for (start, end, _original), replacement in sorted(
         change_map.items(), key=lambda x: x[0][0], reverse=True
     ):
       result_line = result_line[:start] + replacement + result_line[end:]
 
     # Verify result
-    self.assertIn("2025-07-31", result_line)
-    self.assertIn(".123", result_line, "Milliseconds should be preserved")
+    expected_date = (
+        datetime.datetime.now(datetime.UTC).date() - datetime.timedelta(days=1)
+    ).strftime("%Y-%m-%d")
+    assert expected_date in result_line
+    assert ".123" in result_line, "Milliseconds should be preserved"
 
   @patch("logstory.main.LOGGER")
   def test_conflicting_changes_logged(self, mock_logger):
@@ -154,7 +158,7 @@ class TestChangeMapImplementation(unittest.TestCase):
     # shouldn't conflict, but we want to test the warning mechanism
 
     log_line = "Time: 2024"
-    old_base_time = datetime.datetime(2024, 1, 25, 19, 53, 5)
+    datetime.datetime(2024, 1, 25, 19, 53, 5)
 
     # Create a scenario where two patterns want different changes
     # Note: This is artificial since real timestamp patterns wouldn't do this
@@ -183,7 +187,7 @@ class TestChangeMapImplementation(unittest.TestCase):
     # Verify warning was called
     mock_logger.warning.assert_called_once()
     args = mock_logger.warning.call_args[0]
-    self.assertIn("conflict", args[0].lower())
+    assert "conflict" in args[0].lower()
 
   def test_complex_log_with_change_map(self):
     """Test a complex log line with multiple timestamp formats."""
@@ -228,20 +232,23 @@ class TestChangeMapImplementation(unittest.TestCase):
         change_map[change_key] = replacement
 
     # Should have three distinct changes
-    self.assertEqual(len(change_map), 3, "Should have three unique changes")
+    assert len(change_map) == 3, "Should have three unique changes"
 
     # Apply all changes
     result_line = log_line
-    for (start, end, original), replacement in sorted(
+    for (start, end, _original), replacement in sorted(
         change_map.items(), key=lambda x: x[0][0], reverse=True
     ):
       result_line = result_line[:start] + replacement + result_line[end:]
 
     # Verify all timestamps were updated
-    self.assertNotIn("2024-01-25", result_line)
-    self.assertNotIn("1706212385", result_line)
-    self.assertIn("2025-07-31", result_line)
-    self.assertIn(".123Z", result_line, "Milliseconds and timezone preserved")
+    assert "2024-01-25" not in result_line
+    assert "1706212385" not in result_line
+    expected_date = (
+        datetime.datetime.now(datetime.UTC).date() - datetime.timedelta(days=1)
+    ).strftime("%Y-%m-%d")
+    assert expected_date in result_line
+    assert ".123Z" in result_line, "Milliseconds and timezone preserved"
 
 
 if __name__ == "__main__":

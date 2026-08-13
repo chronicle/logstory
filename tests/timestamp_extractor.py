@@ -22,7 +22,7 @@ logtypes_entities_timestamps.yaml, converts them to Python datetimes, and visual
 
 import argparse
 import re
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -58,8 +58,6 @@ def windows_filetime_to_datetime(filetime: int) -> datetime:
   # It's in 100-nanosecond intervals since then
   epoch_start = datetime(1601, 1, 1, tzinfo=UTC)
   delta_seconds = filetime / 10_000_000  # Convert to seconds
-  from datetime import timedelta
-
   return epoch_start + timedelta(seconds=delta_seconds)
 
 
@@ -154,7 +152,7 @@ def main():
   parser.add_argument(
       "--file",
       "-f",
-      default="/tmp/var/log/logstory/WINDOWS_AD.log",  # nosec B108
+      default="/tmp/var/log/logstory/WINDOWS_AD.log",  # nosec B108 # noqa: S108
       help="Path to log file (default: /tmp/var/log/logstory/WINDOWS_AD.log)",
   )
   parser.add_argument(

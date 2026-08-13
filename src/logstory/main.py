@@ -51,12 +51,15 @@ class MatchLike(Protocol):
   """Protocol for objects that behave like regex matches."""
 
   def start(self) -> int:
+    """Return start index of match."""
     ...
 
   def end(self) -> int:
+    """Return end index of match."""
     ...
 
   def group(self, n: int = 0) -> str:
+    """Return captured group substring."""
     ...
 
 
@@ -140,7 +143,12 @@ else:
 
 
 # Check if we can use ADC with impersonation for REST API
-def can_use_application_default_credentials():
+def can_use_application_default_credentials() -> bool:
+  """Check if Application Default Credentials can be used for REST API.
+
+  Returns:
+    True if ADC credentials with impersonation are configured, False otherwise.
+  """
   try:
     api_type = detect_auth_type()
     return (
@@ -502,7 +510,7 @@ def _write_entries_to_local_file(
   """
   # Get log directory from environment or use default
   if log_dir is None:
-    log_dir = os.getenv("LOGSTORY_LOCAL_LOG_DIR", "/tmp/var/log/logstory")  # nosec B108
+    log_dir = os.getenv("LOGSTORY_LOCAL_LOG_DIR", "/tmp/var/log/logstory")  # nosec B108 # noqa: S108
 
   # Create directory if it doesn't exist
   log_path = Path(log_dir)
