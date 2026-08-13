@@ -38,6 +38,9 @@ dev = [
     "pre-commit",
     "mypy",
     "pytest",
+    "pytest-cov",
+    "coverage[toml]",
+    "hypothesis",
     "types-requests",
     "types-PyYAML",
     "interrogate",
@@ -119,7 +122,7 @@ max-complexity = 10
 
 [tool.ruff.lint.per-file-ignores]
 # Tests can use assertions and have more relaxed rules
-"tests/*" = ["S101", "D", "PLR2004", "T201", "B904", "F541"]
+"tests/*" = ["S101", "D", "PLR2004", "T201", "B904", "F541", "SLF001", "S108", "SIM117", "E741", "F841", "PLC0415", "C901", "PLR0915", "S106", "ARG002"]
 # Scripts and CLI entry points can have print statements and more relaxed rules
 "src/logstory/logstory.py" = ["T201", "PLR0911", "PLR2004", "PLW2901", "UP031", "D415"]
 # Main module can have some relaxed rules for Cloud Functions compatibility
@@ -145,3 +148,25 @@ pyink-use-majority-quotes = true
 [tool.pytest.ini_options]
 pythonpath = [".", "src"]
 testpaths = ["tests"]
+
+
+[tool.coverage.run]
+source = ["logstory"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "pass",
+    "raise ImportError",
+    "except ImportError:",
+]
+show_missing = true
+fail_under = 80
