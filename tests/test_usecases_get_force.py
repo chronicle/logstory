@@ -107,38 +107,56 @@ class TestDownloadUsecaseForceLogic:
   def test_download_usecase_downloads_if_force_true(
       self, mock_get_blobs, mock_get_source_dirs, mock_buckets
   ):
-    """Test that existing usecase is re-downloaded when force=True."""
+    """Test that force=True removes stale files but preserves blob-list files."""
     mock_buckets.return_value = ["gs://test-bucket"]
     mock_get_source_dirs.return_value = ["TEST_USECASE"]
 
-    # Mock blob
-    mock_blob = mock.MagicMock()
-    mock_blob.name = "TEST_USECASE/test_file.log"
-    mock_get_blobs.return_value = [mock_blob]
+    # Mock blobs: kept_file.log should be preserved, new_file.log is new
+    mock_kept_blob = mock.MagicMock()
+    mock_kept_blob.name = "TEST_USECASE/kept_file.log"
+    mock_new_blob = mock.MagicMock()
+    mock_new_blob.name = "TEST_USECASE/new_file.log"
+    mock_get_blobs.return_value = [mock_kept_blob, mock_new_blob]
 
     with tempfile.TemporaryDirectory() as tmpdir:
       with mock.patch("logstory.logstory.__file__", tmpdir):
         usecase_dir = os.path.join(tmpdir, "usecases", "TEST_USECASE")
         os.makedirs(usecase_dir, exist_ok=True)
 
-        # Create a stale file that won't be in the new blob list
+        # Create files: one in blob list (should be preserved during force)
+        # and one stale (should be deleted)
+        kept_file = os.path.join(usecase_dir, "kept_file.log")
+        with open(kept_file, "w") as f:
+          f.write("kept content")
         stale_file = os.path.join(usecase_dir, "stale_file.log")
         with open(stale_file, "w") as f:
           f.write("stale content")
+
+        assert os.path.exists(kept_file)
         assert os.path.exists(stale_file)
 
         from logstory.logstory import _download_usecase
+
+        # Make kept_file re-download return True (file exists after download)
+        mock_kept_blob.download_to_filename.side_effect = lambda path: (
+            open(path, "w").write("redownloaded kept content")
+        )
 
         result = _download_usecase("TEST_USECASE", force=True)
 
         # Should return True
         assert result is True
-        # Should have called _get_blobs (because force=True)
-        mock_get_blobs.assert_called_once()
-        # Should have attempted to download new files
-        mock_blob.download_to_filename.assert_called_once()
-        # Stale file should be deleted
-        assert not os.path.exists(stale_file), "Stale file should be deleted on force update"
+        # Should have attempted to download both blobs
+        assert mock_kept_blob.download_to_filename.called
+        assert mock_new_blob.download_to_filename.called
+        # Stale file should be deleted during cleanup
+        assert not os.path.exists(
+            stale_file
+        ), "Stale file should be deleted on force update"
+        # Kept file should still exist (re-downloaded)
+        assert os.path.exists(
+            kept_file
+        ), "File in blob list should be preserved/re-downloaded"
 
   @mock.patch("logstory.logstory.get_usecases_buckets")
   @mock.patch("logstory.logstory._get_source_directories")

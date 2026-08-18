@@ -613,17 +613,18 @@ def _download_usecase(usecase: str, bucket: str = None, force: bool = False) -> 
   # For force updates, remove old files not present in new blob list
   if force and os.path.exists(usecase_dir):
     new_blob_paths = {blob.name for blob in blob_list if not blob.name.endswith("/")}
-    for root, dirs, files in os.walk(usecase_dir):
+    for root, dirs, files in os.walk(usecase_dir, topdown=False):
       for file in files:
         file_path = os.path.join(root, file)
-        relative_path = os.path.relpath(file_path, usecases_base)
+        # Compute relative path from usecases directory (same format as blob.name)
+        relative_path = os.path.relpath(file_path, os.path.join(usecases_base, "usecases"))
         if relative_path not in new_blob_paths:
           os.remove(file_path)
-      for dir_name in dirs[:]:
+      # Clean up empty directories (topdown=False ensures children are processed first)
+      for dir_name in dirs:
         dir_path = os.path.join(root, dir_name)
-        if not os.listdir(dir_path):
+        if os.path.exists(dir_path) and not os.listdir(dir_path):
           os.rmdir(dir_path)
-          dirs.remove(dir_name)
 
   for blob in blob_list:
     if blob.name.endswith("/"):
