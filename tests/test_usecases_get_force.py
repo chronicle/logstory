@@ -121,6 +121,12 @@ class TestDownloadUsecaseForceLogic:
         usecase_dir = os.path.join(tmpdir, "usecases", "TEST_USECASE")
         os.makedirs(usecase_dir, exist_ok=True)
 
+        # Create a stale file that won't be in the new blob list
+        stale_file = os.path.join(usecase_dir, "stale_file.log")
+        with open(stale_file, "w") as f:
+          f.write("stale content")
+        assert os.path.exists(stale_file)
+
         from logstory.logstory import _download_usecase
 
         result = _download_usecase("TEST_USECASE", force=True)
@@ -129,8 +135,10 @@ class TestDownloadUsecaseForceLogic:
         assert result is True
         # Should have called _get_blobs (because force=True)
         mock_get_blobs.assert_called_once()
-        # Should have attempted to download
+        # Should have attempted to download new files
         mock_blob.download_to_filename.assert_called_once()
+        # Stale file should be deleted
+        assert not os.path.exists(stale_file), "Stale file should be deleted on force update"
 
   @mock.patch("logstory.logstory.get_usecases_buckets")
   @mock.patch("logstory.logstory._get_source_directories")

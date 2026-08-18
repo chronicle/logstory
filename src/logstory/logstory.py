@@ -596,9 +596,8 @@ def _download_usecase(usecase: str, bucket: str = None, force: bool = False) -> 
     return False
 
   # Check if usecase is already installed
-  usecase_dir = os.path.join(
-      os.path.dirname(os.path.abspath(__file__)), "usecases/", usecase
-  )
+  usecases_base = os.path.dirname(os.path.abspath(__file__))
+  usecase_dir = os.path.join(usecases_base, "usecases/", usecase)
   if os.path.exists(usecase_dir) and not force:
     typer.echo(f"Usecase '{usecase}' is already installed. Use --force to update.")
     return True
@@ -606,16 +605,30 @@ def _download_usecase(usecase: str, bucket: str = None, force: bool = False) -> 
   # Download from the found source
   if force and os.path.exists(usecase_dir):
     print(f"Updating usecase '{usecase}' from source '{found_source}'")
-    shutil.rmtree(usecase_dir)
   else:
     print(f"Downloading usecase '{usecase}' from source '{found_source}'")
+
   blob_list = _get_blobs(found_source, usecase)
+
+  # For force updates, remove old files not present in new blob list
+  if force and os.path.exists(usecase_dir):
+    new_blob_paths = {blob.name for blob in blob_list if not blob.name.endswith("/")}
+    for root, dirs, files in os.walk(usecase_dir):
+      for file in files:
+        file_path = os.path.join(root, file)
+        relative_path = os.path.relpath(file_path, usecases_base)
+        if relative_path not in new_blob_paths:
+          os.remove(file_path)
+      for dir_name in dirs[:]:
+        dir_path = os.path.join(root, dir_name)
+        if not os.listdir(dir_path):
+          os.rmdir(dir_path)
+          dirs.remove(dir_name)
+
   for blob in blob_list:
     if blob.name.endswith("/"):
       continue
-    destination_file_name = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "usecases/", blob.name
-    )
+    destination_file_name = os.path.join(usecases_base, "usecases/", blob.name)
     os.makedirs(os.path.dirname(destination_file_name), exist_ok=True)
     print(f"Downloading {blob.name} to {destination_file_name}")
     blob.download_to_filename(destination_file_name)
