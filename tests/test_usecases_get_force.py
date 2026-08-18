@@ -75,12 +75,14 @@ def test_usecases_get_without_force_defaults_to_false():
 class TestDownloadUsecaseForceLogic:
   """Test _download_usecase() force parameter logic."""
 
+  @mock.patch("logstory.logstory.get_usecases_buckets")
   @mock.patch("logstory.logstory._get_source_directories")
   @mock.patch("logstory.logstory._get_blobs")
   def test_download_usecase_skips_if_exists_without_force(
-      self, mock_get_blobs, mock_get_source_dirs
+      self, mock_get_blobs, mock_get_source_dirs, mock_buckets
   ):
     """Test that existing usecase is skipped when force=False."""
+    mock_buckets.return_value = ["gs://test-bucket"]
     mock_get_source_dirs.return_value = ["TEST_USECASE"]
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -99,12 +101,14 @@ class TestDownloadUsecaseForceLogic:
         # Should not have called _get_blobs
         mock_get_blobs.assert_not_called()
 
+  @mock.patch("logstory.logstory.get_usecases_buckets")
   @mock.patch("logstory.logstory._get_source_directories")
   @mock.patch("logstory.logstory._get_blobs")
   def test_download_usecase_downloads_if_force_true(
-      self, mock_get_blobs, mock_get_source_dirs
+      self, mock_get_blobs, mock_get_source_dirs, mock_buckets
   ):
     """Test that existing usecase is re-downloaded when force=True."""
+    mock_buckets.return_value = ["gs://test-bucket"]
     mock_get_source_dirs.return_value = ["TEST_USECASE"]
 
     # Mock blob
@@ -128,12 +132,14 @@ class TestDownloadUsecaseForceLogic:
         # Should have attempted to download
         mock_blob.download_to_filename.assert_called_once()
 
+  @mock.patch("logstory.logstory.get_usecases_buckets")
   @mock.patch("logstory.logstory._get_source_directories")
   @mock.patch("logstory.logstory._get_blobs")
   def test_download_usecase_new_usecase_downloads_without_force(
-      self, mock_get_blobs, mock_get_source_dirs
+      self, mock_get_blobs, mock_get_source_dirs, mock_buckets
   ):
     """Test that new usecase is downloaded even without force flag."""
+    mock_buckets.return_value = ["gs://test-bucket"]
     mock_get_source_dirs.return_value = ["TEST_USECASE"]
 
     # Mock blob

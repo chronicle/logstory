@@ -606,6 +606,7 @@ def _download_usecase(usecase: str, bucket: str = None, force: bool = False) -> 
   # Download from the found source
   if force and os.path.exists(usecase_dir):
     print(f"Updating usecase '{usecase}' from source '{found_source}'")
+    shutil.rmtree(usecase_dir)
   else:
     print(f"Downloading usecase '{usecase}' from source '{found_source}'")
   blob_list = _get_blobs(found_source, usecase)

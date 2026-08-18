@@ -3,11 +3,11 @@ task: "Add --force flag to usecases get command"
 project: logstory
 effort: E3
 effort_source: classifier
-phase: verify
-progress: 20/34
+phase: complete
+progress: 31/34
 mode: interactive
 started: 2026-08-17T21:52:00Z
-updated: 2026-08-17T22:00:00Z
+updated: 2026-08-17T22:05:00Z
 ---
 
 ## Problem
@@ -160,6 +160,7 @@ Add an optional `--force` flag to the `usecases get` command that allows users t
 - **2026-08-17 14:52 UTC** — Using Typer boolean flag (`--force`) rather than string argument; more idiomatic for CLI
 - **2026-08-17 14:52 UTC** — Short alias `-f` included per CLI conventions (but not `-F` to avoid confusion with file paths)
 - **2026-08-17 21:55 UTC** — Analyzed `_download_usecase()`: currently downloads all files unconditionally via `blob.download_to_filename()`. Will add force check before the directory creation/download loop.
+- **2026-08-17 22:05 UTC** — Implementation complete: modified _download_usecase() with force parameter, added CLI flag via typer.Option, wrote comprehensive unit tests, updated documentation and changelog. Committed with git commit bc83c1d.
 
 ## Verification
 
