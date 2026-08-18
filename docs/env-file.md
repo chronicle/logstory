@@ -490,6 +490,9 @@ LOGSTORY_REGION=US
 # Supports: gs://bucket, file:///path, bare-bucket-name
 LOGSTORY_USECASES_BUCKETS=gs://bucket1,file:///local/usecases
 
+# Optional: Filter usecases for 'replay all' command (pipe-separated)
+LOGSTORY_USECASES=NETWORK_ANALYSIS|GITHUB
+
 # Optional: Local file output directory
 LOGSTORY_LOCAL_LOG_DIR=/tmp/var/log/logstory
 
