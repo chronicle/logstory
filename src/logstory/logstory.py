@@ -572,7 +572,7 @@ def _get_all_source_directories() -> list[str]:
   return list(all_directories)
 
 
-def _download_usecase(usecase: str, bucket: str = None) -> bool:
+def _download_usecase(usecase: str, bucket: str = None, force: bool = False) -> bool:
   """Download a usecase from configured sources. Returns True if successful."""
   sources = [bucket] if bucket else get_usecases_buckets()
 
@@ -595,8 +595,19 @@ def _download_usecase(usecase: str, bucket: str = None) -> bool:
     typer.echo(f"Available usecases: {available}")
     return False
 
+  # Check if usecase is already installed
+  usecase_dir = os.path.join(
+      os.path.dirname(os.path.abspath(__file__)), "usecases/", usecase
+  )
+  if os.path.exists(usecase_dir) and not force:
+    typer.echo(f"Usecase '{usecase}' is already installed. Use --force to update.")
+    return True
+
   # Download from the found source
-  print(f"Downloading usecase '{usecase}' from source '{found_source}'")
+  if force and os.path.exists(usecase_dir):
+    print(f"Updating usecase '{usecase}' from source '{found_source}'")
+  else:
+    print(f"Downloading usecase '{usecase}' from source '{found_source}'")
   blob_list = _get_blobs(found_source, usecase)
   for blob in blob_list:
     if blob.name.endswith("/"):
@@ -669,12 +680,18 @@ def usecase_get(
     usecase: str = typer.Argument(..., help="Name of the usecase to download"),
     env_file: str | None = EnvFileOption,
     bucket: str = UsecasesBucketOption,
+    force: bool = typer.Option(
+        False,
+        "--force",
+        "-f",
+        help="Force overwrite of existing usecase files",
+    ),
 ):
   """Download a usecase from configured sources."""
   # Load environment file
   load_env_file(env_file)
 
-  success = _download_usecase(usecase, bucket)
+  success = _download_usecase(usecase, bucket, force=force)
   if not success:
     raise typer.Exit(1)
 
