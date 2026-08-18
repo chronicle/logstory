@@ -16,7 +16,7 @@ import datetime
 import re
 import unittest
 
-from src.logstory.main import (
+from logstory.main import (
     EPOCH_AS_FILETIME,
     _update_timestamp,
     datetime_to_filetime,

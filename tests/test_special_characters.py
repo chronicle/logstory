@@ -17,8 +17,8 @@ import base64
 import json
 from unittest.mock import MagicMock
 
-from src.logstory.auth import LegacyAuthHandler, RestAuthHandler
-from src.logstory.ingestion import (
+from logstory.auth import LegacyAuthHandler, RestAuthHandler
+from logstory.ingestion import (
     LegacyIngestionBackend,
     RestIngestionBackend,
     sanitize_log_text,

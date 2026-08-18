@@ -41,28 +41,21 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ruff pytest pyyaml build twine
+          pip install ".[dev]" build twine
 
       - name: Run linting with Ruff
         run: |
           echo " Running Ruff linter..."
-          ruff check . --output-format=github || echo " Linting issues found - not enforced yet"
+          ruff check .
 
-      - name: Run formatting check with Ruff
-        run: |
-          echo " Checking code formatting..."
-          ruff format --check . || echo " Formatting issues found - not enforced yet"
-
-      - name: Run tests
+      - name: Run test suite with pytest & coverage
         run: |
           echo " Running test suite..."
-          cd tests
-          python test_yaml.py
-          python test_logstory.py
+          pytest --cov=logstory --cov-report=term-missing tests/
 
       - name: Run timestamp validation
         run: |
-          echo "⏱ Validating timestamp configurations..."
+          echo "Validating timestamp configurations..."
           python -c "
           import yaml
           import sys
