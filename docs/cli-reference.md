@@ -88,16 +88,26 @@ logstory usecases get USECASE_NAME
 
 # Download from specific source
 logstory usecases get USECASE_NAME --usecases-bucket gs://specific-bucket
+
+# Force update an existing usecase
+logstory usecases get USECASE_NAME --force
 ```
 
 **Options:**
 - `--env-file TEXT`: Path to .env file to load environment variables from
 - `--usecases-bucket TEXT`: Usecase source URI (gs://bucket, git@repo, etc.) - overrides config list
+- `--force`, `-f`: Force overwrite of existing usecase files (default: false)
 
 **Examples:**
 ```bash
 # Download using custom environment
 logstory usecases get EDR_WORKSHOP --env-file .env.prod
+
+# Force update an installed usecase
+logstory usecases get NETWORK_ANALYSIS --force
+
+# Update using short flag
+logstory usecases get NETWORK_ANALYSIS -f
 
 # Download from local file system
 logstory usecases get MALWARE --usecases-bucket file:///path/to/usecases

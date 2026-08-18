@@ -572,7 +572,7 @@ def _get_all_source_directories() -> list[str]:
   return list(all_directories)
 
 
-def _download_usecase(usecase: str, bucket: str = None) -> bool:
+def _download_usecase(usecase: str, bucket: str = None, force: bool = False) -> bool:
   """Download a usecase from configured sources. Returns True if successful."""
   sources = [bucket] if bucket else get_usecases_buckets()
 
@@ -595,15 +595,43 @@ def _download_usecase(usecase: str, bucket: str = None) -> bool:
     typer.echo(f"Available usecases: {available}")
     return False
 
+  # Check if usecase is already installed
+  usecases_base = os.path.dirname(os.path.abspath(__file__))
+  usecase_dir = os.path.join(usecases_base, "usecases/", usecase)
+  if os.path.exists(usecase_dir) and not force:
+    typer.echo(f"Usecase '{usecase}' is already installed. Use --force to update.")
+    return True
+
   # Download from the found source
-  print(f"Downloading usecase '{usecase}' from source '{found_source}'")
+  if force and os.path.exists(usecase_dir):
+    print(f"Updating usecase '{usecase}' from source '{found_source}'")
+  else:
+    print(f"Downloading usecase '{usecase}' from source '{found_source}'")
+
   blob_list = _get_blobs(found_source, usecase)
+
+  # For force updates, remove old files not present in new blob list
+  if force and os.path.exists(usecase_dir):
+    new_blob_paths = {blob.name for blob in blob_list if not blob.name.endswith("/")}
+    for root, dirs, files in os.walk(usecase_dir, topdown=False):
+      for file in files:
+        file_path = os.path.join(root, file)
+        # Compute relative path from usecases directory (same format as blob.name)
+        relative_path = os.path.relpath(file_path, os.path.join(usecases_base, "usecases"))
+        # Normalize path separators to forward slashes (blob.name uses forward slashes)
+        relative_path = relative_path.replace(os.sep, "/")
+        if relative_path not in new_blob_paths:
+          os.remove(file_path)
+      # Clean up empty directories (topdown=False ensures children are processed first)
+      for dir_name in dirs:
+        dir_path = os.path.join(root, dir_name)
+        if os.path.exists(dir_path) and not os.listdir(dir_path):
+          os.rmdir(dir_path)
+
   for blob in blob_list:
     if blob.name.endswith("/"):
       continue
-    destination_file_name = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "usecases/", blob.name
-    )
+    destination_file_name = os.path.join(usecases_base, "usecases/", blob.name)
     os.makedirs(os.path.dirname(destination_file_name), exist_ok=True)
     print(f"Downloading {blob.name} to {destination_file_name}")
     blob.download_to_filename(destination_file_name)
@@ -669,12 +697,18 @@ def usecase_get(
     usecase: str = typer.Argument(..., help="Name of the usecase to download"),
     env_file: str | None = EnvFileOption,
     bucket: str = UsecasesBucketOption,
+    force: bool = typer.Option(
+        False,
+        "--force",
+        "-f",
+        help="Force overwrite of existing usecase files",
+    ),
 ):
   """Download a usecase from configured sources."""
   # Load environment file
   load_env_file(env_file)
 
-  success = _download_usecase(usecase, bucket)
+  success = _download_usecase(usecase, bucket, force=force)
   if not success:
     raise typer.Exit(1)
 

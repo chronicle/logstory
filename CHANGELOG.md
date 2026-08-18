@@ -2,6 +2,14 @@
 
 <!--next-version-placeholder-->
 
+## Unreleased
+
+### Added
+- Added `--force` flag to `logstory usecases get` command to enable forced updates of existing usecases (Issue #38)
+  - New `--force` / `-f` option allows overwriting installed usecases with latest remote versions
+  - Maintains backward compatibility: without `--force`, skips already-installed usecases
+  - Added comprehensive unit tests for force flag functionality
+
 ## v1.2.3 (2026-08-13)
 
 ### Fixed
