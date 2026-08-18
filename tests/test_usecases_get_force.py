@@ -128,7 +128,6 @@ class TestDownloadUsecaseForceLogic:
         kept_file = os.path.join(usecase_dir, "kept_file.log")
         with open(kept_file, "w") as f:
           f.write("kept content")
-        kept_file_stat = os.stat(kept_file)
 
         stale_file = os.path.join(usecase_dir, "stale_file.log")
         with open(stale_file, "w") as f:
