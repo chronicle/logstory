@@ -314,10 +314,92 @@ def _validate_timestamp_config(log_type: str, timestamp_map: dict[str, Any]) -> 
   LOGGER.debug("Timestamp configuration validation passed for log type '%s'", log_type)
 
 
-def _get_log_content(
-    use_case: str, log_type: str, entities: bool | None = False
+def _search_udm(
+    http_client: requests.AuthorizedSession,
+    customer_id: str,
+    query: str,
+    start_time: datetime.datetime | None = None,
+    end_time: datetime.datetime | None = None,
+    region: str = "US",
 ) -> str:
-  """Retrieves log content from either GCS or local filesystem."""
+  """Searches UDM events and returns results as JSON lines.
+
+  Args:
+    http_client: Authenticated HTTP client for API calls.
+    customer_id: Chronicle customer ID.
+    query: UDM search query.
+    start_time: Start time for search (defaults to 30 days ago).
+    end_time: End time for search (defaults to now).
+    region: Chronicle region (US or EU).
+
+  Returns:
+    JSON lines string with UDM event results.
+  """
+  url_prefix = f"{region.lower()}-" if region.upper() != "US" else ""
+  api_url = (
+      f"https://{url_prefix}malachiteingestion-pa.googleapis.com/"
+      f"v1/projects/{customer_id}:search"
+  )
+
+  if end_time is None:
+    end_time = datetime.datetime.now(datetime.UTC)
+  if start_time is None:
+    start_time = end_time - datetime.timedelta(days=30)
+
+  payload = {
+      "query": query,
+      "start_time": start_time.isoformat(),
+      "end_time": end_time.isoformat(),
+  }
+
+  LOGGER.info("Executing UDM search query: %s", query)
+  try:
+    response = http_client.post(api_url, json=payload)
+    response.raise_for_status()
+
+    results = []
+    for line in response.text.strip().split('\n'):
+      if line:
+        event_data = json.loads(line)
+        results.append(json.dumps(event_data))
+
+    LOGGER.info("UDM search returned %d results", len(results))
+    return '\n'.join(results)
+  except Exception as e:
+    LOGGER.error("Error searching UDM: %s", e)
+    raise
+
+
+def _get_log_content(
+    use_case: str,
+    log_type: str,
+    entities: bool | None = False,
+    udm_query: str | None = None,
+    http_client: requests.AuthorizedSession | None = None,
+    customer_id: str | None = None,
+    region: str = "US",
+) -> str:
+  """Retrieves log content from GCS, local filesystem, or UDM search.
+
+  Args:
+    use_case: Use case name for file paths.
+    log_type: Log type name for file paths.
+    entities: Whether to retrieve entities instead of events.
+    udm_query: Optional UDM search query to execute instead of reading files.
+    http_client: Authenticated HTTP client for UDM search.
+    customer_id: Chronicle customer ID for UDM search.
+    region: Chronicle region for UDM search.
+
+  Returns:
+    Log content as string.
+  """
+  if udm_query:
+    if not http_client or not customer_id:
+      raise ValueError(
+          "http_client and customer_id required when using udm_query"
+      )
+    return _search_udm(http_client, customer_id, udm_query, region=region)
+
   if entities:
     object_name = f"{use_case}/ENTITIES/{log_type}.log"
   else:
@@ -644,6 +726,10 @@ def usecase_replay_logtype(
     ts_map_path: str | None = "./",
     entities: bool | None = False,
     local_file_output: bool = False,
+    udm_query: str | None = None,
+    http_client: requests.AuthorizedSession | None = None,
+    customer_id: str | None = None,
+    region: str | None = None,
 ) -> datetime.datetime | None:
   """Replays log data for a specific use case and log type.
 
@@ -657,6 +743,10 @@ def usecase_replay_logtype(
     ts_map_path: disk location of the yaml files
     entities: bool for Entities (True) vs Events (False)
     local_file_output: bool to write to local files instead of API
+    udm_query: Optional UDM search query to execute instead of reading files.
+    http_client: Authenticated HTTP client for UDM search.
+    customer_id: Chronicle customer ID for UDM search.
+    region: Chronicle region for UDM search.
 
   Returns:
     old_base_time: so that subsequent logtypes/usecases can all use the same value
@@ -681,7 +771,15 @@ def usecase_replay_logtype(
     api_for_log_type = timestamp_map[log_type]["api"]
     # Get optional log_dir from YAML config, defaults to None for backwards compatibility
     log_type_log_dir = timestamp_map[log_type].get("log_dir")
-    log_content = _get_log_content(use_case, log_type, entities)
+    log_content = _get_log_content(
+        use_case,
+        log_type,
+        entities,
+        udm_query=udm_query,
+        http_client=http_client,
+        customer_id=customer_id,
+        region=region or REGION,
+    )
     ingestion_labels = _get_ingestion_labels(
         use_case, logstory_exe_time, api_for_log_type
     )
