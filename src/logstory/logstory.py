@@ -618,6 +618,8 @@ def _download_usecase(usecase: str, bucket: str = None, force: bool = False) -> 
         file_path = os.path.join(root, file)
         # Compute relative path from usecases directory (same format as blob.name)
         relative_path = os.path.relpath(file_path, os.path.join(usecases_base, "usecases"))
+        # Normalize path separators to forward slashes (blob.name uses forward slashes)
+        relative_path = relative_path.replace(os.sep, "/")
         if relative_path not in new_blob_paths:
           os.remove(file_path)
       # Clean up empty directories (topdown=False ensures children are processed first)

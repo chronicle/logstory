@@ -128,6 +128,8 @@ class TestDownloadUsecaseForceLogic:
         kept_file = os.path.join(usecase_dir, "kept_file.log")
         with open(kept_file, "w") as f:
           f.write("kept content")
+        kept_file_stat = os.stat(kept_file)
+
         stale_file = os.path.join(usecase_dir, "stale_file.log")
         with open(stale_file, "w") as f:
           f.write("stale content")
@@ -137,10 +139,10 @@ class TestDownloadUsecaseForceLogic:
 
         from logstory.logstory import _download_usecase
 
-        # Make kept_file re-download return True (file exists after download)
-        mock_kept_blob.download_to_filename.side_effect = lambda path: (
-            open(path, "w").write("redownloaded kept content")
-        )
+        # Don't provide side_effect for kept_blob download (it's a no-op)
+        # This verifies the file was never deleted by the cleanup pass
+        mock_kept_blob.download_to_filename = mock.MagicMock()
+        mock_new_blob.download_to_filename = mock.MagicMock()
 
         result = _download_usecase("TEST_USECASE", force=True)
 
@@ -153,10 +155,12 @@ class TestDownloadUsecaseForceLogic:
         assert not os.path.exists(
             stale_file
         ), "Stale file should be deleted on force update"
-        # Kept file should still exist (re-downloaded)
+        # Kept file should still exist with original content (never deleted)
         assert os.path.exists(
             kept_file
-        ), "File in blob list should be preserved/re-downloaded"
+        ), "File in blob list should be preserved by cleanup"
+        with open(kept_file, "r") as f:
+          assert f.read() == "kept content", "Kept file content unchanged by cleanup"
 
   @mock.patch("logstory.logstory.get_usecases_buckets")
   @mock.patch("logstory.logstory._get_source_directories")
