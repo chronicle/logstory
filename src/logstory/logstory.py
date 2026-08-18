@@ -1040,6 +1040,52 @@ def replay_usecase_logtype(
   _replay_usecases(usecases, logtype_list, entities, timestamp_delta, local_file_output)
 
 
+@replay_app.command("from-udm-search")
+def replay_from_udm_search(
+    query: str = typer.Argument(..., help="UDM search query"),
+    env_file: str | None = EnvFileOption,
+    credentials_path: str | None = CredentialsOption,
+    customer_id: str | None = CustomerIdOption,
+    region: str | None = RegionOption,
+    timestamp_delta: str | None = TimestampDeltaOption,
+    local_file_output: bool = LocalFileOutputOption,
+    api_type: str | None = ApiTypeOption,
+    project_id: str | None = ProjectIdOption,
+    forwarder_name: str | None = ForwarderNameOption,
+    impersonate_service_account: str | None = ImpersonateServiceAccountOption,
+):
+  """Replay logs from a UDM search query.
+
+  Args:
+    query: UDM search query (e.g., "metadata.event_type='PROCESS_EXECUTION'")
+  """
+  final_credentials, final_customer_id, final_region = _load_and_validate_params(
+      env_file,
+      credentials_path,
+      customer_id,
+      region,
+      impersonate_service_account,
+      api_type,
+  )
+  _set_environment_vars(
+      final_credentials,
+      final_customer_id,
+      final_region,
+      api_type,
+      project_id,
+      forwarder_name,
+      impersonate_service_account,
+  )
+
+  _replay_from_udm(
+      query,
+      timestamp_delta,
+      final_customer_id,
+      final_region,
+      local_file_output,
+  )
+
+
 def _replay_usecases(
     usecases: list[str],
     logtypes: list[str] | str,
@@ -1081,6 +1127,61 @@ def _replay_usecases(
     metadata.ingestion_labels["replayed_from"]="logstory"
     metadata.ingestion_labels["source_usecase"]="{use_case}"
     """)
+
+
+def _replay_from_udm(
+    query: str,
+    timestamp_delta: str | None,
+    customer_id: str,
+    region: str,
+    local_file_output: bool = False,
+):
+  """Replay logs from UDM search query.
+
+  Args:
+    query: UDM search query.
+    timestamp_delta: Timestamp delta for time shifts.
+    customer_id: Chronicle customer ID.
+    region: Chronicle region.
+    local_file_output: Whether to write to local files instead of API.
+  """
+  logstory_exe_time = _get_current_time()
+
+  typer.echo(f"Executing UDM search query: {query}")
+
+  # Get authenticated HTTP client
+  if not imported_main.http_client:
+    raise RuntimeError("No HTTP client available for UDM search")
+
+  # We need a synthetic log_type and use_case for the replay pipeline
+  # Since this is a direct UDM search, we'll use generic names
+  use_case = "UDM_SEARCH"
+  log_type = "UDM_EVENTS"
+
+  try:
+    old_base_time = imported_main.usecase_replay_logtype(
+        use_case,
+        log_type,
+        logstory_exe_time,
+        timestamp_delta=timestamp_delta,
+        entities=False,
+        local_file_output=local_file_output,
+        udm_query=query,
+        http_client=imported_main.http_client,
+        customer_id=customer_id,
+        region=region,
+    )
+
+    typer.echo(f"Successfully replayed UDM search results with timestamp delta: {timestamp_delta}")
+    typer.echo(f"""UDM Search for the replayed logs:
+    metadata.ingested_timestamp.seconds >= {int(logstory_exe_time.timestamp())}
+    metadata.ingestion_labels["log_replay"]="true"
+    metadata.ingestion_labels["replayed_from"]="logstory"
+    metadata.ingestion_labels["source_type"]="udm_search"
+    """)
+  except Exception as e:
+    typer.echo(f"Error replaying UDM search: {e}", err=True)
+    raise typer.Exit(code=1)
 
 
 def entry_point():
