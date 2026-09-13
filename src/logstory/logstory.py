@@ -833,6 +833,8 @@ def _set_environment_vars(
   if impersonate_service_account:
     os.environ["LOGSTORY_IMPERSONATE_SERVICE_ACCOUNT"] = impersonate_service_account
 
+  imported_main.ingestion_backend = None
+
 
 @replay_app.command("all")
 def replay_all_usecases(
