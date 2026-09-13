@@ -427,15 +427,25 @@ def _get_gcs_blobs(bucket_name, usecase=None):
   """Get blobs from GCS bucket, trying authenticated client first."""
   client = None
 
-  # Try application default credentials first
-  try:
-    client = storage.Client()
-  except DefaultCredentialsError:
-    # Fall back to anonymous client for public buckets
+  creds_path = os.getenv("LOGSTORY_CREDENTIALS_PATH") or os.getenv(
+      "GOOGLE_APPLICATION_CREDENTIALS"
+  )
+  if creds_path and os.path.exists(creds_path):
     try:
-      client = storage.Client.create_anonymous_client()
-    except Exception as e:
-      raise Exception(f"Could not create GCS client: {e}") from e
+      client = storage.Client.from_service_account_json(creds_path)
+    except Exception:
+      pass
+
+  # Try application default credentials next
+  if client is None:
+    try:
+      client = storage.Client()
+    except DefaultCredentialsError:
+      # Fall back to anonymous client for public buckets
+      try:
+        client = storage.Client.create_anonymous_client()
+      except Exception as e:
+        raise Exception(f"Could not create GCS client: {e}") from e
 
   bucket = client.bucket(bucket_name)
   if usecase:
@@ -560,7 +570,7 @@ def _get_source_directories(source_uri: str) -> list[str]:
         top_level_directories.append(prefix)
     return top_level_directories
   except Exception as e:
-    source_type, identifier = _parse_source_uri(source_uri)
+    source_type, identifier = parse_usecase_source(source_uri)
     if source_type == "gcs":
       try:
         anon_client = storage.Client.create_anonymous_client()
@@ -634,7 +644,7 @@ def _download_usecase(usecase: str, bucket: str = None) -> bool:
       print(f"Downloading {blob.name} to {destination_file_name}")
       blob.download_to_filename(destination_file_name)
   except Exception as e:
-    source_type, identifier = _parse_source_uri(found_source)
+    source_type, identifier = parse_usecase_source(found_source)
     if source_type == "gcs":
       try:
         anon_client = storage.Client.create_anonymous_client()
