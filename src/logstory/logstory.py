@@ -548,16 +548,36 @@ def list_bucket_directories(
 
 def _get_source_directories(source_uri: str) -> list[str]:
   """Helper function to get source directories without printing."""
-  blobs = _get_blobs(source_uri)
-  top_level_directories = []
-  for blob in blobs.pages:
-    prefixes = blob.prefixes
-    for prefix in prefixes:
-      if "docs" in prefix:
-        continue
-      prefix = prefix.strip("/")
-      top_level_directories.append(prefix)
-  return top_level_directories
+  try:
+    blobs = _get_blobs(source_uri)
+    top_level_directories = []
+    for blob in blobs.pages:
+      prefixes = blob.prefixes
+      for prefix in prefixes:
+        if "docs" in prefix:
+          continue
+        prefix = prefix.strip("/")
+        top_level_directories.append(prefix)
+    return top_level_directories
+  except Exception as e:
+    source_type, identifier = _parse_source_uri(source_uri)
+    if source_type == "gcs":
+      try:
+        anon_client = storage.Client.create_anonymous_client()
+        bucket = anon_client.bucket(identifier)
+        blobs = bucket.list_blobs(delimiter="/")
+        top_level_directories = []
+        for blob in blobs.pages:
+          prefixes = blob.prefixes
+          for prefix in prefixes:
+            if "docs" in prefix:
+              continue
+            prefix = prefix.strip("/")
+            top_level_directories.append(prefix)
+        return top_level_directories
+      except Exception:
+        raise e
+    raise
 
 
 def _get_all_source_directories() -> list[str]:
@@ -602,16 +622,37 @@ def _download_usecase(usecase: str, bucket: str = None) -> bool:
 
   # Download from the found source
   print(f"Downloading usecase '{usecase}' from source '{found_source}'")
-  blob_list = _get_blobs(found_source, usecase)
-  for blob in blob_list:
-    if blob.name.endswith("/"):
-      continue
-    destination_file_name = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "usecases/", blob.name
-    )
-    os.makedirs(os.path.dirname(destination_file_name), exist_ok=True)
-    print(f"Downloading {blob.name} to {destination_file_name}")
-    blob.download_to_filename(destination_file_name)
+  try:
+    blob_list = _get_blobs(found_source, usecase)
+    for blob in blob_list:
+      if blob.name.endswith("/"):
+        continue
+      destination_file_name = os.path.join(
+          os.path.dirname(os.path.abspath(__file__)), "usecases/", blob.name
+      )
+      os.makedirs(os.path.dirname(destination_file_name), exist_ok=True)
+      print(f"Downloading {blob.name} to {destination_file_name}")
+      blob.download_to_filename(destination_file_name)
+  except Exception as e:
+    source_type, identifier = _parse_source_uri(found_source)
+    if source_type == "gcs":
+      try:
+        anon_client = storage.Client.create_anonymous_client()
+        bucket = anon_client.bucket(identifier)
+        blob_list = bucket.list_blobs(prefix=usecase)
+        for blob in blob_list:
+          if blob.name.endswith("/"):
+            continue
+          destination_file_name = os.path.join(
+              os.path.dirname(os.path.abspath(__file__)), "usecases/", blob.name
+          )
+          os.makedirs(os.path.dirname(destination_file_name), exist_ok=True)
+          print(f"Downloading {blob.name} to {destination_file_name}")
+          blob.download_to_filename(destination_file_name)
+      except Exception as fallback_e:
+        raise fallback_e from e
+    else:
+      raise e
 
   return True
 
