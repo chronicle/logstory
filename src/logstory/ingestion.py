@@ -283,7 +283,8 @@ class RestIngestionBackend(IngestionBackend):
     Returns:
       Resolved region string matching Chronicle regional endpoints.
     """
-    region = self.region.lower() if self.region else "us"
+    cleaned_region = self.region.strip().lower() if self.region else ""
+    region = cleaned_region if cleaned_region else "us"
     return REST_REGION_NAME_MAP.get(region, region)
 
   def _get_parent(self) -> str:
@@ -351,7 +352,7 @@ class RestIngestionBackend(IngestionBackend):
       }
 
       response = self.http_client.post(create_url, json=payload)
-      if response.status_code == HTTP_STATUS_OK:
+      if response.status_code in (HTTP_STATUS_OK, 201):
         forwarder = response.json()
         self._forwarder_id = forwarder["name"].split("/")[-1]
         self._forwarder_cache[self.forwarder_name] = self._forwarder_id

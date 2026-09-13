@@ -161,80 +161,53 @@ def can_use_application_default_credentials() -> bool:
     return False
 
 
-def get_ingestion_backend() -> IngestionBackend | None:
-  """Get or initialize the ingestion backend from environment configuration."""
-  global ingestion_backend, http_client
-
-  if ingestion_backend is not None:
-    return ingestion_backend
-
-  sec_mgr_creds = os.environ.get("SECRET_MANAGER_CREDENTIALS")
-  cust_id = os.environ.get("CUSTOMER_ID")
-  creds_path = os.environ.get("CREDENTIALS_PATH")
-  creds_json = os.environ.get("LOGSTORY_CREDENTIALS")
-  region = os.environ.get("REGION")
-  proj_id = os.environ.get("LOGSTORY_PROJECT_ID")
-  fwd_name = os.environ.get("LOGSTORY_FORWARDER_NAME")
-  impersonate_sa = os.environ.get("LOGSTORY_IMPERSONATE_SERVICE_ACCOUNT")
-
-  valid_creds_path = (
-      creds_path if (creds_path and os.path.exists(creds_path)) else None
-  )
-  sa_info = None
-
-  try:
-    if sec_mgr_creds:
-      sm_client = secretmanager.SecretManagerServiceClient()
-      sec_req = {"name": f"{sec_mgr_creds}/versions/latest"}
-      sec_resp = sm_client.access_secret_version(sec_req)
-      sa_info = json.loads(sec_resp.payload.data.decode("UTF-8"))
-    elif creds_json:
-      sa_info = json.loads(creds_json)
-    elif valid_creds_path:
-      with open(valid_creds_path) as f:
-        sa_info = json.load(f)
-
-    can_adc = (
-        has_application_default_credentials()
-        and impersonate_sa is not None
-    )
-
-    if (
-        sa_info
-        or valid_creds_path
-        or creds_json
-        or sec_mgr_creds
-        or can_adc
-    ):
-      api_type = detect_auth_type()
-      auth_handler = create_auth_handler(
-          api_type=api_type,
-          credentials_path=valid_creds_path,
-          service_account_info=sa_info,
-          secret_manager_credentials=sec_mgr_creds,
-          impersonate_service_account=impersonate_sa,
-      )
-      http_client = auth_handler.get_http_client()
-      if cust_id:
-        ingestion_backend = create_ingestion_backend(
-            auth_handler=auth_handler,
-            customer_id=cust_id,
-            api_type=api_type,
-            project_id=proj_id,
-            region=region,
-            forwarder_name=fwd_name,
-        )
-  except Exception as err:  # pylint: disable=broad-exception-caught
-    LOGGER.warning("Failed to initialize ingestion backend: %s", err)
-
-  return ingestion_backend
-
+can_use_adc = can_use_application_default_credentials()
 
 # Initialize ingestion_backend as None by default
 ingestion_backend = None
 
-# Create authentication and backend based on API type at module load time
-get_ingestion_backend()
+# Create authentication and backend based on API type
+if (
+    service_account_info
+    or CREDENTIALS_PATH
+    or CREDENTIALS_JSON
+    or SECRET_MANAGER_CREDENTIALS
+    or can_use_adc
+):
+  # Get API type from environment variable
+  api_type = detect_auth_type()
+
+  LOGGER.info("Using API type: %s", api_type)
+  LOGGER.info("PROJECT_ID env var: %s", PROJECT_ID)
+
+  # Create appropriate auth handler
+  auth_handler = create_auth_handler(
+      api_type=api_type,
+      credentials_path=CREDENTIALS_PATH,
+      service_account_info=service_account_info,
+      secret_manager_credentials=SECRET_MANAGER_CREDENTIALS,
+      impersonate_service_account=IMPERSONATE_SERVICE_ACCOUNT,
+  )
+
+  # Get HTTP client from auth handler
+  http_client = auth_handler.get_http_client()
+
+  # Create ingestion backend if we have customer ID
+  if CUSTOMER_ID:
+    ingestion_backend = create_ingestion_backend(
+        auth_handler=auth_handler,
+        customer_id=CUSTOMER_ID,
+        api_type=api_type,
+        project_id=PROJECT_ID,
+        region=REGION,
+        forwarder_name=FORWARDER_NAME,
+    )
+# Legacy fallback for backward compatibility when no auth is configured
+elif service_account_info:
+  credentials = service_account.Credentials.from_service_account_info(
+      service_account_info, scopes=SCOPES
+  )
+  http_client = requests.AuthorizedSession(credentials)
 
 
 def filetime_to_datetime(filetime):
@@ -816,7 +789,7 @@ def usecase_replay_logtype(
         log_type,
         entries,
         ingestion_labels,
-        None if local_file_output else (ingestion_backend or get_ingestion_backend()),
+        ingestion_backend,
         local_file_output,
         log_type_log_dir,
     )

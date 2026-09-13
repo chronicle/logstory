@@ -901,7 +901,7 @@ def replay_all_usecases(
     _set_environment_vars(
         None,
         None,
-        region,
+        region or get_region_default(),
         api_type,
         project_id or get_project_id_default(),
         forwarder_name,
@@ -986,7 +986,7 @@ def replay_usecase(
     _set_environment_vars(
         None,
         None,
-        region,
+        region or get_region_default(),
         api_type,
         project_id or get_project_id_default(),
         forwarder_name,
@@ -1047,7 +1047,7 @@ def replay_usecase_logtype(
     _set_environment_vars(
         None,
         None,
-        region,
+        region or get_region_default(),
         api_type,
         project_id or get_project_id_default(),
         forwarder_name,

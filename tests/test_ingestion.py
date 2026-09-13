@@ -168,6 +168,11 @@ class TestRestIngestionBackend:
     backend_asia = RestIngestionBackend(mock_auth, "c1", "p1", region="asia-southeast1")
     assert "asia-southeast1-chronicle.googleapis.com" in backend_asia.get_base_url()
 
+    # Test whitespace/empty fallback to "us"
+    backend_empty = RestIngestionBackend(mock_auth, "c1", "p1", region="  ")
+    assert "us-chronicle.googleapis.com" in backend_empty.get_base_url()
+    assert backend_empty._get_parent() == "projects/p1/locations/us/instances/c1"
+
   def test_forwarder_creation_flow(self):
     """Test forwarder listing, caching, and creation fallback."""
     mock_auth = MagicMock(spec=RestAuthHandler)
@@ -191,13 +196,13 @@ class TestRestIngestionBackend:
     # Cached access
     assert backend._get_or_create_forwarder() == "fwd-found-123"
 
-    # Case 2: Not found in list, create succeeds
+    # Case 2: Not found in list, create succeeds with 201 Created
     backend_create = RestIngestionBackend(
         mock_auth, "c1", "p1", region="us", forwarder_name="Custom-Fwd"
     )
     mock_list_empty = MagicMock(status_code=200)
     mock_list_empty.json.return_value = {"forwarders": []}
-    mock_create_resp = MagicMock(status_code=200)
+    mock_create_resp = MagicMock(status_code=201)
     mock_create_resp.json.return_value = {
         "name": "projects/p1/locations/us/instances/c1/forwarders/fwd-created-456"
     }
