@@ -1,0 +1,24 @@
+filter {
+    json {
+        on_error => "not_json"
+        source => "message"
+        array_function => "split_columns"
+    }
+    if [whenCreated] != "" {
+        grok {
+          match => {
+            "whenCreated" => ["\/Date\\((%{GREEDYDATA:when_created})\\)\/"]
+          }
+          overwrite => ["when_created"]
+        }
+        date {
+            match => ["when_created", "UNIX_MS"]
+            target => "event.idm.entity.metadata.interval.start_time"
+        }
+    }
+   mutate {
+    merge => {
+      "@output" => "event"
+    }
+  }
+}
