@@ -445,6 +445,24 @@ class TestCliCommandsExecution:
         )
         assert result.exit_code == 0
 
+  def test_replay_usecase_entities_missing_skips_cleanly(self):
+    """Test logstory replay usecase with --entities skips gracefully if no entities exist."""
+    with patch("logstory.logstory.get_usecases", return_value=["EDR_WORKSHOP"]):
+      with patch("logstory.logstory._get_logtypes", return_value=[]):
+        result = runner.invoke(
+            app,
+            [
+                "replay",
+                "usecase",
+                "EDR_WORKSHOP",
+                "--entities",
+                "--local-file-output",
+                "--no-get",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "No entity logs found" in result.stdout
+
   def test_replay_usecase_logtype_command(self):
     """Test logstory replay logtype command."""
     with patch("logstory.logstory.get_usecases", return_value=["NETWORK_ANALYSIS"]):

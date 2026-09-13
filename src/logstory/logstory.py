@@ -996,6 +996,9 @@ def replay_usecase(
   usecases = [usecase]
   logtypes = _get_logtypes(usecase, entities=entities)
   if not logtypes:
+    if entities:
+      typer.echo(f"No entity logs found for usecase '{usecase}', skipping.")
+      return
     print(f"No logs found for usecase '{usecase}'")
     raise typer.Exit(1)
   _replay_usecases(usecases, logtypes, entities, timestamp_delta, local_file_output)
