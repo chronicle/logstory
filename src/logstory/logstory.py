@@ -149,6 +149,11 @@ def get_timestamp_delta_default():
   return os.getenv("LOGSTORY_TIMESTAMP_DELTA", "1d")
 
 
+def get_project_id_default() -> str | None:
+  """Get Google Cloud project ID from environment variable."""
+  return os.getenv("LOGSTORY_PROJECT_ID")
+
+
 def get_auto_get_default():
   """Get auto-get setting from environment variable."""
   auto_get_value = os.getenv("LOGSTORY_AUTO_GET", "").lower()
@@ -711,7 +716,8 @@ def _load_and_validate_params(
     region: str | None,
     impersonate_service_account: str | None = None,
     api_type: str | None = None,
-) -> tuple[str | None, str, str]:
+    project_id: str | None = None,
+) -> tuple[str | None, str, str, str | None]:
   """Load environment file and validate/resolve required parameters."""
   # Load environment file first
   load_env_file(env_file)
@@ -721,6 +727,7 @@ def _load_and_validate_params(
   final_customer_id = customer_id or get_customer_id_default()
   final_region = region or get_region_default()
   final_api_type = api_type or os.environ.get("LOGSTORY_API_TYPE", "").lower()
+  final_project_id = project_id or get_project_id_default()
   final_impersonate = impersonate_service_account or os.environ.get(
       "LOGSTORY_IMPERSONATE_SERVICE_ACCOUNT"
   )
@@ -730,24 +737,25 @@ def _load_and_validate_params(
   can_use_adc = has_adc and final_impersonate and final_api_type == "rest"
 
   # STRICT VALIDATION for REST API
-  if final_api_type == "rest":
-    # Check for project ID if REST API is explicitly requested
-    project_id = os.environ.get("LOGSTORY_PROJECT_ID")
-    if not project_id:
-      typer.echo("Error: REST API is specified but missing required parameters!")
-      typer.echo("")
-      typer.echo("LOGSTORY_API_TYPE=rest requires:")
-      typer.echo("  • LOGSTORY_PROJECT_ID (Google Cloud project ID)")
-      typer.echo("")
-      typer.echo("Current configuration:")
-      typer.echo(f"  • API Type: {final_api_type}")
-      typer.echo(f"  • Project ID: {project_id or 'NOT SET'}")
-      typer.echo("")
-      typer.echo("Fix by adding to your .env file or environment:")
-      typer.echo("  LOGSTORY_PROJECT_ID=your-project-id")
-      typer.echo("")
-      typer.echo("Or use auto-detection by removing LOGSTORY_API_TYPE")
-      raise typer.Exit(1)
+  # Check for project ID if REST API is explicitly requested
+  if final_api_type == "rest" and not final_project_id:
+    typer.echo("Error: REST API is specified but missing required parameters!")
+    typer.echo("")
+    typer.echo("LOGSTORY_API_TYPE=rest requires:")
+    typer.echo("  * LOGSTORY_PROJECT_ID (Google Cloud project ID)")
+    typer.echo("")
+    typer.echo("Current configuration:")
+    typer.echo(f"  * API Type: {final_api_type}")
+    typer.echo(f"  * Project ID: {final_project_id or 'NOT SET'}")
+    typer.echo("")
+    typer.echo("Fix by adding to your .env file or environment:")
+    typer.echo("  LOGSTORY_PROJECT_ID=your-project-id")
+    typer.echo("")
+    typer.echo("Or pass via CLI option:")
+    typer.echo("  --project-id your-project-id")
+    typer.echo("")
+    typer.echo("Or use auto-detection by removing LOGSTORY_API_TYPE")
+    raise typer.Exit(1)
 
   # Validate required parameters
   if not final_customer_id or (not final_credentials and not can_use_adc):
@@ -786,7 +794,7 @@ def _load_and_validate_params(
   if final_customer_id:
     final_customer_id = validate_uuid4(final_customer_id)
 
-  return final_credentials, final_customer_id, final_region
+  return final_credentials, final_customer_id, final_region, final_project_id
 
 
 def _set_environment_vars(
@@ -866,20 +874,23 @@ def replay_all_usecases(
 
   # Skip credential validation if using local file output
   if not local_file_output:
-    final_credentials, final_customer_id, final_region = _load_and_validate_params(
-        env_file,
-        credentials_path,
-        customer_id,
-        region,
-        impersonate_service_account,
-        api_type,
+    final_credentials, final_customer_id, final_region, final_project_id = (
+        _load_and_validate_params(
+            env_file,
+            credentials_path,
+            customer_id,
+            region,
+            impersonate_service_account,
+            api_type,
+            project_id,
+        )
     )
     _set_environment_vars(
         final_credentials,
         final_customer_id,
         final_region,
         api_type,
-        project_id,
+        final_project_id,
         forwarder_name,
         impersonate_service_account,
     )
@@ -890,7 +901,7 @@ def replay_all_usecases(
         None,
         region,
         api_type,
-        project_id,
+        project_id or get_project_id_default(),
         forwarder_name,
         impersonate_service_account,
     )
@@ -948,20 +959,23 @@ def replay_usecase(
 
   # Skip credential validation if using local file output
   if not local_file_output:
-    final_credentials, final_customer_id, final_region = _load_and_validate_params(
-        env_file,
-        credentials_path,
-        customer_id,
-        region,
-        impersonate_service_account,
-        api_type,
+    final_credentials, final_customer_id, final_region, final_project_id = (
+        _load_and_validate_params(
+            env_file,
+            credentials_path,
+            customer_id,
+            region,
+            impersonate_service_account,
+            api_type,
+            project_id,
+        )
     )
     _set_environment_vars(
         final_credentials,
         final_customer_id,
         final_region,
         api_type,
-        project_id,
+        final_project_id,
         forwarder_name,
         impersonate_service_account,
     )
@@ -972,7 +986,7 @@ def replay_usecase(
         None,
         region,
         api_type,
-        project_id,
+        project_id or get_project_id_default(),
         forwarder_name,
         impersonate_service_account,
     )
@@ -1004,20 +1018,23 @@ def replay_usecase_logtype(
   """Replay specific logtypes from a usecase."""
   # Skip credential validation if using local file output
   if not local_file_output:
-    final_credentials, final_customer_id, final_region = _load_and_validate_params(
-        env_file,
-        credentials_path,
-        customer_id,
-        region,
-        impersonate_service_account,
-        api_type,
+    final_credentials, final_customer_id, final_region, final_project_id = (
+        _load_and_validate_params(
+            env_file,
+            credentials_path,
+            customer_id,
+            region,
+            impersonate_service_account,
+            api_type,
+            project_id,
+        )
     )
     _set_environment_vars(
         final_credentials,
         final_customer_id,
         final_region,
         api_type,
-        project_id,
+        final_project_id,
         forwarder_name,
         impersonate_service_account,
     )
@@ -1030,7 +1047,7 @@ def replay_usecase_logtype(
         None,
         region,
         api_type,
-        project_id,
+        project_id or get_project_id_default(),
         forwarder_name,
         impersonate_service_account,
     )

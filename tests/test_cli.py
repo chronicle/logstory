@@ -42,6 +42,7 @@ from logstory.logstory import (
     get_auto_get_default,
     get_credentials_default,
     get_customer_id_default,
+    get_project_id_default,
     get_region_default,
     get_timestamp_delta_default,
     get_usecases,
@@ -295,6 +296,13 @@ class TestDiscoveryAndDownloads:
 class TestParamValidationAndEnvSetup:
   """Test parameter loading, validation and environment configuration."""
 
+  def test_get_project_id_default(self):
+    """Test get_project_id_default returns environment value or None."""
+    with patch.dict(os.environ, {"LOGSTORY_PROJECT_ID": "my-test-proj"}, clear=True):
+      assert get_project_id_default() == "my-test-proj"
+    with patch.dict(os.environ, {}, clear=True):
+      assert get_project_id_default() is None
+
   def test_load_and_validate_params_rest_missing_project_id_raises(self):
     """Test REST API without project ID raises Exit."""
     with patch.dict(os.environ, {"LOGSTORY_API_TYPE": "rest"}, clear=True):
@@ -306,6 +314,29 @@ class TestParamValidationAndEnvSetup:
             region="us",
             api_type="rest",
         )
+
+  @patch("logstory.logstory.validate_credentials_file")
+  @patch("logstory.logstory.validate_uuid4")
+  def test_load_and_validate_params_rest_with_cli_project_id(
+      self, mock_uuid, mock_creds
+  ):
+    """Test REST API honors project_id from CLI parameter without env var."""
+    mock_creds.return_value = "/valid/creds.json"
+    mock_uuid.return_value = "12345678-1234-4234-8234-123456789abc"
+
+    with patch.dict(os.environ, {}, clear=True):
+      creds, cust, reg, proj = _load_and_validate_params(
+          env_file=None,
+          credentials_path="/valid/creds.json",
+          customer_id="12345678-1234-4234-8234-123456789abc",
+          region="us",
+          api_type="rest",
+          project_id="cli-project-123",
+      )
+      assert creds == "/valid/creds.json"
+      assert cust == "12345678-1234-4234-8234-123456789abc"
+      assert reg == "us"
+      assert proj == "cli-project-123"
 
   def test_load_and_validate_params_missing_customer_id_raises(self):
     """Test missing customer ID raises Exit."""

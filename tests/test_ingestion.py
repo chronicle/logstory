@@ -160,10 +160,13 @@ class TestRestIngestionBackend:
     """Test regional URL resolution for REST API."""
     mock_auth = MagicMock(spec=RestAuthHandler)
     backend = RestIngestionBackend(mock_auth, "c1", "p1", region="europe")
-    assert "europe-west1-chronicle.googleapis.com" in backend.get_base_url()
+    assert "europe-chronicle.googleapis.com" in backend.get_base_url()
 
     backend_us = RestIngestionBackend(mock_auth, "c1", "p1", region="us")
-    assert "us-central1-chronicle.googleapis.com" in backend_us.get_base_url()
+    assert "us-chronicle.googleapis.com" in backend_us.get_base_url()
+
+    backend_asia = RestIngestionBackend(mock_auth, "c1", "p1", region="asia-southeast1")
+    assert "asia-southeast1-chronicle.googleapis.com" in backend_asia.get_base_url()
 
   def test_forwarder_creation_flow(self):
     """Test forwarder listing, caching, and creation fallback."""
@@ -205,7 +208,7 @@ class TestRestIngestionBackend:
     created_id = backend_create._get_or_create_forwarder()
     assert created_id == "fwd-created-456"
 
-    # Case 3: Create fails, fallback to default
+    # Case 3: Create fails, fallback to None
     backend_fail = RestIngestionBackend(
         mock_auth, "c1", "p1", region="us", forwarder_name="Fail-Fwd"
     )
@@ -213,7 +216,7 @@ class TestRestIngestionBackend:
     mock_session.post.return_value = mock_create_fail
 
     fallback_id = backend_fail._get_or_create_forwarder()
-    assert fallback_id == "default"
+    assert fallback_id is None
 
   def test_post_udm_events_rest(self):
     """Test post_udm_events with metadata generation and labels."""
@@ -235,6 +238,7 @@ class TestRestIngestionBackend:
     udm_event = payload["inline_source"]["events"][0]["udm"]
     assert "metadata" in udm_event
     assert "event_timestamp" in udm_event["metadata"]
+    assert udm_event["metadata"]["event_timestamp"].endswith("Z")
     assert "id" in udm_event["metadata"]
     assert udm_event["metadata"]["ingestion_labels"] == labels
 
@@ -253,8 +257,10 @@ class TestRestIngestionBackend:
 
     mock_session.post.assert_called_once()
     payload = mock_session.post.call_args.kwargs["json"]
+    assert payload["inline_source"]["log_type"] == "ASSET"
     entity_entry = payload["inline_source"]["entities"][0]
-    assert entity_entry["log_type"] == "ASSET"
+    assert entity_entry["hostname"] == "host1"
+    assert entity_entry["ip"] == "10.0.0.1"
     assert entity_entry["labels"] == {"dept": "eng"}
 
   def test_check_response_error_handling(self):
@@ -394,3 +400,28 @@ class TestCreateIngestionBackend:
     post_call = mock_session.post.call_args
     entity_out = post_call.kwargs["json"]["inline_source"]["entities"][0]
     assert "labels" not in entity_out
+
+  def test_rest_post_unstructured_without_forwarder(self):
+    """Test REST post_unstructured_logs omits forwarder if not available."""
+    mock_auth = MagicMock(spec=RestAuthHandler)
+    mock_session = MagicMock()
+    mock_session.get.return_value = MagicMock(
+        status_code=404,
+        json=lambda: {"forwarders": []},
+    )
+    mock_session.post.side_effect = [
+        MagicMock(status_code=500, text="Creation failed"),
+        MagicMock(status_code=200),
+    ]
+    mock_auth.get_http_client.return_value = mock_session
+
+    backend = RestIngestionBackend(mock_auth, "c1", "p1")
+    entries = [{"logText": "test line without forwarder"}]
+    backend.post_unstructured_logs("SYSLOG", entries, labels=[])
+
+    post_call = mock_session.post.call_args_list[-1]
+    inline_source = post_call.kwargs["json"]["inline_source"]
+    assert "forwarder" not in inline_source
+    assert len(inline_source["logs"]) == 1
+    assert inline_source["logs"][0]["log_entry_time"].endswith("Z")
+    assert inline_source["logs"][0]["collection_time"].endswith("Z")
