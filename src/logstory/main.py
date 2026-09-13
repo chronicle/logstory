@@ -21,9 +21,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 import yaml
-from google.auth.transport import requests
 from google.cloud import secretmanager, storage
-from google.oauth2 import service_account
 
 # Import the new abstraction modules
 try:
@@ -163,7 +161,7 @@ def can_use_application_default_credentials() -> bool:
 
 def get_ingestion_backend() -> IngestionBackend | None:
   """Get or initialize the ingestion backend from environment configuration."""
-  global ingestion_backend, http_client
+  global ingestion_backend, http_client  # noqa: PLW0603
 
   if ingestion_backend is not None:
     return ingestion_backend
@@ -177,9 +175,7 @@ def get_ingestion_backend() -> IngestionBackend | None:
   fwd_name = os.environ.get("LOGSTORY_FORWARDER_NAME")
   impersonate_sa = os.environ.get("LOGSTORY_IMPERSONATE_SERVICE_ACCOUNT")
 
-  valid_creds_path = (
-      creds_path if (creds_path and os.path.exists(creds_path)) else None
-  )
+  valid_creds_path = creds_path if (creds_path and os.path.exists(creds_path)) else None
   sa_info = None
 
   try:
@@ -194,18 +190,9 @@ def get_ingestion_backend() -> IngestionBackend | None:
       with open(valid_creds_path) as f:
         sa_info = json.load(f)
 
-    can_adc = (
-        has_application_default_credentials()
-        and impersonate_sa is not None
-    )
+    can_adc = has_application_default_credentials() and impersonate_sa is not None
 
-    if (
-        sa_info
-        or valid_creds_path
-        or creds_json
-        or sec_mgr_creds
-        or can_adc
-    ):
+    if sa_info or valid_creds_path or creds_json or sec_mgr_creds or can_adc:
       api_type = detect_auth_type()
       auth_handler = create_auth_handler(
           api_type=api_type,
