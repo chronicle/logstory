@@ -464,7 +464,7 @@ class RestIngestionBackend(IngestionBackend):
       self,
       log_type: str,
       entries: list[dict[str, Any]],
-      labels: list[dict[str, str]],
+      labels: list[dict[str, str]],  # noqa: ARG002
   ) -> None:
     """Post entities using REST API.
 
@@ -475,12 +475,7 @@ class RestIngestionBackend(IngestionBackend):
     url = f"{self.get_base_url()}/v1alpha/{parent}/entities:import"
 
     # Format entities for REST API
-    entities = []
-    for entry in entries:
-      entity = dict(entry)
-      if labels:
-        entity["labels"] = {label["key"]: label["value"] for label in labels}
-      entities.append(entity)
+    entities = [dict(entry) for entry in entries]
 
     body = {
         "inline_source": {

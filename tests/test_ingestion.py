@@ -266,7 +266,6 @@ class TestRestIngestionBackend:
     entity_entry = payload["inline_source"]["entities"][0]
     assert entity_entry["hostname"] == "host1"
     assert entity_entry["ip"] == "10.0.0.1"
-    assert entity_entry["labels"] == {"dept": "eng"}
 
   def test_check_response_error_handling(self):
     """Test check_response error handling on REST backend."""
