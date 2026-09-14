@@ -12,10 +12,8 @@
   - Added lazy runtime initialization of `ingestion_backend` in `main.py` with automatic cache invalidation on CLI parameter updates
   - Skipped gracefully with an informative message when `--entities` is requested for usecases without entity logs
 
-### Added
-- Bundled `EDR_WORKSHOP`, `HIGH_RISK_USER_DOWNLOAD_EXECUTABLE_FROM_MACRO`, and `MALWARE_IOC` usecases in `src/logstory/usecases/`
-
-- Handled special characters in unstructured log entries to prevent API timeouts with requests 2.32+ (Issue #24)
+  - Added anonymous and service account credential fallback for public and private GCS usecase source buckets
+  - Handled special characters in unstructured log entries to prevent API timeouts with requests 2.32+ (Issue #24)
   - Added `sanitize_log_text` helper to strip problematic trademark and copyright symbols (e.g. `®`, `©`, `™`)
   - Enforced `ensure_ascii=True` serialization in legacy ingestion backend for ASCII-safe transport
   - Added test suite in `tests/test_special_characters.py`
