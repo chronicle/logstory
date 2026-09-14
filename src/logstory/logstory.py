@@ -13,6 +13,7 @@
 # limitations under the License.
 """CLI for Logstory."""
 
+import contextlib
 import datetime
 import glob
 import json
@@ -147,6 +148,11 @@ def get_region_default():
 def get_timestamp_delta_default():
   """Get timestamp delta from environment variable."""
   return os.getenv("LOGSTORY_TIMESTAMP_DELTA", "1d")
+
+
+def get_project_id_default() -> str | None:
+  """Get Google Cloud project ID from environment variable."""
+  return os.getenv("LOGSTORY_PROJECT_ID")
 
 
 def get_auto_get_default():
@@ -422,15 +428,23 @@ def _get_gcs_blobs(bucket_name, usecase=None):
   """Get blobs from GCS bucket, trying authenticated client first."""
   client = None
 
-  # Try application default credentials first
-  try:
-    client = storage.Client()
-  except DefaultCredentialsError:
-    # Fall back to anonymous client for public buckets
+  creds_path = os.getenv("LOGSTORY_CREDENTIALS_PATH") or os.getenv(
+      "GOOGLE_APPLICATION_CREDENTIALS"
+  )
+  if creds_path and os.path.exists(creds_path):
+    with contextlib.suppress(Exception):
+      client = storage.Client.from_service_account_json(creds_path)
+
+  # Try application default credentials next
+  if client is None:
     try:
-      client = storage.Client.create_anonymous_client()
-    except Exception as e:
-      raise Exception(f"Could not create GCS client: {e}") from e
+      client = storage.Client()
+    except DefaultCredentialsError:
+      # Fall back to anonymous client for public buckets
+      try:
+        client = storage.Client.create_anonymous_client()
+      except Exception as e:
+        raise Exception(f"Could not create GCS client: {e}") from e
 
   bucket = client.bucket(bucket_name)
   if usecase:
@@ -543,16 +557,36 @@ def list_bucket_directories(
 
 def _get_source_directories(source_uri: str) -> list[str]:
   """Helper function to get source directories without printing."""
-  blobs = _get_blobs(source_uri)
-  top_level_directories = []
-  for blob in blobs.pages:
-    prefixes = blob.prefixes
-    for prefix in prefixes:
-      if "docs" in prefix:
-        continue
-      prefix = prefix.strip("/")
-      top_level_directories.append(prefix)
-  return top_level_directories
+  try:
+    blobs = _get_blobs(source_uri)
+    top_level_directories = []
+    for blob in blobs.pages:
+      prefixes = blob.prefixes
+      for prefix in prefixes:
+        if "docs" in prefix:
+          continue
+        prefix = prefix.strip("/")
+        top_level_directories.append(prefix)
+    return top_level_directories
+  except Exception as e:
+    source_type, identifier = parse_usecase_source(source_uri)
+    if source_type == "gcs":
+      try:
+        anon_client = storage.Client.create_anonymous_client()
+        bucket = anon_client.bucket(identifier)
+        blobs = bucket.list_blobs(delimiter="/")
+        top_level_directories = []
+        for blob in blobs.pages:
+          prefixes = blob.prefixes
+          for prefix in prefixes:
+            if "docs" in prefix:
+              continue
+            prefix = prefix.strip("/")
+            top_level_directories.append(prefix)
+        return top_level_directories
+      except Exception as err:
+        raise e from err
+    raise
 
 
 def _get_all_source_directories() -> list[str]:
@@ -597,16 +631,37 @@ def _download_usecase(usecase: str, bucket: str = None) -> bool:
 
   # Download from the found source
   print(f"Downloading usecase '{usecase}' from source '{found_source}'")
-  blob_list = _get_blobs(found_source, usecase)
-  for blob in blob_list:
-    if blob.name.endswith("/"):
-      continue
-    destination_file_name = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "usecases/", blob.name
-    )
-    os.makedirs(os.path.dirname(destination_file_name), exist_ok=True)
-    print(f"Downloading {blob.name} to {destination_file_name}")
-    blob.download_to_filename(destination_file_name)
+  try:
+    blob_list = _get_blobs(found_source, usecase)
+    for blob in blob_list:
+      if blob.name.endswith("/"):
+        continue
+      destination_file_name = os.path.join(
+          os.path.dirname(os.path.abspath(__file__)), "usecases/", blob.name
+      )
+      os.makedirs(os.path.dirname(destination_file_name), exist_ok=True)
+      print(f"Downloading {blob.name} to {destination_file_name}")
+      blob.download_to_filename(destination_file_name)
+  except Exception as e:
+    source_type, identifier = parse_usecase_source(found_source)
+    if source_type == "gcs":
+      try:
+        anon_client = storage.Client.create_anonymous_client()
+        bucket = anon_client.bucket(identifier)
+        blob_list = bucket.list_blobs(prefix=usecase)
+        for blob in blob_list:
+          if blob.name.endswith("/"):
+            continue
+          destination_file_name = os.path.join(
+              os.path.dirname(os.path.abspath(__file__)), "usecases/", blob.name
+          )
+          os.makedirs(os.path.dirname(destination_file_name), exist_ok=True)
+          print(f"Downloading {blob.name} to {destination_file_name}")
+          blob.download_to_filename(destination_file_name)
+      except Exception as fallback_e:
+        raise fallback_e from e
+    else:
+      raise e
 
   return True
 
@@ -711,7 +766,8 @@ def _load_and_validate_params(
     region: str | None,
     impersonate_service_account: str | None = None,
     api_type: str | None = None,
-) -> tuple[str | None, str, str]:
+    project_id: str | None = None,
+) -> tuple[str | None, str, str, str | None]:
   """Load environment file and validate/resolve required parameters."""
   # Load environment file first
   load_env_file(env_file)
@@ -721,6 +777,7 @@ def _load_and_validate_params(
   final_customer_id = customer_id or get_customer_id_default()
   final_region = region or get_region_default()
   final_api_type = api_type or os.environ.get("LOGSTORY_API_TYPE", "").lower()
+  final_project_id = project_id or get_project_id_default()
   final_impersonate = impersonate_service_account or os.environ.get(
       "LOGSTORY_IMPERSONATE_SERVICE_ACCOUNT"
   )
@@ -730,24 +787,25 @@ def _load_and_validate_params(
   can_use_adc = has_adc and final_impersonate and final_api_type == "rest"
 
   # STRICT VALIDATION for REST API
-  if final_api_type == "rest":
-    # Check for project ID if REST API is explicitly requested
-    project_id = os.environ.get("LOGSTORY_PROJECT_ID")
-    if not project_id:
-      typer.echo("Error: REST API is specified but missing required parameters!")
-      typer.echo("")
-      typer.echo("LOGSTORY_API_TYPE=rest requires:")
-      typer.echo("  • LOGSTORY_PROJECT_ID (Google Cloud project ID)")
-      typer.echo("")
-      typer.echo("Current configuration:")
-      typer.echo(f"  • API Type: {final_api_type}")
-      typer.echo(f"  • Project ID: {project_id or 'NOT SET'}")
-      typer.echo("")
-      typer.echo("Fix by adding to your .env file or environment:")
-      typer.echo("  LOGSTORY_PROJECT_ID=your-project-id")
-      typer.echo("")
-      typer.echo("Or use auto-detection by removing LOGSTORY_API_TYPE")
-      raise typer.Exit(1)
+  # Check for project ID if REST API is explicitly requested
+  if final_api_type == "rest" and not final_project_id:
+    typer.echo("Error: REST API is specified but missing required parameters!")
+    typer.echo("")
+    typer.echo("LOGSTORY_API_TYPE=rest requires:")
+    typer.echo("  * LOGSTORY_PROJECT_ID (Google Cloud project ID)")
+    typer.echo("")
+    typer.echo("Current configuration:")
+    typer.echo(f"  * API Type: {final_api_type}")
+    typer.echo(f"  * Project ID: {final_project_id or 'NOT SET'}")
+    typer.echo("")
+    typer.echo("Fix by adding to your .env file or environment:")
+    typer.echo("  LOGSTORY_PROJECT_ID=your-project-id")
+    typer.echo("")
+    typer.echo("Or pass via CLI option:")
+    typer.echo("  --project-id your-project-id")
+    typer.echo("")
+    typer.echo("Or use auto-detection by removing LOGSTORY_API_TYPE")
+    raise typer.Exit(1)
 
   # Validate required parameters
   if not final_customer_id or (not final_credentials and not can_use_adc):
@@ -786,7 +844,7 @@ def _load_and_validate_params(
   if final_customer_id:
     final_customer_id = validate_uuid4(final_customer_id)
 
-  return final_credentials, final_customer_id, final_region
+  return final_credentials, final_customer_id, final_region, final_project_id
 
 
 def _set_environment_vars(
@@ -824,6 +882,8 @@ def _set_environment_vars(
 
   if impersonate_service_account:
     os.environ["LOGSTORY_IMPERSONATE_SERVICE_ACCOUNT"] = impersonate_service_account
+
+  imported_main.ingestion_backend = None
 
 
 @replay_app.command("all")
@@ -866,20 +926,23 @@ def replay_all_usecases(
 
   # Skip credential validation if using local file output
   if not local_file_output:
-    final_credentials, final_customer_id, final_region = _load_and_validate_params(
-        env_file,
-        credentials_path,
-        customer_id,
-        region,
-        impersonate_service_account,
-        api_type,
+    final_credentials, final_customer_id, final_region, final_project_id = (
+        _load_and_validate_params(
+            env_file,
+            credentials_path,
+            customer_id,
+            region,
+            impersonate_service_account,
+            api_type,
+            project_id,
+        )
     )
     _set_environment_vars(
         final_credentials,
         final_customer_id,
         final_region,
         api_type,
-        project_id,
+        final_project_id,
         forwarder_name,
         impersonate_service_account,
     )
@@ -888,9 +951,9 @@ def replay_all_usecases(
     _set_environment_vars(
         None,
         None,
-        region,
+        region or get_region_default(),
         api_type,
-        project_id,
+        project_id or get_project_id_default(),
         forwarder_name,
         impersonate_service_account,
     )
@@ -948,20 +1011,23 @@ def replay_usecase(
 
   # Skip credential validation if using local file output
   if not local_file_output:
-    final_credentials, final_customer_id, final_region = _load_and_validate_params(
-        env_file,
-        credentials_path,
-        customer_id,
-        region,
-        impersonate_service_account,
-        api_type,
+    final_credentials, final_customer_id, final_region, final_project_id = (
+        _load_and_validate_params(
+            env_file,
+            credentials_path,
+            customer_id,
+            region,
+            impersonate_service_account,
+            api_type,
+            project_id,
+        )
     )
     _set_environment_vars(
         final_credentials,
         final_customer_id,
         final_region,
         api_type,
-        project_id,
+        final_project_id,
         forwarder_name,
         impersonate_service_account,
     )
@@ -970,9 +1036,9 @@ def replay_usecase(
     _set_environment_vars(
         None,
         None,
-        region,
+        region or get_region_default(),
         api_type,
-        project_id,
+        project_id or get_project_id_default(),
         forwarder_name,
         impersonate_service_account,
     )
@@ -980,6 +1046,9 @@ def replay_usecase(
   usecases = [usecase]
   logtypes = _get_logtypes(usecase, entities=entities)
   if not logtypes:
+    if entities:
+      typer.echo(f"No entity logs found for usecase '{usecase}', skipping.")
+      return
     print(f"No logs found for usecase '{usecase}'")
     raise typer.Exit(1)
   _replay_usecases(usecases, logtypes, entities, timestamp_delta, local_file_output)
@@ -1004,20 +1073,23 @@ def replay_usecase_logtype(
   """Replay specific logtypes from a usecase."""
   # Skip credential validation if using local file output
   if not local_file_output:
-    final_credentials, final_customer_id, final_region = _load_and_validate_params(
-        env_file,
-        credentials_path,
-        customer_id,
-        region,
-        impersonate_service_account,
-        api_type,
+    final_credentials, final_customer_id, final_region, final_project_id = (
+        _load_and_validate_params(
+            env_file,
+            credentials_path,
+            customer_id,
+            region,
+            impersonate_service_account,
+            api_type,
+            project_id,
+        )
     )
     _set_environment_vars(
         final_credentials,
         final_customer_id,
         final_region,
         api_type,
-        project_id,
+        final_project_id,
         forwarder_name,
         impersonate_service_account,
     )
@@ -1028,9 +1100,9 @@ def replay_usecase_logtype(
     _set_environment_vars(
         None,
         None,
-        region,
+        region or get_region_default(),
         api_type,
-        project_id,
+        project_id or get_project_id_default(),
         forwarder_name,
         impersonate_service_account,
     )

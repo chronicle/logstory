@@ -58,12 +58,12 @@ LEGACY_REGION_URL_MAP = {
 }
 
 REST_REGION_NAME_MAP = {
-    "us": "us-central1",
-    "usa": "us-central1",
-    "us-central1": "us-central1",
-    "europe": "europe-west1",
-    "eu": "europe-west1",
-    "europe-west1": "europe-west1",
+    "us": "us",
+    "usa": "us",
+    "us-central1": "us",
+    "europe": "europe",
+    "eu": "europe",
+    "europe-west1": "europe",
     "asia": "asia-southeast1",
     "asia-southeast1": "asia-southeast1",
     "uk": "europe-west2",
@@ -277,21 +277,41 @@ class RestIngestionBackend(IngestionBackend):
     self._forwarder_id = None
     self._forwarder_cache = {}
 
+  def _get_resolved_region(self) -> str:
+    """Get the normalized Chronicle REST API region name.
+
+    Returns:
+      Resolved region string matching Chronicle regional endpoints.
+    """
+    cleaned_region = self.region.strip().lower() if self.region else ""
+    region = cleaned_region if cleaned_region else "us"
+    return REST_REGION_NAME_MAP.get(region, region)
+
+  def _get_parent(self) -> str:
+    """Get the parent resource path for REST API calls.
+
+    Returns:
+      Formatted parent resource string.
+    """
+    return (
+        f"projects/{self.project_id}/locations/{self._get_resolved_region()}"
+        f"/instances/{self.customer_id}"
+    )
+
   def get_base_url(self) -> str:
     """Get the base URL for REST API based on region.
 
     Returns:
       Base URL string for the regional REST API endpoint.
     """
-    region = self.region.lower() if self.region else "us"
-    resolved_region = REST_REGION_NAME_MAP.get(region, region)
+    resolved_region = self._get_resolved_region()
     return f"https://{resolved_region}-chronicle.googleapis.com"
 
-  def _get_or_create_forwarder(self) -> str:
+  def _get_or_create_forwarder(self) -> str | None:
     """Get or create a forwarder for log ingestion.
 
     Returns:
-      Forwarder ID string.
+      Forwarder ID string if found or created, or None if unavailable.
     """
     if self._forwarder_id:
       return self._forwarder_id
@@ -301,47 +321,57 @@ class RestIngestionBackend(IngestionBackend):
       self._forwarder_id = self._forwarder_cache[self.forwarder_name]
       return self._forwarder_id
 
-    parent = (
-        f"projects/{self.project_id}/locations/{self.region.lower()}"
-        f"/instances/{self.customer_id}"
-    )
+    parent = self._get_parent()
 
-    # Try to list existing forwarders
-    list_url = f"{self.get_base_url()}/v1alpha/{parent}/forwarders"
-    response = self.http_client.get(list_url)
+    try:
+      # Try to list existing forwarders
+      list_url = f"{self.get_base_url()}/v1alpha/{parent}/forwarders"
+      response = self.http_client.get(list_url)
 
-    if response.status_code == HTTP_STATUS_OK:
-      forwarders = response.json().get("forwarders", [])
-      for forwarder in forwarders:
-        if forwarder.get("displayName") == self.forwarder_name:
-          # Extract ID from resource name
-          self._forwarder_id = forwarder["name"].split("/")[-1]
-          self._forwarder_cache[self.forwarder_name] = self._forwarder_id
-          return self._forwarder_id
+      if response.status_code == HTTP_STATUS_OK:
+        forwarders = response.json().get("forwarders", [])
+        for forwarder in forwarders:
+          if forwarder.get("displayName") == self.forwarder_name:
+            # Extract ID from resource name
+            self._forwarder_id = forwarder["name"].split("/")[-1]
+            self._forwarder_cache[self.forwarder_name] = self._forwarder_id
+            return self._forwarder_id
 
-    # Create new forwarder if not found
-    create_url = f"{self.get_base_url()}/v1alpha/{parent}/forwarders"
-    payload = {
-        "displayName": self.forwarder_name,
-        "config": {
-            "uploadCompression": False,
-            "metadata": {},
-            "serverSettings": {
-                "enabled": False,
-                "httpSettings": {"routeSettings": {}},
-            },
-        },
-    }
+      # Create new forwarder if not found
+      create_url = f"{self.get_base_url()}/v1alpha/{parent}/forwarders"
+      payload = {
+          "displayName": self.forwarder_name,
+          "config": {
+              "uploadCompression": False,
+              "metadata": {},
+              "serverSettings": {
+                  "enabled": False,
+                  "httpSettings": {"routeSettings": {}},
+              },
+          },
+      }
 
-    response = self.http_client.post(create_url, json=payload)
-    if response.status_code == HTTP_STATUS_OK:
-      forwarder = response.json()
-      self._forwarder_id = forwarder["name"].split("/")[-1]
-      self._forwarder_cache[self.forwarder_name] = self._forwarder_id
-      return self._forwarder_id
+      response = self.http_client.post(create_url, json=payload)
+      if response.status_code in (HTTP_STATUS_OK, 201):
+        forwarder = response.json()
+        self._forwarder_id = forwarder["name"].split("/")[-1]
+        self._forwarder_cache[self.forwarder_name] = self._forwarder_id
+        return self._forwarder_id
 
-    # If we cannot create a forwarder, try to proceed with default
-    return "default"
+      LOGGER.warning(
+          "Failed to create forwarder '%s' (status %d): %s",
+          self.forwarder_name,
+          response.status_code,
+          response.text,
+      )
+    except Exception as e:
+      LOGGER.warning(
+          "Error getting or creating forwarder '%s': %s",
+          self.forwarder_name,
+          e,
+      )
+
+    return None
 
   def post_unstructured_logs(
       self,
@@ -350,14 +380,10 @@ class RestIngestionBackend(IngestionBackend):
       labels: list[dict[str, str]],
   ) -> None:
     """Post unstructured log entries using REST API."""
-    parent = (
-        f"projects/{self.project_id}/locations/{self.region.lower()}"
-        f"/instances/{self.customer_id}"
-    )
+    parent = self._get_parent()
 
     # Get or create forwarder
     forwarder_id = self._get_or_create_forwarder()
-    forwarder_resource = f"{parent}/forwarders/{forwarder_id}"
 
     # REST API endpoint for log ingestion
     url = f"{self.get_base_url()}/v1alpha/{parent}/logTypes/{log_type}/logs:import"
@@ -370,10 +396,11 @@ class RestIngestionBackend(IngestionBackend):
       # Base64 encode the log text
       encoded_log = base64.b64encode(sanitized_log.encode("utf-8")).decode("utf-8")
 
+      now_str = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
       log_entry = {
           "data": encoded_log,
-          "log_entry_time": datetime.now(UTC).isoformat(),
-          "collection_time": datetime.now(UTC).isoformat(),
+          "log_entry_time": now_str,
+          "collection_time": now_str,
       }
 
       # Add labels if provided
@@ -385,7 +412,11 @@ class RestIngestionBackend(IngestionBackend):
       logs.append(log_entry)
 
     # Construct request payload
-    payload = {"inline_source": {"logs": logs, "forwarder": forwarder_resource}}
+    inline_source: dict[str, Any] = {"logs": logs}
+    if forwarder_id:
+      inline_source["forwarder"] = f"{parent}/forwarders/{forwarder_id}"
+
+    payload = {"inline_source": inline_source}
 
     response = self.http_client.post(url, json=payload)
     self._check_response(response)
@@ -394,10 +425,7 @@ class RestIngestionBackend(IngestionBackend):
       self, entries: list[dict[str, Any]], labels: list[dict[str, str]]
   ) -> None:
     """Post UDM events using REST API."""
-    parent = (
-        f"projects/{self.project_id}/locations/{self.region.lower()}"
-        f"/instances/{self.customer_id}"
-    )
+    parent = self._get_parent()
 
     url = f"{self.get_base_url()}/v1alpha/{parent}/events:import"
 
@@ -410,7 +438,9 @@ class RestIngestionBackend(IngestionBackend):
 
       # Add timestamp if missing
       if "event_timestamp" not in entry["metadata"]:
-        entry["metadata"]["event_timestamp"] = datetime.now(UTC).isoformat()
+        entry["metadata"]["event_timestamp"] = datetime.now(UTC).strftime(
+            "%Y-%m-%dT%H:%M:%S.%fZ"
+        )
 
       # Add ID if missing
       if "id" not in entry["metadata"]:
@@ -434,32 +464,25 @@ class RestIngestionBackend(IngestionBackend):
       self,
       log_type: str,
       entries: list[dict[str, Any]],
-      labels: list[dict[str, str]],
+      labels: list[dict[str, str]],  # noqa: ARG002
   ) -> None:
     """Post entities using REST API.
 
-    Note: The REST API entity ingestion may differ from legacy.
-    This is a best-effort implementation based on UDM patterns.
+    Note: The REST API entity ingestion aligns with ImportEntitiesRequest.
     """
-    parent = (
-        f"projects/{self.project_id}/locations/{self.region.lower()}"
-        f"/instances/{self.customer_id}"
-    )
+    parent = self._get_parent()
 
     url = f"{self.get_base_url()}/v1alpha/{parent}/entities:import"
 
     # Format entities for REST API
-    entities = []
-    for entry in entries:
-      entity = {
-          "entity": entry,
-          "log_type": log_type,
-      }
-      if labels:
-        entity["labels"] = {label["key"]: label["value"] for label in labels}
-      entities.append(entity)
+    entities = [dict(entry) for entry in entries]
 
-    body = {"inline_source": {"entities": entities}}
+    body = {
+        "inline_source": {
+            "log_type": log_type,
+            "entities": entities,
+        }
+    }
 
     response = self.http_client.post(url, json=body)
     self._check_response(response)
