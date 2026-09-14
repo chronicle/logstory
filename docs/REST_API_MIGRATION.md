@@ -151,9 +151,12 @@ LOGSTORY_API_TYPE environment variable must be set to 'rest' or 'legacy'
 
 **2. Missing Project ID for REST API**
 ```
-LOGSTORY_API_TYPE=rest is specified but LOGSTORY_PROJECT_ID is missing!
+Error: REST API is specified but missing required parameters!
+
+LOGSTORY_API_TYPE=rest requires:
+  * LOGSTORY_PROJECT_ID (Google Cloud project ID)
 ```
-- **Solution:** Add `LOGSTORY_PROJECT_ID=your-project-id` when using REST API
+- **Solution:** Pass via `--project-id your-project-id` or set `LOGSTORY_PROJECT_ID=your-project-id` in your `.env` file or environment
 
 **3. Authentication Error with REST API**
 - Ensure credentials have `cloud-platform` scope

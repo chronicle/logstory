@@ -2,9 +2,19 @@
 
 <!--next-version-placeholder-->
 
-## v1.2.3 (2026-08-13)
-
 ### Fixed
+- Resolved Chronicle REST API ingestion `400 INVALID_ARGUMENT` and regional resolution errors (Issue #59)
+  - Aligned regional endpoint routing and parent resource paths (`_get_resolved_region()` and `_get_parent()`) to correctly map multi-regions `us` and `europe` to `us-chronicle.googleapis.com` and `europe-chronicle.googleapis.com`
+  - Enforced RFC 3339 UTC timestamps with `Z` suffix (`%Y-%m-%dT%H:%M:%S.%fZ`) across `event_timestamp`, `log_entry_time`, and `collection_time`
+  - Aligned entity ingestion schema with `ImportEntitiesRequest` by setting `log_type` at the root of `inline_source`
+  - Supported HTTP 200/201 on forwarder creation and gracefully omitted `"forwarder"` when creation or lookup fails
+  - Added CLI parameter validation for `--project-id` directly without requiring `LOGSTORY_PROJECT_ID` in the ambient environment
+  - Added lazy runtime initialization of `ingestion_backend` in `main.py` with automatic cache invalidation on CLI parameter updates
+  - Skipped gracefully with an informative message when `--entities` is requested for usecases without entity logs
+
+### Added
+- Bundled `EDR_WORKSHOP`, `HIGH_RISK_USER_DOWNLOAD_EXECUTABLE_FROM_MACRO`, and `MALWARE_IOC` usecases in `src/logstory/usecases/`
+
 - Handled special characters in unstructured log entries to prevent API timeouts with requests 2.32+ (Issue #24)
   - Added `sanitize_log_text` helper to strip problematic trademark and copyright symbols (e.g. `®`, `©`, `™`)
   - Enforced `ensure_ascii=True` serialization in legacy ingestion backend for ASCII-safe transport

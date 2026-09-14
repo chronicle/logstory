@@ -13,6 +13,7 @@
 # limitations under the License.
 """CLI for Logstory."""
 
+import contextlib
 import datetime
 import glob
 import json
@@ -431,10 +432,8 @@ def _get_gcs_blobs(bucket_name, usecase=None):
       "GOOGLE_APPLICATION_CREDENTIALS"
   )
   if creds_path and os.path.exists(creds_path):
-    try:
+    with contextlib.suppress(Exception):
       client = storage.Client.from_service_account_json(creds_path)
-    except Exception:
-      pass
 
   # Try application default credentials next
   if client is None:
@@ -585,8 +584,8 @@ def _get_source_directories(source_uri: str) -> list[str]:
             prefix = prefix.strip("/")
             top_level_directories.append(prefix)
         return top_level_directories
-      except Exception:
-        raise e
+      except Exception as err:
+        raise e from err
     raise
 
 
