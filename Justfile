@@ -12,7 +12,9 @@ gcp_region := env_var_or_default("LOGSTORY_GCP_REGION", if chronicle_region == "
 api_type := env_var_or_default("LOGSTORY_API_TYPE", "rest")
 forwarder_name := env_var_or_default("LOGSTORY_FORWARDER_NAME", "Logstory-REST-Forwarder")
 secret_name := env_var_or_default("LOGSTORY_SECRET_NAME", "chronicle-api-key")
-usecases_bucket := env_var_or_default("LOGSTORY_USECASES_BUCKET", "gs://logstory-usecases-20241216")
+usecases_bucket := env_var_or_default("LOGSTORY_USECASES_BUCKET", "cns:///cns/is-d/home/dandye/logstory_usecases_20260918")
+cns_dir := env_var_or_default("LOGSTORY_CNS_DIR", "/cns/is-d/home/dandye/logstory_usecases_20260918")
+datanexus_entry := env_var_or_default("LOGSTORY_DATANEXUS_ENTRY", "mldataset.cloudsec_adoption.logstory_usecases_2026_09_18")
 timestamp_delta := env_var_or_default("LOGSTORY_TIMESTAMP_DELTA", "1d")
 venv_dir := "venv"
 
@@ -98,7 +100,12 @@ default:
             ('pre-commit-run', '', 'Run pre-commit hooks on all files'),
             ('pre-commit-update', '', 'Update pre-commit hooks to latest versions'),
         ]),
-        ('Usecases & GCS Storage', C.BCYAN, C.CYAN, [
+        ('Usecases, CNS & GCS Storage', C.BCYAN, C.CYAN, [
+            ('usecase-publish-cns', '<usecase> [cns_dir]', 'Sync a single local usecase to Google Colossus (CNS)'),
+            ('usecase-publish-all-cns', '[dir] [cns_dir]', 'Sync all local usecases to Google Colossus (CNS)'),
+            ('usecase-list-cns', '[cns_dir]', 'List usecases stored in Google Colossus (CNS)'),
+            ('datanexus-register-dryrun', '[entry] [variant] [cns_dir]', 'Dry-run DataNexus / ML Catalog variant registration via mlc'),
+            ('datanexus-register', '[entry] [variant] [cns_dir]', 'Register Colossus directory variant in DataNexus via mlc'),
             ('usecase-publish', '<usecase> [bucket]', 'Sync a single local usecase to Google Cloud Storage bucket'),
             ('usecase-publish-all', '[dir] [bucket]', 'Sync all local usecases to Google Cloud Storage bucket'),
             ('usecase-list-gcs', '[bucket]', 'List usecases stored in Google Cloud Storage bucket'),
@@ -757,8 +764,57 @@ cloudrun-help:
     @echo "  just cloudrun-delete-all"
 
 # ==============================================================================
-# Usecases and Storage Bucket Management
+# Usecases, CNS, DataNexus, and Storage Bucket Management
 # ==============================================================================
+
+# Publish a single local usecase to Google Colossus (CNS)
+usecase-publish-cns usecase target_cns=cns_dir:
+    @if [ -d "usecases/{{ usecase }}" ]; then \
+        echo "Publishing usecase '{{ usecase }}' to {{ target_cns }}/{{ usecase }}..."; \
+        fileutil mkdir -p "{{ target_cns }}/{{ usecase }}"; \
+        fileutil cp -f -R "usecases/{{ usecase }}/*" "{{ target_cns }}/{{ usecase }}/"; \
+    elif [ -d "src/logstory/usecases/{{ usecase }}" ]; then \
+        echo "Publishing usecase '{{ usecase }}' to {{ target_cns }}/{{ usecase }}..."; \
+        fileutil mkdir -p "{{ target_cns }}/{{ usecase }}"; \
+        fileutil cp -f -R "src/logstory/usecases/{{ usecase }}/*" "{{ target_cns }}/{{ usecase }}/"; \
+    else \
+        echo "Error: Usecase '{{ usecase }}' not found in usecases/ or src/logstory/usecases/"; \
+        exit 1; \
+    fi
+    @echo "Usecase '{{ usecase }}' published to CNS successfully!"
+
+# Publish all local usecases to Google Colossus (CNS)
+usecase-publish-all-cns local_dir="usecases" target_cns=cns_dir:
+    @if [ ! -d "{{ local_dir }}" ]; then \
+        echo "Error: Local directory '{{ local_dir }}' does not exist."; \
+        exit 1; \
+    fi
+    @echo "Publishing all usecases from '{{ local_dir }}' to {{ target_cns }}..."
+    fileutil mkdir -p "{{ target_cns }}"
+    fileutil cp -f -R "{{ local_dir }}/*" "{{ target_cns }}/"
+    @echo "All usecases published to CNS successfully!"
+
+# List usecases stored in Google Colossus (CNS)
+usecase-list-cns target_cns=cns_dir:
+    fileutil ls "{{ target_cns }}"
+
+# Dry-run registering the Colossus directory as a variant in DataNexus / ML Catalog
+datanexus-register-dryrun entry=datanexus_entry variant="20260918" target_cns=cns_dir format="AUTO":
+    SOURCE_PROTO="$$(/google/bin/releases/ml-catalog/tools/mlc generate file-source "{{ target_cns }}/*" "{{ format }}")" && \
+    /google/bin/releases/ml-catalog/tools/mlc create \
+        --dry_run \
+        "{{ entry }}" "{{ variant }}" \
+        --aliases_assign="latest" \
+        --source="$$SOURCE_PROTO"
+
+# Commit and set default variant in DataNexus / ML Catalog
+datanexus-register entry=datanexus_entry variant="20260918" target_cns=cns_dir format="AUTO":
+    SOURCE_PROTO="$$(/google/bin/releases/ml-catalog/tools/mlc generate file-source "{{ target_cns }}/*" "{{ format }}")" && \
+    /google/bin/releases/ml-catalog/tools/mlc create \
+        "{{ entry }}" "{{ variant }}" \
+        --set_default \
+        --aliases_assign="latest" \
+        --source="$$SOURCE_PROTO"
 
 # Publish a single local usecase to the Google Cloud Storage bucket
 usecase-publish usecase bucket=usecases_bucket:
