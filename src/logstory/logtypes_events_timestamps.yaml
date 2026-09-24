@@ -748,3 +748,16 @@ GITHUB:
       pattern: '("@timestamp":)(\d{10})'
       dateformat: 'epoch'
       group: 2
+
+UDM_EVENTS:
+  api: udmevents
+  timestamps:
+    - name: created_time
+      base_time: true
+      pattern: '("created_time":\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z?\s*"?)'
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      group: 2
+    - name: generic_event_timestamp
+      pattern: '("(?:event_time|timestamp|created_at|time)":\s*"?)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(.\d+Z?\s*"?)'
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      group: 2
