@@ -2,6 +2,13 @@
 
 <!--next-version-placeholder-->
 
+### Security
+- Resolved Dependabot vulnerability alerts across runtime and development dependencies:
+  - Upgraded `urllib3` to `2.8.0` in `src/logstory/requirements.txt` and `uv.lock` (CVE-2026-97687, CVE-2026-97688, CVE-2026-97689)
+  - Upgraded `oauthlib` to `4.0.0` in `src/logstory/requirements.txt` and `uv.lock` (CVE-2026-49264, CVE-2026-49265)
+  - Upgraded `virtualenv` to `21.12.1` in `uv.lock` (CVE-2026-102930, CVE-2026-102938)
+  - Upgraded `black` to `26.5.1` (via `pyink` 26.5.1) in `uv.lock` (CVE-2026-32274)
+
 ### Fixed
 - Resolved Chronicle REST API ingestion `400 INVALID_ARGUMENT` and regional resolution errors (Issue #59)
   - Aligned regional endpoint routing and parent resource paths (`_get_resolved_region()` and `_get_parent()`) to correctly map multi-regions `us` and `europe` to `us-chronicle.googleapis.com` and `europe-chronicle.googleapis.com`
