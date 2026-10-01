@@ -6,19 +6,19 @@ certifi==2026.7.22
     # via requests
 cffi==2.1.1
     # via cryptography
-charset-normalizer==3.5.0
+charset-normalizer==3.5.1
     # via requests
-cryptography==50.0.0
+cryptography==50.0.1
     # via google-auth
-google-api-core==2.34.0
+google-api-core==2.40.0
     # via
     #   google-api-python-client
     #   google-cloud-core
     #   google-cloud-secret-manager
     #   google-cloud-storage
-google-api-python-client==2.198.0
+google-api-python-client==2.201.0
     # via logstory (pyproject.toml)
-google-auth==2.56.3
+google-auth==2.59.1
     # via
     #   logstory (pyproject.toml)
     #   google-api-core
@@ -28,59 +28,61 @@ google-auth==2.56.3
     #   google-cloud-core
     #   google-cloud-secret-manager
     #   google-cloud-storage
-google-auth-httplib2==0.4.1
+google-auth-httplib2==0.4.4
     # via
     #   logstory (pyproject.toml)
     #   google-api-python-client
-google-auth-oauthlib==1.4.0
+google-auth-oauthlib==1.5.0
     # via logstory (pyproject.toml)
-google-cloud-core==2.6.1
+google-cloud-core==2.8.0
     # via google-cloud-storage
-google-cloud-secret-manager==2.30.0
+google-cloud-secret-manager==2.31.0
     # via logstory (pyproject.toml)
-google-cloud-storage==3.13.1
+google-cloud-storage==3.16.0
     # via logstory (pyproject.toml)
-google-crc32c==1.8.0
+google-crc32c==1.9.0
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-resumable-media==2.10.1
+google-resumable-media==2.11.0
     # via google-cloud-storage
-googleapis-common-protos==1.75.1
+googleapis-common-protos==1.75.5
     # via
     #   google-api-core
     #   grpc-google-iam-v1
     #   grpcio-status
 grpc-google-iam-v1==0.14.5
     # via google-cloud-secret-manager
-grpcio==1.83.0
+grpcio==1.84.0
     # via
     #   google-api-core
     #   google-cloud-secret-manager
     #   googleapis-common-protos
     #   grpc-google-iam-v1
     #   grpcio-status
-grpcio-status==1.83.0
+grpcio-status==1.84.0
     # via google-api-core
 httplib2==0.32.0
     # via
     #   google-api-python-client
     #   google-auth-httplib2
-idna==3.18
+idna==3.20
     # via requests
 markdown-it-py==4.2.0
     # via rich
 mdurl==0.1.2
     # via markdown-it-py
-oauthlib==3.3.1
+oauthlib==4.0.0
     # via requests-oauthlib
+opentelemetry-api==1.44.0
+    # via google-api-core
 oyaml==1.0
     # via logstory (pyproject.toml)
-proto-plus==1.28.3
+proto-plus==1.29.0
     # via
     #   google-api-core
     #   google-cloud-secret-manager
-protobuf==7.35.1
+protobuf==7.36.2
     # via
     #   google-api-core
     #   google-cloud-secret-manager
@@ -94,11 +96,11 @@ pyasn1-modules==0.4.2
     # via google-auth
 pycparser==3.0
     # via cffi
-pygments==2.20.0
+pygments==2.21.0
     # via rich
-pyparsing==3.3.2
+pyparsing==3.3.3
     # via httplib2
-python-dotenv==1.2.2
+python-dotenv==1.2.3
     # via logstory (pyproject.toml)
 pyyaml==6.0.3
     # via oyaml
@@ -116,11 +118,13 @@ setuptools==84.0.0
     # via logstory (pyproject.toml)
 shellingham==1.5.4
     # via typer
-typer==0.27.1
+typer==0.27.2
     # via logstory (pyproject.toml)
 typing-extensions==4.16.0
-    # via grpcio
+    # via
+    #   grpcio
+    #   opentelemetry-api
 uritemplate==4.2.0
     # via google-api-python-client
-urllib3==2.7.0
+urllib3==2.8.0
     # via requests
