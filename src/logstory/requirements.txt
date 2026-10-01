@@ -122,5 +122,5 @@ typing-extensions==4.16.0
     # via grpcio
 uritemplate==4.2.0
     # via google-api-python-client
-urllib3==2.7.0
+urllib3==2.8.0
     # via requests
