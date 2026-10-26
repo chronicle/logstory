@@ -31,14 +31,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # Assuming requirements are in docs/requirements.txt
-          if [ -f docs/requirements.txt ]; then
-            pip install -r docs/requirements.txt
-          else
-            echo "docs/requirements.txt not found, skipping dependency installation."
-            # Install Sphinx directly if no requirements file
-            pip install sphinx furo myst-parser sphinx-copybutton sphinx-click
-          fi
+          pip install ".[docs]"
 
       - name: Create .nojekyll file
         run: |

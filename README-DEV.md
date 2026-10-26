@@ -56,8 +56,7 @@ just usecase-publish-all
 
 ### Workflows:
 - **Lock dependencies**: `just deps-lock` (or `uv lock --upgrade`)
-- **Sync local environment**: `uv sync --all-extras`
-- **Compile deploy requirements**: `just deps-compile` (or `uv pip compile pyproject.toml -o src/logstory/requirements.txt`)
+- **Sync local environment**: `just deps-sync` (or `uv sync --all-extras`)
 
 #
 # Edit and Publish Docs
