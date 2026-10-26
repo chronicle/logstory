@@ -5,7 +5,9 @@ on:
     branches:
       - main # Or your default branch
     paths:
-      - 'docs/**' # Trigger only on changes within the docs directory
+      - 'docs/**'
+      - 'pyproject.toml'
+      - '.github/workflows/deploy-docs.yml'
   workflow_dispatch: # Allows manual triggering
 
 permissions:

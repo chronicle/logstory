@@ -15,5 +15,6 @@
   - Docker: `docker-build`, `docker-build-pypi`, `docker-build-local`, `docker-run-local`
   - Documentation: `docs-build`, `docs-live`, `docs-clean`
   - Pre-commit: `pre-commit-install`, `pre-commit-run`, `pre-commit-update`
+  - Dependencies: `deps-lock`, `deps-sync`
   - Virtual Environment: `venv-create`, `venv-clean`
   - Maintain backward-compatible aliases for common shorthands.
