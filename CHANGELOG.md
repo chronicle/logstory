@@ -2,6 +2,16 @@
 
 <!--next-version-placeholder-->
 
+### Security
+- Resolved Dependabot vulnerability alerts across runtime and development dependencies in `uv.lock`:
+  - Upgraded `certifi` to `2026.10.19` (GHSA-6q48-6c7w-9gw2)
+  - Upgraded `urllib3` to `2.8.0` (CVE-2026-97687, CVE-2026-97688, CVE-2026-97689)
+  - Upgraded `oauthlib` to `4.0.0` (CVE-2026-49264, CVE-2026-49265)
+  - Upgraded `setuptools` to `84.1.0` (GHSA-xmj3-9gf7-h52w)
+  - Upgraded `filelock` to `4.2.4` (CVE-2026-112940, CVE-2026-112907, CVE-2026-112913)
+  - Upgraded `virtualenv` to `21.14.13` (CVE-2026-102925, CVE-2026-102930, CVE-2026-102937, CVE-2026-102938, CVE-2026-113714 through CVE-2026-113726, CVE-2026-113732, CVE-2026-113776)
+  - Upgraded `black` to `26.10.1` (with `pyink` `26.5.1` and `[tool.uv] override-dependencies` in `pyproject.toml`, CVE-2026-32274, CVE-2026-114134)
+
 ### Changed
 - Removed legacy `src/logstory/requirements.txt` and `docs/requirements.txt` files to standardize exclusively on `pyproject.toml` and `uv.lock`
   - Updated `.github/workflows/deploy-docs.yml` to install documentation dependencies via `pip install ".[docs]"`
