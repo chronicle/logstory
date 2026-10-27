@@ -41,18 +41,18 @@ for this purpose.
 
 2. **Set up development environment**:
 
-   **Using `uv` (recommended)**:
+   **Using `uv` / `just` (recommended)**:
    ```bash
-   uv sync --all-extras
+   just deps-sync
    uv run pre-commit install
    ```
 
-   **Using `make` / `pip`**:
+   **Using `just` / `pip`**:
    ```bash
-   make dev-setup
+   just dev-setup
    # or manually:
    python -m pip install --upgrade pip
-   pip install -e ".[dev]"
+   pip install -e ".[dev,docs]"
    pre-commit install
    ```
 
@@ -65,18 +65,19 @@ for this purpose.
 ### Running Tests and Quality Checks
 
 ```bash
-# Run timestamp and core tests
-cd tests && uv run python test_yaml.py
-cd tests && uv run python test_logstory.py
-
-# Or run tests using pytest
-uv run pytest
+# Run test suite with pytest
+just test
+# or directly via uv:
+uv run pytest --cov=logstory
 
 # Run linting and format checks
+just check
+# or directly via uv:
 uv run ruff check .
 uv run pyink . --check
-# or via make
-make check
+
+# Build documentation locally
+just docs-build
 ```
 
 ## Releases

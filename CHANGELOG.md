@@ -2,6 +2,11 @@
 
 <!--next-version-placeholder-->
 
+### Changed
+- Removed legacy `src/logstory/requirements.txt` and `docs/requirements.txt` files to standardize exclusively on `pyproject.toml` and `uv.lock`
+  - Updated `.github/workflows/deploy-docs.yml` to install documentation dependencies via `pip install ".[docs]"`
+  - Replaced `just deps-compile` with `just deps-sync` (`uv sync --all-extras`) in `Justfile` and `README-DEV.md`
+
 ### Fixed
 - Resolved Chronicle REST API ingestion `400 INVALID_ARGUMENT` and regional resolution errors (Issue #59)
   - Aligned regional endpoint routing and parent resource paths (`_get_resolved_region()` and `_get_parent()`) to correctly map multi-regions `us` and `europe` to `us-chronicle.googleapis.com` and `europe-chronicle.googleapis.com`

@@ -82,7 +82,7 @@ default:
             ('dev-setup', '', 'Create virtualenv and install dev dependencies (.[dev]) + pre-commit hooks'),
             ('dev-setup-no-venv', '', 'Install dev dependencies (.[dev]) in current Python environment'),
             ('deps-lock', '', 'Update uv.lock with latest compatible dependencies'),
-            ('deps-compile', '', 'Compile src/logstory/requirements.txt from pyproject.toml'),
+            ('deps-sync', '', 'Sync local environment with uv.lock (all extras)'),
             ('package-build', '', 'Build Python source distribution (.tar.gz) and wheel (.whl)'),
             ('package-clean', '', 'Clean build artifacts (dist/, build/, *.egg-info)'),
             ('package-clean-all', '', 'Clean build artifacts and virtual environment'),
@@ -254,9 +254,9 @@ dev-setup-no-venv:
 deps-lock:
     uv lock --upgrade
 
-# Compile src/logstory/requirements.txt directly from pyproject.toml
-deps-compile:
-    uv pip compile pyproject.toml -o src/logstory/requirements.txt
+# Sync local environment with uv.lock (including dev and docs extras)
+deps-sync:
+    uv sync --all-extras
 
 
 # ==============================================================================
@@ -826,10 +826,12 @@ pypi-publish: package-rebuild
 docs-build:
     @if [ -d "{{ venv_dir }}" ] && [ -x "{{ venv_dir }}/bin/sphinx-build" ]; then \
         "{{ venv_dir }}/bin/sphinx-build" -b html docs docs/_build/html; \
+    elif [ -x ".venv/bin/sphinx-build" ]; then \
+        ".venv/bin/sphinx-build" -b html docs docs/_build/html; \
     elif command -v sphinx-build >/dev/null 2>&1; then \
         sphinx-build -b html docs docs/_build/html; \
     else \
-        echo "Error: sphinx-build is not installed. Run 'pip install -r docs/requirements.txt' first."; \
+        echo "Error: sphinx-build is not installed. Run 'uv sync --all-extras' or 'pip install -e \".[docs]\"' first."; \
         exit 1; \
     fi
     @echo "Docs built at: docs/_build/html/index.html"
@@ -838,10 +840,12 @@ docs-build:
 docs-live:
     @if [ -d "{{ venv_dir }}" ] && [ -x "{{ venv_dir }}/bin/sphinx-autobuild" ]; then \
         "{{ venv_dir }}/bin/sphinx-autobuild" -b html docs docs/_build/html; \
+    elif [ -x ".venv/bin/sphinx-autobuild" ]; then \
+        ".venv/bin/sphinx-autobuild" -b html docs docs/_build/html; \
     elif command -v sphinx-autobuild >/dev/null 2>&1; then \
         sphinx-autobuild -b html docs docs/_build/html; \
     else \
-        echo "Error: sphinx-autobuild is not installed. Run 'pip install sphinx-autobuild' first."; \
+        echo "Error: sphinx-autobuild is not installed. Run 'uv sync --all-extras' or 'pip install -e \".[docs]\"' first."; \
         exit 1; \
     fi
 
@@ -925,7 +929,7 @@ alias clean := package-clean
 alias clean-all := package-clean-all
 alias rebuild := package-rebuild
 alias lock := deps-lock
-alias compile-requirements := deps-compile
+alias sync := deps-sync
 
 # Usecases & Storage
 
