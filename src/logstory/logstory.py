@@ -23,6 +23,7 @@ import subprocess  # nosec B404
 import tempfile
 import uuid
 from importlib.metadata import version
+from pathlib import Path
 
 try:
   from . import main as imported_main
@@ -36,6 +37,14 @@ from google.cloud import storage
 from google.oauth2 import service_account
 
 from logstory.auth import has_application_default_credentials
+from logstory.schema import (
+    SchemaValidationError,
+    export_json_schemas,
+    parse_usecase_package,
+    split_frontmatter_and_body,
+    validate_usecase_corpus,
+    validate_usecase_package,
+)
 
 UTC = datetime.UTC
 
@@ -734,6 +743,183 @@ def usecase_get(
     raise typer.Exit(1)
 
 
+@usecases_app.command("validate")
+def usecases_validate(
+    target: str | None = typer.Argument(
+        None,
+        help=(
+            "Path to a usecase directory, a corpus directory, or an installed"
+            " usecase name (validates all installed usecases if omitted)"
+        ),
+    ),
+    strict_v2: bool = typer.Option(
+        False,
+        "--strict-v2",
+        help="Require schema_version 2.0 and fail on legacy v1 manifests",
+    ),
+    output_format: str = typer.Option(
+        "text", "--format", help="Output format: text or json"
+    ),
+) -> None:
+  """Validate one or more usecase packages across the 5 verification gates."""
+  package_dir = Path(os.path.dirname(os.path.abspath(__file__)))
+  installed_root = package_dir / "usecases"
+
+  if target is None:
+    results = [
+        validate_usecase_package(uc_dir, strict_v2=strict_v2)
+        for uc_dir in sorted(installed_root.iterdir(), key=lambda p: p.name)
+        if uc_dir.is_dir() and (uc_dir / f"{uc_dir.name}.md").exists()
+    ]
+  elif Path(target).exists():
+    target_path = Path(target)
+    if (target_path / f"{target_path.name}.md").exists():
+      results = [validate_usecase_package(target_path, strict_v2=strict_v2)]
+    else:
+      results = validate_usecase_corpus(target_path, strict_v2=strict_v2)
+  else:
+    installed_dir = installed_root / target
+    if not installed_dir.is_dir():
+      typer.echo(f"Error: Usecase or path '{target}' not found.")
+      raise typer.Exit(code=1)
+    results = [validate_usecase_package(installed_dir, strict_v2=strict_v2)]
+
+  passed = sum(1 for r in results if r.is_valid)
+  failed = len(results) - passed
+  all_valid = bool(results) and failed == 0
+
+  if output_format.lower() == "json":
+    payload = {
+        "valid": all_valid,
+        "total": len(results),
+        "passed": passed,
+        "failed": failed,
+        "results": [r.to_dict() for r in results],
+    }
+    typer.echo(json.dumps(payload, indent=2))
+  else:
+    for r in results:
+      status_label = "PASS" if r.is_valid else "FAIL"
+      typer.echo(f"[{status_label}] {r.usecase_id} (schema_version={r.schema_version})")
+      for finding in r.findings:
+        loc = f" ({finding.path})" if finding.path else ""
+        typer.echo(f"  [{finding.severity}] {finding.gate}{loc}: {finding.message}")
+    typer.echo(f"Summary: total={len(results)} passed={passed} failed={failed}")
+
+  if not all_valid:
+    raise typer.Exit(code=1)
+
+
+@usecases_app.command("inspect")
+def usecases_inspect(
+    target: str = typer.Argument(
+        ..., help="Path to a usecase directory or installed usecase name"
+    ),
+    blind: bool = typer.Option(
+        True,
+        "--blind/--include-eval",
+        help=(
+            "Blind mode strips solution section below <!-- BEGIN_SOLUTION -->"
+            " and omits eval.yaml"
+        ),
+    ),
+    output_format: str = typer.Option(
+        "json", "--format", help="Output format: json or text"
+    ),
+) -> None:
+  """Inspect a usecase package in blind mode (default) or full evaluation mode."""
+  package_dir = Path(os.path.dirname(os.path.abspath(__file__)))
+  target_path = Path(target)
+  if target_path.exists():
+    usecase_dir = target_path
+  else:
+    usecase_dir = package_dir / "usecases" / target
+    if not usecase_dir.is_dir():
+      typer.echo(f"Error: Usecase or path '{target}' not found.")
+      raise typer.Exit(code=1)
+
+  try:
+    pkg = parse_usecase_package(usecase_dir, blind=blind)
+  except SchemaValidationError as exc:
+    typer.echo(f"Error parsing usecase '{target}': {exc}")
+    raise typer.Exit(code=1) from exc
+
+  if output_format.lower() == "json":
+    typer.echo(json.dumps(pkg.to_dict(blind=blind), indent=2))
+  else:
+    manifest_dict = (
+        pkg.manifest.to_dict() if pkg.manifest is not None else pkg.raw_frontmatter
+    )
+    uc_id = manifest_dict.get("id", usecase_dir.name)
+    title = manifest_dict.get("title", uc_id)
+    description = manifest_dict.get("description", "")
+    typer.echo(f"id: {uc_id}")
+    typer.echo(f"schema_version: {pkg.schema_version}")
+    typer.echo(f"title: {title}")
+    typer.echo(f"description: {description}")
+    if pkg.manifest is not None:
+      event_ids = [s.stream_id for s in pkg.manifest.telemetry.events]
+      entity_ids = [s.stream_id for s in pkg.manifest.telemetry.entities]
+      typer.echo(f"event_streams: {', '.join(event_ids)}")
+      typer.echo(f"entity_streams: {', '.join(entity_ids)}")
+    typer.echo("\n--- Public Markdown Body ---")
+    typer.echo(pkg.public_markdown_body)
+    if not blind:
+      if pkg.solution_markdown_body is not None:
+        typer.echo("\n--- Solution Markdown Body ---")
+        typer.echo(pkg.solution_markdown_body)
+      if pkg.eval_data is not None:
+        typer.echo("\n--- Eval Data ---")
+        typer.echo(json.dumps(pkg.eval_data.to_dict(), indent=2))
+
+
+@usecases_app.command("export-schemas")
+def usecases_export_schemas(
+    output_dir: str = typer.Option(
+        "schemas",
+        "--output-dir",
+        help="Directory to write usecase.schema.json and eval.schema.json",
+    ),
+) -> None:
+  """Export Draft 2020-12 JSON Schemas for usecase.md and eval.yaml."""
+  usecase_schema_path, eval_schema_path = export_json_schemas(Path(output_dir))
+  typer.echo(f"Wrote {usecase_schema_path}")
+  typer.echo(f"Wrote {eval_schema_path}")
+
+
+def _get_paired_baselines(
+    usecase: str, search_roots: list[Path] | None = None
+) -> list[str]:
+  """Locate `<usecase_dir>/<usecase>.md` and return `environment.paired_baselines`."""
+  package_dir = Path(os.path.dirname(os.path.abspath(__file__)))
+  roots: list[Path] = []
+  if search_roots:
+    roots.extend(Path(r) for r in search_roots)
+  roots.extend([
+      package_dir / "usecases",
+      Path("usecases"),
+  ])
+  for root in roots:
+    md_path = root / usecase / f"{usecase}.md"
+    if md_path.is_file():
+      try:
+        frontmatter, _ = split_frontmatter_and_body(md_path.read_text(encoding="utf-8"))
+      except Exception:
+        return []
+      env_block = frontmatter.get("environment")
+      if not isinstance(env_block, dict):
+        return []
+      raw_baselines = env_block.get("paired_baselines", [])
+      if not isinstance(raw_baselines, list):
+        return []
+      deduped: list[str] = []
+      for item in raw_baselines:
+        if isinstance(item, str) and item.strip() and item not in deduped:
+          deduped.append(item)
+      return deduped
+  return []
+
+
 def _get_logtypes(usecase: str, entities: bool = False) -> list[str]:
   """Get logtype names for a usecase without printing."""
   entity_or_event = "ENTITIES" if entities else "EVENTS"
@@ -984,6 +1170,14 @@ def replay_usecase(
     project_id: str | None = ProjectIdOption,
     forwarder_name: str | None = ForwarderNameOption,
     impersonate_service_account: str | None = ImpersonateServiceAccountOption,
+    with_paired_baselines: bool = typer.Option(
+        False,
+        "--with-paired-baselines",
+        help=(
+            "Also replay composable paired baselines declared in"
+            " environment.paired_baselines"
+        ),
+    ),
 ):
   """Replay a specific usecase."""
   # Load environment file first (needed for download logic)
@@ -1042,6 +1236,29 @@ def replay_usecase(
         forwarder_name,
         impersonate_service_account,
     )
+
+  if with_paired_baselines:
+    for baseline_uc in _get_paired_baselines(usecase):
+      if get_if_missing and baseline_uc not in get_usecases():
+        print(f"Paired baseline '{baseline_uc}' not found locally, downloading...")
+        if not _download_usecase(baseline_uc):
+          raise typer.Exit(1)
+      current_available = get_usecases()
+      if baseline_uc not in current_available:
+        print(
+            f"Paired baseline '{baseline_uc}' not found. Available usecases:"
+            f" {', '.join(sorted(current_available))}"
+        )
+        raise typer.Exit(1)
+      baseline_logtypes = _get_logtypes(baseline_uc, entities=entities)
+      if baseline_logtypes:
+        _replay_usecases(
+            [baseline_uc],
+            baseline_logtypes,
+            entities,
+            timestamp_delta,
+            local_file_output,
+        )
 
   usecases = [usecase]
   logtypes = _get_logtypes(usecase, entities=entities)
