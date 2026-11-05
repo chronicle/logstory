@@ -1,0 +1,124 @@
+schema_version: "2.0"
+usecase_id: RULES_SEARCH_WORKSHOP
+threat_context:
+  grounding_tier: tradecraft_modeled
+  difficulty_tier: intermediate
+  threat_actor: null
+  actor_aliases: []
+  campaign_name: "Google SecOps Rules, Entity Graph, and Search Workshop"
+  cisa_advisories: []
+  cve_ids: []
+  mitre_tactics:
+    - TA0006
+    - TA0008
+  mitre_techniques:
+    - T1003
+    - T1021.002
+    - T1110.001
+    - T1110.003
+tasks:
+  alert_triage:
+    enabled: true
+    case_id: null
+    alert_ids: []
+    prompt: "Triage Windows authentication, Sysmon process execution, and Active Directory entity context alerts for brute-force login sequences, credential dumping, and SMB admin share lateral movement."
+    expected_skill: guided-ttp-hunt-credential-access
+    skill_bindings:
+      google_secops: guided-ttp-hunt-credential-access
+      goose: guided-ttp-hunt-credential-access
+      databricks: ocsf-credential-access-hunt
+    time_horizon_hours: 72
+  threat_hunt:
+    enabled: true
+    prompt_unalerted: "Hunt across Windows Event Log (winevtlog), Sysmon (windows_sysmon), PowerShell (powershell), and Active Directory context (windows_ad) for password spray, brute force followed by login success, Mimikatz execution, and SMB admin share lateral movement."
+    prompt_intel_driven: null
+    expected_patient_zero: null
+    time_horizon_hours: 168
+  detection_engineering:
+    enabled: true
+    prompt: "Author YARA-L 2.0 detection rules covering Windows SMB admin share usage (T1021.002), Mimikatz command-line invocation (T1003), password spraying (T1110.003), and repeated authentication failures followed by success (T1110.001)."
+    target_techniques:
+      - T1003
+      - T1021.002
+      - T1110.001
+      - T1110.003
+    reference_rules:
+      - RULES/mitre_attack_T1021_002_windows_admin_share_basic.yl2
+      - RULES/rw_mimikatz_T1003.yl2
+      - RULES/win_password_spray.yl2
+      - RULES/win_repeatedAuthFailure_thenSuccess.yl2
+    expected_rule_count_min: 4
+    max_false_positives_on_paired_baseline: 0
+ground_truth:
+  expected_disposition: TRUE_POSITIVE
+  expected_verdict: MALICIOUS
+  severity: HIGH
+  patient_zero_host: null
+  patient_zero_account: null
+  root_cause_summary: "Multi-stage Windows credential access and lateral movement workshop scenario featuring brute-force authentication (4625 followed by 4624), password spraying, Mimikatz credential dumping (T1003), and SMB admin share traversal (T1021.002) enriched with Active Directory entity context."
+  kill_chain:
+    - stage: credential_access_brute_force
+      stream_id: winevtlog
+      timestamp_utc: "2025-07-26T00:00:00Z"
+      tactic: TA0006
+      technique_id: T1110.001
+      summary: "Repeated Windows Security Event ID 4625 failed logins followed by Event ID 4624 successful login within 15 minutes."
+      key_evidence:
+        - 'metadata.event_type = "USER_LOGIN" AND metadata.product_event_type = "4625"'
+        - 'metadata.event_type = "USER_LOGIN" AND metadata.product_event_type = "4624"'
+    - stage: credential_dumping
+      stream_id: windows_sysmon
+      timestamp_utc: "2025-07-26T00:05:00Z"
+      tactic: TA0006
+      technique_id: T1003
+      summary: "Command-line invocation of Mimikatz observed in PROCESS_LAUNCH telemetry."
+      key_evidence:
+        - 'metadata.event_type = "PROCESS_LAUNCH" AND target.process.command_line = /mimikatz/ nocase'
+    - stage: lateral_movement_admin_shares
+      stream_id: windows_sysmon
+      timestamp_utc: "2025-07-26T00:10:00Z"
+      tactic: TA0008
+      technique_id: T1021.002
+      summary: "Execution of net use targeting Windows administrative shares (C$, ADMIN$, IPC$)."
+      key_evidence:
+        - 'metadata.event_type = "PROCESS_LAUNCH" AND target.process.command_line = /net.*use.*(C|ADMIN|IPC)\$/ nocase'
+  entities_and_iocs:
+    compromised_accounts: []
+    affected_assets: []
+    malicious_iocs: []
+    benign_confusers:
+      signed_lolbins:
+        - net.exe
+        - whoami.exe
+        - powershell.exe
+      internal_ips: []
+      change_window: null
+compliance_gates:
+  requires_pre_containment_verification: true
+  requires_168h_horizon_widening: false
+  forbid_external_cti_on_internal_ips: true
+  forbid_lolbin_hash_blocking: true
+  respect_change_window: false
+  expected_actions:
+    primary: []
+    secondary: []
+    prohibited:
+      - block_ioc:net.exe
+      - block_ioc:whoami.exe
+      - block_ioc:powershell.exe
+counterfactual_pair: null
+reference_queries:
+  google_secops_udm:
+    - 'metadata.event_type = "PROCESS_LAUNCH" AND target.process.command_line = /net.*use.*(C|ADMIN|IPC)\$/ nocase'
+    - 'metadata.event_type = "PROCESS_LAUNCH" AND target.process.command_line = /mimikatz/ nocase'
+    - 'metadata.event_type = "USER_LOGIN" AND metadata.vendor_name = "Microsoft" AND metadata.product_event_type = "4625"'
+  google_secops_yaral:
+    - RULES/mitre_attack_T1021_002_windows_admin_share_basic.yl2
+    - RULES/rw_mimikatz_T1003.yl2
+    - RULES/win_password_spray.yl2
+    - RULES/win_repeatedAuthFailure_thenSuccess.yl2
+  databricks_sql:
+    - "SELECT * FROM security_lakehouse.ocsf_silver.process_activity WHERE LOWER(process.cmd_line) LIKE '%mimikatz%'"
+  sigma: []
+  splunk_spl:
+    - 'sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" CommandLine="*mimikatz*"'

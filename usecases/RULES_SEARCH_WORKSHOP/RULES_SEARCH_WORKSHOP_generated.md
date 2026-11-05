@@ -2,13 +2,27 @@
 
 ## Introduction
 
-Usecase providing logs for workshops on advanced search capabilities, building rules for Google SecOps, entity graph exploration, and statistical search
+Usecase providing logs for workshops on advanced search capabilities, building rules for Google Security Operations, entity graph exploration, and statistical search.
 
-**Tags**: rules-workshop, yara-l, google-secops, entity-graph, advanced-search, statistical-search, visualization
+**ID**: RULES_SEARCH_WORKSHOP
+
+**Version**: 2.0.0
+
+**Author**: Google Cloud Security
+
+**License**: Apache-2.0
+
+**Tags**: rules-workshop, yara-l, google-secops, entity-graph, advanced-search, statistical-search, visualization, ocsf
 
 **Created**: 2025-07-26
 
-**Updated**: 2025-07-26
+**Updated**: 2026-11-05
+
+## Environment
+
+**Organization**: cymbal-investments.org
+
+**Scenario Type**: workshop
 
 ## Run Frequency
 
@@ -22,24 +36,18 @@ Usecase providing logs for workshops on advanced search capabilities, building r
 
 ## Events
 
-| Log Type | Product Name | Vendor Name | Notes |
-|----------|--------------|-------------|-------|
-| POWERSHELL.log | PowerShell | Microsoft |  |
-| WINDOWS_DEFENDER_AV.log | Windows Defender AV | Microsoft |  |
-| WINDOWS_SYSMON.log | Microsoft-Windows-Sysmon | Microsoft |  |
-| WINEVTLOG.log | Microsoft-Windows-Security-Auditing | Microsoft |  |
-| WINEVTLOG.log | Microsoft-Windows-TaskScheduler | Microsoft |  |
-| WINEVTLOG.log | SecurityCenter | Microsoft |  |
-| WINEVTLOG.log | Service Control Manager | Microsoft |  |
+| Stream ID | Log Type | Product Name | Vendor Name | OCSF Class | Notes |
+|-----------|----------|--------------|-------------|------------|-------|
+| powershell | POWERSHELL | PowerShell | Microsoft | Process Activity (1007) | Windows PowerShell script block and command execution logs. |
+| windows_defender_av | WINDOWS_DEFENDER_AV | Windows Defender AV | Microsoft | Detection Finding (2004) | Microsoft Defender Antivirus detection and threat alert telemetry. |
+| windows_sysmon | WINDOWS_SYSMON | Microsoft-Windows-Sysmon | Microsoft | Process Activity (1007) | Sysmon process creation, file creation, and network telemetry. |
+| winevtlog | WINEVTLOG | Microsoft-Windows-Security-Auditing | Microsoft | Authentication (3002) | Additional product_names in this log type include: Microsoft-Windows-TaskScheduler, SecurityCenter, and Service Control Manager. |
 
 ## Entities
 
-| Log Type | Product Name | Vendor Name | Notes |
-|----------|--------------|-------------|-------|
-| POWERSHELL.log | PowerShell | Microsoft |  |
-| WINDOWS_DEFENDER_AV.log | Windows Defender AV | Microsoft |  |
-| WINDOWS_SYSMON.log | Microsoft-Windows-Sysmon | Microsoft |  |
-| WINEVTLOG.log | Microsoft-Windows-Security-Auditing | Microsoft | Additional product_names in this log type include: Microsoft-Windows-TaskScheduler, SecurityCenter, and Service Control Manager |
+| Stream ID | Log Type | Product Name | Vendor Name | OCSF Class | Notes |
+|-----------|----------|--------------|-------------|------------|-------|
+| windows_ad | WINDOWS_AD | Active Directory | Microsoft | User Inventory (5003) | Active Directory user and computer entity context for Entity Graph joins. |
 
 ## Rules
 
@@ -74,6 +82,34 @@ Usecase providing logs for workshops on advanced search capabilities, building r
 |-----------|------|-------|
 | key_servers | String | Key server names - Used for rules workshop |
 | ntds_suspicious_processes | String | process names often associated with accessing ntds.dit - Used for rules workshop - Stoner |
+
+## Platform Bindings
+
+### Google SecOps
+
+- `powershell`: `POWERSHELL`
+- `windows_defender_av`: `WINDOWS_DEFENDER_AV`
+- `windows_sysmon`: `WINDOWS_SYSMON`
+- `winevtlog`: `WINEVTLOG`
+- `windows_ad`: `WINDOWS_AD`
+
+### Databricks
+
+- **Catalog**: `security_lakehouse`
+- **Schema**: `ocsf_silver`
+- `powershell`: `secops_ocsf.process_activity`
+- `windows_defender_av`: `secops_ocsf.detection_finding`
+- `windows_sysmon`: `secops_ocsf.process_activity`
+- `winevtlog`: `secops_ocsf.authentication`
+- `windows_ad`: `secops_ocsf.user_inventory`
+
+### Splunk
+
+- `powershell`: `XmlWinEventLog:Microsoft-Windows-PowerShell/Operational`
+- `windows_defender_av`: `XmlWinEventLog:Microsoft-Windows-Windows Defender/Operational`
+- `windows_sysmon`: `XmlWinEventLog:Microsoft-Windows-Sysmon/Operational`
+- `winevtlog`: `XmlWinEventLog:Security`
+- `windows_ad`: `ms:ad:user`
 
 ---
 
