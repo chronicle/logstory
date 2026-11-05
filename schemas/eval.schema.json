@@ -1,0 +1,671 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://chronicle.github.io/logstory/schemas/eval.schema.json",
+  "title": "SecurityUsecaseEval",
+  "description": "Held-out Blue Team Evaluation & Answer Key Schema (v2.0) for autonomous SOC agent benchmarking across Alert Triage, Threat Hunting, and Detection Engineering.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "usecase_id",
+    "threat_context",
+    "tasks",
+    "ground_truth",
+    "compliance_gates"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "2.0",
+      "description": "Evaluation schema version ('2.0')."
+    },
+    "usecase_id": {
+      "type": "string",
+      "pattern": "^[A-Z0-9_]+$",
+      "description": "Usecase identifier matching <USECASE>.md id."
+    },
+    "threat_context": {
+      "$ref": "#/$defs/ThreatContext"
+    },
+    "tasks": {
+      "$ref": "#/$defs/EvaluationTasks"
+    },
+    "ground_truth": {
+      "$ref": "#/$defs/GroundTruth"
+    },
+    "compliance_gates": {
+      "$ref": "#/$defs/ComplianceGates"
+    },
+    "counterfactual_pair": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/CounterfactualPair"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Optional Signal Detection Theory twin pairing."
+    },
+    "reference_queries": {
+      "$ref": "#/$defs/ReferenceQueries"
+    }
+  },
+  "$defs": {
+    "ThreatContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "grounding_tier"
+      ],
+      "description": "Adversary, advisory, and MITRE ATT&CK context.",
+      "properties": {
+        "grounding_tier": {
+          "type": "string",
+          "enum": [
+            "stix_grounded",
+            "tradecraft_modeled",
+            "behavioral_synthetic",
+            "benign_baseline"
+          ]
+        },
+        "difficulty_tier": {
+          "type": "string",
+          "enum": [
+            "beginner",
+            "intermediate",
+            "advanced",
+            "expert",
+            "tier_1",
+            "tier_2",
+            "tier_3",
+            "tier_4",
+            "tier_5"
+          ]
+        },
+        "threat_actor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "actor_aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "campaign_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "cisa_advisories": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "cve_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mitre_tactics": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mitre_techniques": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "release_day": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "cohort": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "AlertTriageTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Alert triage benchmark task configuration.",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "case_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "alert_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "expected_skill": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "skill_bindings": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "time_horizon_hours": {
+          "type": "integer"
+        }
+      }
+    },
+    "ThreatHuntTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Proactive threat hunt task configuration.",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "prompt_unalerted": {
+          "type": "string"
+        },
+        "prompt_intel_driven": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "expected_patient_zero": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "expected_skill": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "skill_bindings": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "time_horizon_hours": {
+          "type": "integer"
+        }
+      }
+    },
+    "DetectionEngineeringTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Detection engineering task configuration.",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "target_techniques": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "reference_rules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expected_rule_count_min": {
+          "type": "integer"
+        },
+        "max_false_positives_on_paired_baseline": {
+          "type": "integer"
+        }
+      }
+    },
+    "EvaluationTasks": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Multi-task Blue Team benchmark suite.",
+      "properties": {
+        "alert_triage": {
+          "$ref": "#/$defs/AlertTriageTask"
+        },
+        "threat_hunt": {
+          "$ref": "#/$defs/ThreatHuntTask"
+        },
+        "detection_engineering": {
+          "$ref": "#/$defs/DetectionEngineeringTask"
+        }
+      }
+    },
+    "KillChainStage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stage",
+        "stream_id"
+      ],
+      "description": "Single chronological attack stage.",
+      "properties": {
+        "stage": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stream_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timestamp_utc": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tactic": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "technique_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "summary": {
+          "type": "string"
+        },
+        "key_evidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "AffectedAsset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hostname"
+      ],
+      "description": "Affected enterprise asset and blast-radius cost.",
+      "properties": {
+        "hostname": {
+          "type": "string",
+          "minLength": 1
+        },
+        "criticality_tier": {
+          "type": "string",
+          "enum": [
+            "TIER_0",
+            "TIER_1",
+            "TIER_2",
+            "TIER_3",
+            "tier_0_crown_jewel",
+            "tier_1_core_infra",
+            "tier_2_workstation",
+            "critical",
+            "high",
+            "medium",
+            "low"
+          ]
+        },
+        "ip_addresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "role": {
+          "type": "string"
+        },
+        "patient_zero": {
+          "type": "boolean"
+        },
+        "blast_radius_fp_usd": {
+          "type": "number"
+        },
+        "blast_radius_fn_usd": {
+          "type": "number"
+        }
+      }
+    },
+    "MaliciousIoc": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "value"
+      ],
+      "description": "Ground-truth malicious indicator of compromise.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "ChangeWindow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ticket_id"
+      ],
+      "description": "Maintenance or change window record.",
+      "properties": {
+        "ticket_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "approved": {
+          "type": "boolean"
+        },
+        "start_utc": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "end_utc": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "summary": {
+          "type": "string"
+        }
+      }
+    },
+    "BenignConfusers": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Benign confusers and signed OS LOLBins.",
+      "properties": {
+        "signed_lolbins": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "internal_ips": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "change_window": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ChangeWindow"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "admin_tools": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "EntitiesAndIocs": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Ground-truth entities, IOCs, and confusers.",
+      "properties": {
+        "compromised_accounts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "affected_assets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AffectedAsset"
+          }
+        },
+        "malicious_iocs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MaliciousIoc"
+          }
+        },
+        "benign_confusers": {
+          "$ref": "#/$defs/BenignConfusers"
+        }
+      }
+    },
+    "GroundTruth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expected_disposition",
+        "expected_verdict"
+      ],
+      "description": "Ground-truth disposition, verdict, and timeline.",
+      "properties": {
+        "expected_disposition": {
+          "type": "string",
+          "enum": [
+            "TRUE_POSITIVE",
+            "BENIGN_POSITIVE",
+            "FALSE_POSITIVE",
+            "SUSPICIOUS_TRUE_POSITIVE",
+            "INCONCLUSIVE"
+          ]
+        },
+        "expected_verdict": {
+          "type": "string",
+          "enum": [
+            "MALICIOUS",
+            "BENIGN",
+            "SUSPICIOUS",
+            "INCONCLUSIVE"
+          ]
+        },
+        "severity": {
+          "type": "string"
+        },
+        "patient_zero_host": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "patient_zero_account": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "root_cause_summary": {
+          "type": "string"
+        },
+        "kill_chain": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/KillChainStage"
+          }
+        },
+        "entities_and_iocs": {
+          "$ref": "#/$defs/EntitiesAndIocs"
+        }
+      }
+    },
+    "ExpectedActions": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Primary, secondary, and prohibited response actions.",
+      "properties": {
+        "primary": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "secondary": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "prohibited": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ComplianceGates": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Safety and SOP compliance requirements.",
+      "properties": {
+        "requires_pre_containment_verification": {
+          "type": "boolean"
+        },
+        "requires_168h_horizon_widening": {
+          "type": "boolean"
+        },
+        "forbid_external_cti_on_internal_ips": {
+          "type": "boolean"
+        },
+        "forbid_lolbin_hash_blocking": {
+          "type": "boolean"
+        },
+        "respect_change_window": {
+          "type": "boolean"
+        },
+        "expected_actions": {
+          "$ref": "#/$defs/ExpectedActions"
+        }
+      }
+    },
+    "CounterfactualPair": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "paired_usecase_id",
+        "pair_relationship"
+      ],
+      "description": "Counterfactual benign/malicious twin link.",
+      "properties": {
+        "paired_usecase_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pair_relationship": {
+          "type": "string",
+          "enum": [
+            "malicious_variant_of_benign_baseline",
+            "benign_baseline_for_malicious_variant",
+            "confusable_twin",
+            "benign_twin",
+            "attack_twin"
+          ]
+        },
+        "shared_entities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "shared_telemetry_streams": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "discriminating_invariant": {
+          "type": "string"
+        }
+      }
+    },
+    "ReferenceQueries": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Reference investigative queries by platform.",
+      "properties": {
+        "google_secops_udm": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "google_secops_yaral": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "databricks_sql": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sigma": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "splunk_spl": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

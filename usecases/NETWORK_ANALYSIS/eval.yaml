@@ -1,0 +1,91 @@
+schema_version: "2.0"
+usecase_id: NETWORK_ANALYSIS
+threat_context:
+  grounding_tier: behavioral_synthetic
+  difficulty_tier: beginner
+  threat_actor: null
+  actor_aliases: []
+  campaign_name: "Network Analysis & Statistical Search Workshop"
+  cisa_advisories: []
+  cve_ids: []
+  mitre_tactics:
+    - TA0011
+    - TA0010
+  mitre_techniques:
+    - T1071.001
+    - T1041
+tasks:
+  alert_triage:
+    enabled: true
+    case_id: null
+    alert_ids: []
+    prompt: "Analyze high-volume HTTP connection events from Zeek telemetry and determine whether outbound byte transfers exceed baseline statistical thresholds."
+    expected_skill: dns-tunneling-network-beacon-hunt
+    skill_bindings:
+      google_secops: dns-tunneling-network-beacon-hunt
+      goose: dns-tunneling-network-beacon-hunt
+      databricks: ocsf-dns-beacon-hunt
+    time_horizon_hours: 72
+  threat_hunt:
+    enabled: true
+    prompt_unalerted: "Hunt across Zeek connection telemetry (zeek_conn) for principal-to-target HTTP sessions exceeding 10 connections and 5 MB total transfer over a 30-minute window."
+    prompt_intel_driven: null
+    expected_patient_zero: null
+    time_horizon_hours: 168
+  detection_engineering:
+    enabled: true
+    prompt: "Author a YARA-L 2.0 statistical rule over Zeek NETWORK_CONNECTION events detecting principal/target IP pairs with >10 events and >5 MB transferred within 30 minutes."
+    target_techniques:
+      - T1071.001
+      - T1041
+    reference_rules:
+      - RULES/network_analysis.yl2
+    expected_rule_count_min: 1
+    max_false_positives_on_paired_baseline: 0
+ground_truth:
+  expected_disposition: SUSPICIOUS_TRUE_POSITIVE
+  expected_verdict: SUSPICIOUS
+  severity: LOW
+  patient_zero_host: null
+  patient_zero_account: null
+  root_cause_summary: "High-volume outbound HTTP TCP transfers to external target IPs outside 10.10.0.0/16 exceeding statistical byte and connection count thresholds in Zeek telemetry."
+  kill_chain:
+    - stage: command_and_control
+      stream_id: zeek_conn
+      timestamp_utc: "2025-07-26T00:00:00Z"
+      tactic: TA0011
+      technique_id: T1071.001
+      summary: "Repeated HTTP TCP connections to external target IPs exceeding 5 MB over 30-minute windows."
+      key_evidence:
+        - 'metadata.event_type = "NETWORK_CONNECTION" AND metadata.vendor_name = "Zeek"'
+  entities_and_iocs:
+    compromised_accounts: []
+    affected_assets: []
+    malicious_iocs: []
+    benign_confusers:
+      signed_lolbins: []
+      internal_ips:
+        - 10.10.0.0/16
+      change_window: null
+compliance_gates:
+  requires_pre_containment_verification: true
+  requires_168h_horizon_widening: false
+  forbid_external_cti_on_internal_ips: true
+  forbid_lolbin_hash_blocking: true
+  respect_change_window: false
+  expected_actions:
+    primary: []
+    secondary: []
+    prohibited:
+      - enrich_external_cti:10.10.0.0/16
+counterfactual_pair: null
+reference_queries:
+  google_secops_udm:
+    - 'metadata.vendor_name = "Zeek" AND metadata.event_type = "NETWORK_CONNECTION" AND network.application_protocol = "HTTP"'
+  google_secops_yaral:
+    - RULES/network_analysis.yl2
+  databricks_sql:
+    - "SELECT src_endpoint.ip, dst_endpoint.ip, COUNT(*) AS event_count, SUM(traffic.bytes) AS total_bytes FROM security_lakehouse.ocsf_silver.network_activity GROUP BY 1, 2 HAVING COUNT(*) > 10"
+  sigma: []
+  splunk_spl:
+    - 'sourcetype="zeek:conn:json" service="http" | stats count sum(orig_bytes) sum(resp_bytes) by id.orig_h, id.resp_h'

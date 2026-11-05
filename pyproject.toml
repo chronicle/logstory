@@ -73,10 +73,13 @@ logstory = "logstory.logstory:entry_point"
 "logstory" = [
     "usecases/**/*.log",
     "*.yaml",
+    "usecases/**/*.yaml",
     "usecases/**/*.yl2",
     "usecases/**/*.json",
     "usecases/**/*.md",
-    "usecases/**/*.proto"
+    "usecases/**/*.j2",
+    "usecases/**/*.proto",
+    "schemas/*.json",
 ]
 
 [tool.ruff]

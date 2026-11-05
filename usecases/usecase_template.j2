@@ -4,6 +4,22 @@
 
 {{ description }}
 
+{% if id %}
+**ID**: {{ id }}
+{% endif %}
+
+{% if version %}
+**Version**: {{ version }}
+{% endif %}
+
+{% if author %}
+**Author**: {{ author }}
+{% endif %}
+
+{% if license %}
+**License**: {{ license }}
+{% endif %}
+
 {% if tags %}
 **Tags**: {{ tags | join(', ') }}
 {% endif %}
@@ -14,6 +30,18 @@
 
 {% if updated %}
 **Updated**: {{ updated }}
+{% endif %}
+
+{% if environment %}
+## Environment
+
+**Organization**: {{ environment.organization | default('cymbal-investments.org') }}
+
+**Scenario Type**: {{ environment.scenario_type | default('attack') }}
+
+{% if environment.paired_baselines %}
+**Paired Baselines**: {{ environment.paired_baselines | join(', ') }}
+{% endif %}
 {% endif %}
 
 {% if run_frequency %}
@@ -37,11 +65,19 @@
 ## Events
 
 {% if events and events | length > 0 and events[0].log_type != "N/A" %}
+{% if schema_version == "2.0" %}
+| Stream ID | Log Type | Product Name | Vendor Name | OCSF Class | Notes |
+|-----------|----------|--------------|-------------|------------|-------|
+{% for event in events %}
+| {{ event.stream_id | default('') }} | {{ event.log_type }} | {{ event.product_name }} | {{ event.vendor_name }} | {{ event.ocsf_class_name | default('') }}{% if event.ocsf_class_uid %} ({{ event.ocsf_class_uid }}){% endif %} | {{ event.notes | default('') }} |
+{% endfor %}
+{% else %}
 | Log Type | Product Name | Vendor Name | Notes |
 |----------|--------------|-------------|-------|
 {% for event in events %}
 | {{ event.log_type }} | {{ event.product_name }} | {{ event.vendor_name }} | {{ event.notes | default('') }} |
 {% endfor %}
+{% endif %}
 {% else %}
 No events configured for this usecase.
 {% endif %}
@@ -49,11 +85,19 @@ No events configured for this usecase.
 ## Entities
 
 {% if entities and entities | length > 0 and entities[0].log_type != "N/A" %}
+{% if schema_version == "2.0" %}
+| Stream ID | Log Type | Product Name | Vendor Name | OCSF Class | Notes |
+|-----------|----------|--------------|-------------|------------|-------|
+{% for entity in entities %}
+| {{ entity.stream_id | default('') }} | {{ entity.log_type }} | {{ entity.product_name }} | {{ entity.vendor_name }} | {{ entity.ocsf_class_name | default('') }}{% if entity.ocsf_class_uid %} ({{ entity.ocsf_class_uid }}){% endif %} | {{ entity.notes | default('') }} |
+{% endfor %}
+{% else %}
 | Log Type | Product Name | Vendor Name | Notes |
 |----------|--------------|-------------|-------|
 {% for entity in entities %}
 | {{ entity.log_type }} | {{ entity.product_name }} | {{ entity.vendor_name }} | {{ entity.notes | default('') }} |
 {% endfor %}
+{% endif %}
 {% else %}
 No entities configured for this usecase.
 {% endif %}
@@ -88,6 +132,53 @@ No rules configured for this usecase.
 {% for ref_list in reference_lists %}
 | {{ ref_list.name }} | {{ ref_list.type | default('') }} | {{ ref_list.notes | default('') }} |
 {% endfor %}
+{% endif %}
+
+{% if platforms %}
+## Platform Bindings
+
+{% if platforms.google_secops %}
+### Google SecOps
+
+{% if platforms.google_secops.log_type_mappings %}
+{% for stream_id, log_type in platforms.google_secops.log_type_mappings.items() %}
+- `{{ stream_id }}`: `{{ log_type }}`
+{% endfor %}
+{% endif %}
+{% endif %}
+
+{% if platforms.databricks %}
+### Databricks
+
+- **Catalog**: `{{ platforms.databricks.catalog | default('security_lakehouse') }}`
+- **Schema**: `{{ platforms.databricks.schema_name | default('ocsf_silver') }}`
+{% if platforms.databricks.table_mappings %}
+{% for stream_id, table_name in platforms.databricks.table_mappings.items() %}
+- `{{ stream_id }}`: `{{ table_name }}`
+{% endfor %}
+{% endif %}
+{% if platforms.databricks.detections %}
+{% for det in platforms.databricks.detections %}
+- Detection: `{{ det }}`
+{% endfor %}
+{% endif %}
+{% endif %}
+
+{% if platforms.sigma and platforms.sigma.rules %}
+### Sigma
+
+{% for sigma_rule in platforms.sigma.rules %}
+- `{{ sigma_rule }}`
+{% endfor %}
+{% endif %}
+
+{% if platforms.splunk and platforms.splunk.sourcetypes %}
+### Splunk
+
+{% for stream_id, sourcetype in platforms.splunk.sourcetypes.items() %}
+- `{{ stream_id }}`: `{{ sourcetype }}`
+{% endfor %}
+{% endif %}
 {% endif %}
 
 ---
