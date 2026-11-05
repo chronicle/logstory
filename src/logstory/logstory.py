@@ -39,7 +39,7 @@ from logstory.auth import has_application_default_credentials
 
 UTC = datetime.UTC
 
-DEFAULT_BUCKET = "gs://logstory-usecases-20241216"
+DEFAULT_BUCKET = "cns:///cns/is-d/home/dandye/logstory_usecases_20260918"
 
 
 def version_callback(value: bool):
@@ -161,19 +161,34 @@ def get_auto_get_default():
   return auto_get_value in ("true", "1", "yes", "on")
 
 
+def _normalize_cns_path(raw_path: str) -> str:
+  """Normalize a CNS URI payload or path into a canonical /cns/... directory path."""
+  cleaned = raw_path.strip().rstrip("*").rstrip("/")
+  if cleaned.startswith("/cns/"):
+    return cleaned
+  if cleaned.startswith("cns/"):
+    return f"/{cleaned}"
+  cleaned = cleaned.lstrip("/")
+  return f"/cns/{cleaned}"
+
+
 def parse_usecase_source(source_uri: str) -> tuple[str, str]:
   """Parse a usecase source URI and return (source_type, identifier).
 
   Args:
-    source_uri: URI like 'gs://bucket-name' or bare bucket name
+    source_uri: URI like 'cns:///cns/...', 'gs://bucket-name', or bare bucket name
 
   Returns:
     Tuple of (source_type, identifier) where:
-    - source_type: 'gcs', 'git', etc.
-    - identifier: bucket name, repo URL, etc.
+    - source_type: 'cns', 'gcs', 'git', etc.
+    - identifier: CNS path, bucket name, repo URL, etc.
   """
   source_uri = source_uri.strip()
 
+  if source_uri.startswith("cns://"):
+    return ("cns", _normalize_cns_path(source_uri[6:]))
+  if source_uri.startswith("/cns/"):
+    return ("cns", _normalize_cns_path(source_uri))
   if source_uri.startswith("gs://"):
     return ("gcs", source_uri[5:])  # Remove 'gs://' prefix
   if source_uri.startswith("git@") or source_uri.endswith(".git"):
@@ -258,7 +273,10 @@ TimestampDeltaOption = typer.Option(
 UsecasesBucketOption = typer.Option(
     None,
     "--usecases-bucket",
-    help="Usecase source URI (gs://bucket, git@repo, etc.) - overrides config list",
+    help=(
+        "Usecase source URI (cns:///cns/..., gs://bucket, file:///dir, etc.) - "
+        "overrides config list"
+    ),
 )
 
 LocalFileOutputOption = typer.Option(
@@ -413,6 +431,8 @@ def _get_blobs(source_uri, usecase=None):
   """Get blobs from usecase source, supporting multiple source types."""
   source_type, identifier = parse_usecase_source(source_uri)
 
+  if source_type == "cns":
+    return _get_cns_blobs(identifier, usecase)
   if source_type == "gcs":
     return _get_gcs_blobs(identifier, usecase)
   if source_type == "git":
@@ -452,6 +472,119 @@ def _get_gcs_blobs(bucket_name, usecase=None):
   else:
     blobs = bucket.list_blobs(delimiter="/")
   return blobs
+
+
+class _CnsBlob:
+  """Blob object for Google Colossus (CNS) operations via fileutil."""
+
+  def __init__(self, name: str, cns_path: str):
+    self.name = name
+    self._cns_path = cns_path
+
+  def download_to_filename(self, destination: str):
+    """Copy file from CNS to local destination using fileutil cp -f."""
+    cmd = ["fileutil", "cp", "-f", self._cns_path, destination]
+    gfs_user = os.getenv("LOGSTORY_GFS_USER")
+    if gfs_user:
+      cmd.insert(1, f"--gfs_user={gfs_user}")
+    try:
+      subprocess.run(  # nosec B603 B607 # noqa: S603
+          cmd,
+          check=True,
+          capture_output=True,
+          text=True,
+      )
+    except FileNotFoundError as e:
+      raise RuntimeError(
+          "fileutil binary not found in PATH; required for cns:// sources"
+      ) from e
+    except subprocess.CalledProcessError as e:
+      stderr = (e.stderr or "").strip()
+      raise RuntimeError(
+          f"Failed to copy CNS file '{self._cns_path}' to '{destination}': {stderr}"
+      ) from e
+
+
+def _get_cns_blobs(directory_path: str, usecase: str | None = None):
+  """Get blobs from Google Colossus (CNS) via fileutil, mimicking GCS blob interface."""
+  directory_path = _normalize_cns_path(directory_path)
+  gfs_user = os.getenv("LOGSTORY_GFS_USER")
+  base_cmd = ["fileutil"]
+  if gfs_user:
+    base_cmd.append(f"--gfs_user={gfs_user}")
+
+  if usecase:
+    usecase_path = f"{directory_path}/{usecase}"
+    cmd = [*base_cmd, "ls", "-l", "-R", usecase_path]
+    try:
+      result = subprocess.run(  # nosec B603 B607 # noqa: S603
+          cmd,
+          check=True,
+          capture_output=True,
+          text=True,
+      )
+    except FileNotFoundError as e:
+      raise RuntimeError(
+          "fileutil binary not found in PATH; required for cns:// sources"
+      ) from e
+    except subprocess.CalledProcessError as e:
+      stderr = (e.stderr or "").strip()
+      raise RuntimeError(
+          f"Usecase directory does not exist or is inaccessible on CNS: {usecase_path}"
+          f" ({stderr})"
+      ) from e
+
+    blobs = []
+    prefix_to_strip = f"{directory_path}/"
+    for line in result.stdout.splitlines():
+      line = line.strip()
+      if not line or not line.startswith("-"):
+        continue
+      parts = line.split(None, 7)
+      if len(parts) < 8:
+        continue
+      cns_file_path = parts[7]
+      if cns_file_path.startswith(prefix_to_strip):
+        blob_name = cns_file_path[len(prefix_to_strip) :]
+      else:
+        blob_name = os.path.relpath(cns_file_path, directory_path).replace(os.sep, "/")
+      blobs.append(_CnsBlob(blob_name, cns_file_path))
+    return blobs
+
+  # Return top-level directories (used for listing available usecases)
+  cmd = [*base_cmd, "ls", "-l", directory_path]
+  try:
+    result = subprocess.run(  # nosec B603 B607 # noqa: S603
+        cmd,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+  except FileNotFoundError as e:
+    raise RuntimeError(
+        "fileutil binary not found in PATH; required for cns:// sources"
+    ) from e
+  except subprocess.CalledProcessError as e:
+    stderr = (e.stderr or "").strip()
+    raise RuntimeError(
+        f"CNS directory does not exist or is inaccessible: {directory_path} ({stderr})"
+    ) from e
+
+  prefixes = []
+  for line in result.stdout.splitlines():
+    line = line.strip()
+    if not line or not line.startswith("d"):
+      continue
+    parts = line.split(None, 7)
+    if len(parts) < 8:
+      continue
+    full_path = parts[7].rstrip("/")
+    if full_path == directory_path:
+      continue
+    item_name = full_path.rsplit("/", 1)[-1]
+    prefixes.append(f"{item_name}/")
+
+  return _FileBlobCollection([_FileBlobPage(prefixes)])
 
 
 class _FileBlob:
