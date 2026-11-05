@@ -1,0 +1,475 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://chronicle.github.io/logstory/schemas/usecase.schema.json",
+  "title": "SecurityUsecaseManifest",
+  "description": "Open Security Scenario & Logstory Usecase Manifest Schema (v2.0) combining OKF v0.2 provenance, OCSF telemetry streams, and multi-platform bindings.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "title",
+    "version",
+    "created",
+    "updated",
+    "author",
+    "license",
+    "description",
+    "tags",
+    "environment",
+    "telemetry",
+    "platforms"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "2.0",
+      "description": "Usecase manifest schema version ('2.0')."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Z0-9_]+$",
+      "description": "Canonical uppercase usecase identifier."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable blind-safe package title."
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Semantic version of the usecase package."
+    },
+    "created": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "Initial authoring date (YYYY-MM-DD)."
+    },
+    "updated": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "Last modification date (YYYY-MM-DD)."
+    },
+    "author": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Package author or organization."
+    },
+    "license": {
+      "type": "string",
+      "minLength": 1,
+      "description": "SPDX license identifier (e.g., Apache-2.0)."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Blind-safe summary of the telemetry streams and scenario context (no spoilers)."
+    },
+    "tags": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      },
+      "description": "Discovery tags for the usecase package."
+    },
+    "environment": {
+      "$ref": "#/$defs/EnvironmentContext"
+    },
+    "telemetry": {
+      "$ref": "#/$defs/TelemetrySection"
+    },
+    "platforms": {
+      "$ref": "#/$defs/PlatformBindings"
+    }
+  },
+  "$defs": {
+    "TimestampPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Replay timestamp adjustment policy.",
+      "properties": {
+        "base_date": {
+          "type": "string",
+          "description": "Base date of synthetic logs (YYYY-MM-DD)."
+        },
+        "preserve_relative_offsets": {
+          "type": "boolean",
+          "description": "Whether relative inter-event offsets are preserved."
+        },
+        "default_delta": {
+          "type": "string",
+          "description": "Default timestamp shift expression."
+        },
+        "entity_offset_days": {
+          "type": "integer",
+          "description": "Days prior to events to replay entity context logs."
+        },
+        "window_start": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional UTC window start timestamp."
+        },
+        "window_end": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional UTC window end timestamp."
+        }
+      }
+    },
+    "EnvironmentContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Simulated organization, scenario classification, and composable paired baselines.",
+      "properties": {
+        "organization": {
+          "type": "string",
+          "description": "Simulated enterprise domain name."
+        },
+        "scenario_type": {
+          "type": "string",
+          "enum": [
+            "attack",
+            "benign_baseline",
+            "baseline",
+            "hybrid",
+            "workshop"
+          ],
+          "description": "High-level scenario classification."
+        },
+        "paired_baselines": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Composable benign baseline usecase IDs to co-replay."
+        },
+        "timestamp_policy": {
+          "$ref": "#/$defs/TimestampPolicy"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional environment notes."
+        }
+      }
+    },
+    "TelemetryStream": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stream_id",
+        "path",
+        "log_type"
+      ],
+      "description": "Vendor-neutral event or entity telemetry stream.",
+      "properties": {
+        "stream_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Stable identifier for the stream."
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Relative path to the log file inside the usecase."
+        },
+        "log_type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Canonical ingestion log type identifier."
+        },
+        "vendor_name": {
+          "type": "string",
+          "description": "Telemetry vendor name."
+        },
+        "product_name": {
+          "type": "string",
+          "description": "Telemetry product name."
+        },
+        "ocsf_category_uid": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "OCSF v1.3+ category UID."
+        },
+        "ocsf_class_uid": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "OCSF v1.3+ class UID."
+        },
+        "ocsf_class_name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "OCSF v1.3+ class name."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Blind-safe stream notes."
+        }
+      }
+    },
+    "TelemetrySection": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Event and entity telemetry streams.",
+      "properties": {
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TelemetryStream"
+          },
+          "description": "Event log streams under EVENTS/."
+        },
+        "entities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TelemetryStream"
+          },
+          "description": "Entity context streams under ENTITIES/."
+        }
+      }
+    },
+    "GoogleSecOpsRunFrequency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "events"
+      ],
+      "description": "Recommended Google SecOps replay cadence.",
+      "properties": {
+        "events": {
+          "type": "string",
+          "description": "Replay frequency for event streams."
+        },
+        "entities": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Replay frequency for entity streams."
+        }
+      }
+    },
+    "GoogleSecOpsDetection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "description": "Google SecOps YARA-L 2.0 detection rule entry.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Rule name."
+        },
+        "path": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional relative path to .yl2 file."
+        },
+        "live": {
+          "type": "boolean",
+          "description": "Whether live rule evaluation is enabled."
+        },
+        "alerting": {
+          "type": "boolean",
+          "description": "Whether alerting is enabled."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Rule notes."
+        }
+      }
+    },
+    "GoogleSecOpsSavedSearch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "description": "Saved UDM search definition.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "creator": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "query": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "GoogleSecOpsReferenceList": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "description": "Google SecOps reference list metadata.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "GoogleSecOpsPlatform": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Google Security Operations platform bindings.",
+      "properties": {
+        "run_frequency": {
+          "$ref": "#/$defs/GoogleSecOpsRunFrequency"
+        },
+        "data_rbac": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "log_type_mappings": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "detections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/GoogleSecOpsDetection"
+          }
+        },
+        "saved_searches": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/GoogleSecOpsSavedSearch"
+          }
+        },
+        "reference_lists": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/GoogleSecOpsReferenceList"
+          }
+        },
+        "parser_extensions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "DatabricksPlatform": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Databricks Unity Catalog OCSF Lakehouse bindings.",
+      "properties": {
+        "catalog": {
+          "type": "string"
+        },
+        "schema_name": {
+          "type": "string"
+        },
+        "table_mappings": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "detections": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "SigmaPlatform": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Sigma detection rule bindings.",
+      "properties": {
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "SplunkPlatform": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Splunk sourcetype and search bindings.",
+      "properties": {
+        "sourcetypes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "saved_searches": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "PlatformBindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Multi-platform ingestion and detection bindings.",
+      "properties": {
+        "google_secops": {
+          "$ref": "#/$defs/GoogleSecOpsPlatform"
+        },
+        "databricks": {
+          "$ref": "#/$defs/DatabricksPlatform"
+        },
+        "sigma": {
+          "$ref": "#/$defs/SigmaPlatform"
+        },
+        "splunk": {
+          "$ref": "#/$defs/SplunkPlatform"
+        }
+      }
+    }
+  }
+}
