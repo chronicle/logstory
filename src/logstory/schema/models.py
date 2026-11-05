@@ -1014,7 +1014,17 @@ class SecurityUsecaseManifest:
     title = _require_non_empty_str(mapping, "title", path)
     version = _require_non_empty_str(mapping, "version", path)
     created = _require_non_empty_str(mapping, "created", path)
+    if not _ISO_DATE_RE.match(created):
+      raise SchemaValidationError(
+          f"Field 'created' {created!r} must match {ISO_DATE_PATTERN}",
+          path=f"{path}.created",
+      )
     updated = _require_non_empty_str(mapping, "updated", path)
+    if not _ISO_DATE_RE.match(updated):
+      raise SchemaValidationError(
+          f"Field 'updated' {updated!r} must match {ISO_DATE_PATTERN}",
+          path=f"{path}.updated",
+      )
     author = _require_non_empty_str(mapping, "author", path)
     license_id = _require_non_empty_str(mapping, "license", path)
     description = _require_non_empty_str(mapping, "description", path)

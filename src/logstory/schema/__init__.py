@@ -68,8 +68,26 @@ from logstory.schema.models import (
     split_frontmatter_and_body,
     split_solution_section,
 )
+from logstory.schema.validator import (
+    FORBIDDEN_FRONTMATTER_KEYS,
+    GATE_G1_SCHEMA,
+    GATE_G2_INTEGRITY,
+    GATE_G3_ANTI_SPOILER,
+    GATE_G4_COUNTERFACTUAL,
+    GATE_G5_LEGACY_V1,
+    UsecaseValidationResult,
+    ValidationFinding,
+    validate_usecase_corpus,
+    validate_usecase_package,
+)
 
 __all__ = [
+    "FORBIDDEN_FRONTMATTER_KEYS",
+    "GATE_G1_SCHEMA",
+    "GATE_G2_INTEGRITY",
+    "GATE_G3_ANTI_SPOILER",
+    "GATE_G4_COUNTERFACTUAL",
+    "GATE_G5_LEGACY_V1",
     "JSON_SCHEMA_DRAFT_2020_12",
     "SCHEMA_VERSION_V1",
     "SCHEMA_VERSION_V2",
@@ -114,10 +132,14 @@ __all__ = [
     "ThreatContext",
     "ThreatHuntTask",
     "TimestampPolicy",
+    "UsecaseValidationResult",
+    "ValidationFinding",
     "build_eval_json_schema",
     "build_usecase_json_schema",
     "export_json_schemas",
     "parse_usecase_package",
     "split_frontmatter_and_body",
     "split_solution_section",
+    "validate_usecase_corpus",
+    "validate_usecase_package",
 ]
