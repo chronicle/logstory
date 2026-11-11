@@ -705,6 +705,68 @@ OFFICE_365:
       group: 2
       # Replaces: label_applied, sent
 
+WIZ_IO:
+  api: unstructuredlogentries
+  log_dir: /tmp/var/log/logstory
+  timestamps:
+    - name: wiz_timestamp
+      base_time: true
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      group: 2
+      pattern: '("timestamp"\s*:\s*")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+    - name: wiz_created
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      group: 2
+      pattern: '("created"\s*:\s*")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+    - name: wiz_createdAt
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      group: 2
+      pattern: '("createdAt"\s*:\s*")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+    - name: wiz_updatedAt
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      group: 2
+      pattern: '("updatedAt"\s*:\s*")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+    - name: wiz_updated
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      group: 2
+      pattern: '("updated"\s*:\s*")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+    - name: wiz_statusChangedAt
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      group: 2
+      pattern: '("statusChangedAt"\s*:\s*")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+    - name: wiz_resolvedAt
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      group: 2
+      pattern: '("resolvedAt"\s*:\s*")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+    - name: wiz_dueAt
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      group: 2
+      pattern: '("dueAt"\s*:\s*")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+    - name: wiz_start
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      group: 2
+      pattern: '("start"\s*:\s*")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+    - name: wiz_end
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      group: 2
+      pattern: '("end"\s*:\s*")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+    - name: wiz_eventTime
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      group: 2
+      pattern: '("eventTime"\s*:\s*")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+    - name: wiz_executionTime_0
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      group: 2
+      pattern: '("executionTime"\s*:\s*")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+    - name: wiz_executionTime_1
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      group: 2
+      pattern: '("executionTime"\s*:\s*"[^"]+".*?"executionTime"\s*:\s*")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+    - name: wiz_executionTime_2
+      dateformat: "%Y-%m-%dT%H:%M:%S"
+      group: 2
+      pattern: '("executionTime"\s*:\s*"[^"]+".*?"executionTime"\s*:\s*"[^"]+".*?"executionTime"\s*:\s*")(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+
 WORKSPACE_ACTIVITY:
   api: unstructuredlogentries
   log_dir: /tmp/var/log/logstory
