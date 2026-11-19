@@ -39,7 +39,7 @@ from logstory.auth import has_application_default_credentials
 
 UTC = datetime.UTC
 
-DEFAULT_BUCKET = "cns:///cns/is-d/home/dandye/logstory_usecases_20260918"
+DEFAULT_BUCKET = "gs://logstory-usecases-20241216"
 
 
 def version_callback(value: bool):
