@@ -13,6 +13,10 @@ api_type := env_var_or_default("LOGSTORY_API_TYPE", "rest")
 forwarder_name := env_var_or_default("LOGSTORY_FORWARDER_NAME", "Logstory-REST-Forwarder")
 secret_name := env_var_or_default("LOGSTORY_SECRET_NAME", "chronicle-api-key")
 usecases_bucket := env_var_or_default("LOGSTORY_USECASES_BUCKET", "gs://logstory-usecases-20241216")
+cns_dir := env_var_or_default("LOGSTORY_CNS_DIR", "/cns/is-d/home/cloudsec-adoption/logstory_usecases_20260918")
+cns_gfs_user := env_var_or_default("LOGSTORY_GFS_USER", "cloudsec-adoption")
+datanexus_entry := env_var_or_default("LOGSTORY_DATANEXUS_ENTRY", "mldataset.cloudsec_adoption.logstory_usecases_2026_09_18")
+datanexus_read_delegator := env_var_or_default("LOGSTORY_DATANEXUS_READ_DELEGATOR", "mdb:cloudsec-adoption")
 timestamp_delta := env_var_or_default("LOGSTORY_TIMESTAMP_DELTA", "1d")
 venv_dir := "venv"
 
@@ -98,7 +102,12 @@ default:
             ('pre-commit-run', '', 'Run pre-commit hooks on all files'),
             ('pre-commit-update', '', 'Update pre-commit hooks to latest versions'),
         ]),
-        ('Usecases & GCS Storage', C.BCYAN, C.CYAN, [
+        ('Usecases, CNS & GCS Storage', C.BCYAN, C.CYAN, [
+            ('usecase-publish-cns', '<usecase> [cns_dir]', 'Sync a single local usecase to Google Colossus (CNS)'),
+            ('usecase-publish-all-cns', '[dir] [cns_dir]', 'Sync all local usecases to Google Colossus (CNS)'),
+            ('usecase-list-cns', '[cns_dir]', 'List usecases stored in Google Colossus (CNS)'),
+            ('datanexus-register-dryrun', '[entry] [variant]', 'Dry-run DataNexus / ML Catalog variant registration via mlc'),
+            ('datanexus-register', '[entry] [variant]', 'Register Colossus directory variant in DataNexus via mlc'),
             ('usecase-publish', '<usecase> [bucket]', 'Sync a single local usecase to Google Cloud Storage bucket'),
             ('usecase-publish-all', '[dir] [bucket]', 'Sync all local usecases to Google Cloud Storage bucket'),
             ('usecase-list-gcs', '[bucket]', 'List usecases stored in Google Cloud Storage bucket'),
@@ -178,18 +187,26 @@ info:
     forwarder = "{{ forwarder_name }}"
     secret = "{{ secret_name }}"
     bucket = "{{ usecases_bucket }}"
+    cns = "{{ cns_dir }}"
+    gfs_user = "{{ cns_gfs_user }}"
+    dn_entry = "{{ datanexus_entry }}"
+    dn_delegator = "{{ datanexus_read_delegator }}"
     delta = "{{ timestamp_delta }}"
 
     print(f"\n  {C.BCYAN}=== Logstory Active Configuration ==={C.RESET}")
-    print(f"  {C.BOLD}LOGSTORY_PROJECT_ID:{C.RESET}      {C.GREEN if project else C.GRAY}{project or '(not set)'}{C.RESET}")
-    print(f"  {C.BOLD}LOGSTORY_CUSTOMER_ID:{C.RESET}     {C.GREEN if customer else C.GRAY}{customer or '(not set)'}{C.RESET}")
-    print(f"  {C.BOLD}LOGSTORY_REGION:{C.RESET}          {C.CYAN}{chronicle_reg}{C.RESET}")
-    print(f"  {C.BOLD}LOGSTORY_GCP_REGION:{C.RESET}      {C.CYAN}{gcp_reg}{C.RESET}")
-    print(f"  {C.BOLD}LOGSTORY_API_TYPE:{C.RESET}        {C.YELLOW}{api}{C.RESET}")
-    print(f"  {C.BOLD}LOGSTORY_FORWARDER_NAME:{C.RESET}  {C.WHITE}{forwarder}{C.RESET}")
-    print(f"  {C.BOLD}LOGSTORY_SECRET_NAME:{C.RESET}     {C.MAGENTA}{secret}{C.RESET}")
-    print(f"  {C.BOLD}LOGSTORY_USECASES_BUCKET:{C.RESET} {C.CYAN}{bucket}{C.RESET}")
-    print(f"  {C.BOLD}LOGSTORY_TIMESTAMP_DELTA:{C.RESET} {C.WHITE}{delta}{C.RESET}\n")
+    print(f"  {C.BOLD}LOGSTORY_PROJECT_ID:{C.RESET}               {C.GREEN if project else C.GRAY}{project or '(not set)'}{C.RESET}")
+    print(f"  {C.BOLD}LOGSTORY_CUSTOMER_ID:{C.RESET}              {C.GREEN if customer else C.GRAY}{customer or '(not set)'}{C.RESET}")
+    print(f"  {C.BOLD}LOGSTORY_REGION:{C.RESET}                   {C.CYAN}{chronicle_reg}{C.RESET}")
+    print(f"  {C.BOLD}LOGSTORY_GCP_REGION:{C.RESET}               {C.CYAN}{gcp_reg}{C.RESET}")
+    print(f"  {C.BOLD}LOGSTORY_API_TYPE:{C.RESET}                 {C.YELLOW}{api}{C.RESET}")
+    print(f"  {C.BOLD}LOGSTORY_FORWARDER_NAME:{C.RESET}           {C.WHITE}{forwarder}{C.RESET}")
+    print(f"  {C.BOLD}LOGSTORY_SECRET_NAME:{C.RESET}              {C.MAGENTA}{secret}{C.RESET}")
+    print(f"  {C.BOLD}LOGSTORY_USECASES_BUCKET:{C.RESET}          {C.CYAN}{bucket}{C.RESET}")
+    print(f"  {C.BOLD}LOGSTORY_CNS_DIR:{C.RESET}                  {C.CYAN}{cns}{C.RESET}")
+    print(f"  {C.BOLD}LOGSTORY_GFS_USER:{C.RESET}                 {C.CYAN}{gfs_user}{C.RESET}")
+    print(f"  {C.BOLD}LOGSTORY_DATANEXUS_ENTRY:{C.RESET}          {C.CYAN}{dn_entry}{C.RESET}")
+    print(f"  {C.BOLD}LOGSTORY_DATANEXUS_READ_DELEGATOR:{C.RESET} {C.CYAN}{dn_delegator}{C.RESET}")
+    print(f"  {C.BOLD}LOGSTORY_TIMESTAMP_DELTA:{C.RESET}          {C.WHITE}{delta}{C.RESET}\n")
 
 # ==============================================================================
 # Google Cloud Authentication and Configuration Setup
@@ -757,8 +774,83 @@ cloudrun-help:
     @echo "  just cloudrun-delete-all"
 
 # ==============================================================================
-# Usecases and Storage Bucket Management
+# Usecases, CNS, DataNexus, and Storage Bucket Management
 # ==============================================================================
+
+# Publish a single local usecase to Google Colossus (CNS)
+usecase-publish-cns usecase target_cns=cns_dir gfs_user=cns_gfs_user:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    gfs_args=()
+    if [ -n "{{ gfs_user }}" ]; then
+        gfs_args=(--gfs_user="{{ gfs_user }}")
+    fi
+    if [ -d "usecases/{{ usecase }}" ]; then
+        src_dir="usecases/{{ usecase }}"
+    elif [ -d "src/logstory/usecases/{{ usecase }}" ]; then
+        src_dir="src/logstory/usecases/{{ usecase }}"
+    else
+        echo "Error: Usecase '{{ usecase }}' not found in usecases/ or src/logstory/usecases/"
+        exit 1
+    fi
+    echo "Publishing usecase '{{ usecase }}' to {{ target_cns }}/{{ usecase }}..."
+    fileutil "${gfs_args[@]}" mkdir -p "{{ target_cns }}/{{ usecase }}"
+    fileutil "${gfs_args[@]}" cp -f -R "${src_dir}"/* "{{ target_cns }}/{{ usecase }}/"
+    echo "Usecase '{{ usecase }}' published to CNS successfully!"
+
+# Publish all local usecases to Google Colossus (CNS)
+usecase-publish-all-cns local_dir="usecases" target_cns=cns_dir gfs_user=cns_gfs_user:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ ! -d "{{ local_dir }}" ]; then
+        echo "Error: Local directory '{{ local_dir }}' does not exist."
+        exit 1
+    fi
+    echo "Publishing all usecases from '{{ local_dir }}' to {{ target_cns }}..."
+    gfs_args=()
+    if [ -n "{{ gfs_user }}" ]; then
+        gfs_args=(--gfs_user="{{ gfs_user }}")
+    fi
+    fileutil "${gfs_args[@]}" mkdir -p "{{ target_cns }}"
+    fileutil "${gfs_args[@]}" cp -f -R "{{ local_dir }}"/* "{{ target_cns }}/"
+    echo "All usecases published to CNS successfully!"
+
+# List usecases stored in Google Colossus (CNS)
+usecase-list-cns target_cns=cns_dir:
+    fileutil ls "{{ target_cns }}"
+
+# Dry-run registering the Colossus directory as a variant in DataNexus / ML Catalog
+datanexus-register-dryrun entry=datanexus_entry variant="20260918" target_cns=cns_dir format="AUTO" read_delegator=datanexus_read_delegator:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    SOURCE_PROTO="$(/google/bin/releases/ml-catalog/tools/mlc generate file-source "{{ target_cns }}/*" "{{ format }}")"
+    rd_args=()
+    if [ -n "{{ read_delegator }}" ]; then
+        rd_args=(--read_delegator="{{ read_delegator }}")
+    fi
+    /google/bin/releases/ml-catalog/tools/mlc create \
+        --dry_run \
+        "{{ entry }}" "{{ variant }}" \
+        --set_default \
+        --aliases_assign="latest" \
+        "${rd_args[@]}" \
+        --source="$SOURCE_PROTO"
+
+# Commit and set default variant in DataNexus / ML Catalog
+datanexus-register entry=datanexus_entry variant="20260918" target_cns=cns_dir format="AUTO" read_delegator=datanexus_read_delegator:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    SOURCE_PROTO="$(/google/bin/releases/ml-catalog/tools/mlc generate file-source "{{ target_cns }}/*" "{{ format }}")"
+    rd_args=()
+    if [ -n "{{ read_delegator }}" ]; then
+        rd_args=(--read_delegator="{{ read_delegator }}")
+    fi
+    /google/bin/releases/ml-catalog/tools/mlc create \
+        "{{ entry }}" "{{ variant }}" \
+        --set_default \
+        --aliases_assign="latest" \
+        "${rd_args[@]}" \
+        --source="$SOURCE_PROTO"
 
 # Publish a single local usecase to the Google Cloud Storage bucket
 usecase-publish usecase bucket=usecases_bucket:

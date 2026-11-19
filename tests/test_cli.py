@@ -26,11 +26,14 @@ import typer
 from typer.testing import CliRunner
 
 from logstory.logstory import (
+    DEFAULT_BUCKET,
+    _CnsBlob,
     _download_all_usecases,
     _download_usecase,
     _FileBlob,
     _get_all_source_directories,
     _get_blobs,
+    _get_cns_blobs,
     _get_file_blobs,
     _get_gcs_blobs,
     _get_logtypes,
@@ -171,10 +174,28 @@ class TestCliDefaultsAndEnv:
 
 
 class TestSourceParsingAndBlobMocking:
-  """Test parsing GCS/file sources and blob collections."""
+  """Test parsing CNS/GCS/file sources and blob collections."""
+
+  def test_default_bucket_is_gcs(self):
+    """Test DEFAULT_BUCKET defaults to GCS and CNS override works via env var."""
+    assert DEFAULT_BUCKET == "gs://logstory-usecases-20241216"
+    with patch.dict(os.environ, {}, clear=True):
+      assert get_usecases_buckets() == ["gs://logstory-usecases-20241216"]
+    cns_uri = "cns:///cns/is-d/home/cloudsec-adoption/logstory_usecases_20260918"
+    with patch.dict(os.environ, {"LOGSTORY_USECASES_BUCKETS": cns_uri}, clear=True):
+      assert get_usecases_buckets() == [cns_uri]
 
   def test_parse_usecase_source(self):
     """Test source URI parsing."""
+    assert parse_usecase_source(
+        "cns:///cns/is-d/home/cloudsec-adoption/logstory_usecases_20260918"
+    ) == ("cns", "/cns/is-d/home/cloudsec-adoption/logstory_usecases_20260918")
+    assert parse_usecase_source(
+        "cns://is-d/home/cloudsec-adoption/logstory_usecases_20260918"
+    ) == ("cns", "/cns/is-d/home/cloudsec-adoption/logstory_usecases_20260918")
+    assert parse_usecase_source(
+        "/cns/is-d/home/cloudsec-adoption/logstory_usecases_20260918/*"
+    ) == ("cns", "/cns/is-d/home/cloudsec-adoption/logstory_usecases_20260918")
     assert parse_usecase_source("gs://my-bucket/usecases") == (
         "gcs",
         "my-bucket/usecases",
@@ -210,6 +231,65 @@ class TestSourceParsingAndBlobMocking:
       fb.download_to_filename(str(dest))
       assert dest.read_text(encoding="utf-8") == "sample content"
 
+  @patch("subprocess.run")
+  def test_cns_blob_and_collection(self, mock_run):
+    """Test _CnsBlob and _get_cns_blobs directory and recursive file listing."""
+    # 1. Directory listing (usecase=None)
+    mock_run.return_value = MagicMock(
+        stdout=(
+            "drwxrwxr-x 1 cloudsec-adoption cloudsec-adoption 0 2026/11/19 22:22:47"
+            " /cns/is-d/home/cloudsec-adoption/logstory_usecases_20260918/NETWORK_ANALYSIS\n"
+            "-rw-rw-r-- 1 cloudsec-adoption cloudsec-adoption 3664 2026/11/19 22:22:48"
+            " /cns/is-d/home/cloudsec-adoption/logstory_usecases_20260918/README_template.md\n"
+            "drwxrwxr-x 1 cloudsec-adoption cloudsec-adoption 0 2026/11/19 22:22:47"
+            " /cns/is-d/home/cloudsec-adoption/logstory_usecases_20260918/RULES_SEARCH_WORKSHOP\n"
+        )
+    )
+    collection = _get_cns_blobs(
+        "/cns/is-d/home/cloudsec-adoption/logstory_usecases_20260918"
+    )
+    assert len(collection.pages) == 1
+    assert collection.pages[0].prefixes == [
+        "NETWORK_ANALYSIS/",
+        "RULES_SEARCH_WORKSHOP/",
+    ]
+
+    # 2. Recursive file listing for specific usecase
+    mock_run.return_value = MagicMock(
+        stdout=(
+            "drwxrwxr-x 1 cloudsec-adoption cloudsec-adoption 0 2026/11/19 22:22:47"
+            " /cns/is-d/home/cloudsec-adoption/logstory_usecases_20260918/NETWORK_ANALYSIS\n"
+            "-rw-rw-r-- 1 cloudsec-adoption cloudsec-adoption 2540751 2026/11/19"
+            " 22:22:48"
+            " /cns/is-d/home/cloudsec-adoption/logstory_usecases_20260918/NETWORK_ANALYSIS/EVENTS/BRO_JSON.log\n"
+        )
+    )
+    blobs = _get_cns_blobs(
+        "/cns/is-d/home/cloudsec-adoption/logstory_usecases_20260918",
+        usecase="NETWORK_ANALYSIS",
+    )
+    assert len(blobs) == 1
+    assert isinstance(blobs[0], _CnsBlob)
+    assert blobs[0].name == "NETWORK_ANALYSIS/EVENTS/BRO_JSON.log"
+
+    # 3. Download via _CnsBlob with LOGSTORY_GFS_USER
+    mock_run.reset_mock()
+    with patch.dict(os.environ, {"LOGSTORY_GFS_USER": "my-group"}):
+      blobs[0].download_to_filename("/tmp/BRO_JSON.log")
+    mock_run.assert_called_once_with(
+        [
+            "fileutil",
+            "--gfs_user=my-group",
+            "cp",
+            "-f",
+            "/cns/is-d/home/cloudsec-adoption/logstory_usecases_20260918/NETWORK_ANALYSIS/EVENTS/BRO_JSON.log",
+            "/tmp/BRO_JSON.log",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
   @patch("logstory.logstory.storage.Client")
   def test_get_gcs_blobs(self, mock_storage_client):
     """Test _get_gcs_blobs with GCS client."""
@@ -225,7 +305,12 @@ class TestSourceParsingAndBlobMocking:
     mock_bucket.list_blobs.assert_called_once_with(prefix="UC1")
 
   def test_get_blobs_dispatcher(self):
-    """Test _get_blobs dispatching to GCS or file."""
+    """Test _get_blobs dispatching to CNS, GCS, or file."""
+    with patch("logstory.logstory._get_cns_blobs", return_value=["cns_blob"]):
+      assert _get_blobs(
+          "cns:///cns/is-d/home/cloudsec-adoption/logstory_usecases_20260918"
+      ) == ["cns_blob"]
+
     with patch("logstory.logstory._get_gcs_blobs", return_value=["gcs_blob"]):
       assert _get_blobs("gs://bucket1") == ["gcs_blob"]
 
